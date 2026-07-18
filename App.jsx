@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen } from "lucide-react";
-import { sb, sbInsert } from "./supabase";
+import { sb, sbInsert, adminLogin, sbAuth } from "./supabase";
 
 
 const OPEN_QUESTIONS = [
@@ -64,7 +64,7 @@ function fmtTime(s) {
 
 /* ========================================================================= */
 
-export default function App() {
+function InnerApp() {
   const [screen, setScreen] = useState("portal"); // portal | home | setup | test | result
   const [name, setName] = useState("");
   const [mode, setMode] = useState(null); // 'level' | 'check'
@@ -1131,3 +1131,150 @@ const styles = {
   reviewRow: { background: "rgba(255,255,255,0.03)", borderRadius: 6, padding: "8px 12px" },
   adBox: { background: "rgba(255,159,28,0.06)", border: "1px solid rgba(255,159,28,0.2)", borderRadius: 12, padding: 18 },
 };
+
+/* ========================= ADMIN PANEL ========================= */
+
+function AdminPanel() {
+  const [token, setToken] = useState(() => localStorage.getItem("adminToken") || "");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState("results"); // results | registrations
+  const [results, setResults] = useState(null);
+  const [registrations, setRegistrations] = useState(null);
+  const [search, setSearch] = useState("");
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await adminLogin(email, password);
+      localStorage.setItem("adminToken", data.access_token);
+      setToken(data.access_token);
+    } catch {
+      setError("Email və ya şifrə yanlışdır.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("adminToken");
+    setToken("");
+    setResults(null);
+    setRegistrations(null);
+  }
+
+  useEffect(() => {
+    if (!token) return;
+    sbAuth("test_results?select=*&order=created_at.desc&limit=500", token)
+      .then(setResults)
+      .catch(() => setResults([]));
+    sbAuth("course_registrations?select=*&order=created_at.desc&limit=500", token)
+      .then(setRegistrations)
+      .catch(() => setRegistrations([]));
+  }, [token]);
+
+  const styleA = {
+    page: { minHeight: "100vh", background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)", color: "#F5EFE0", fontFamily: "'Inter', -apple-system, sans-serif", padding: "32px 16px" },
+    box: { maxWidth: 900, margin: "0 auto" },
+    input: { width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)", background: "rgba(255,255,255,0.04)", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", marginBottom: 12 },
+    btn: { background: "#FF9F1C", color: "#0A0A0C", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 15, cursor: "pointer" },
+    tabBtn: (active) => ({ padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(245,239,224,0.2)", background: active ? "#FF9F1C" : "transparent", color: active ? "#0A0A0C" : "#F5EFE0", fontWeight: active ? 700 : 400, cursor: "pointer", marginRight: 8 }),
+    table: { width: "100%", borderCollapse: "collapse", fontSize: 13.5 },
+    th: { textAlign: "left", padding: "8px 10px", borderBottom: "1px solid rgba(245,239,224,0.2)", opacity: 0.7, fontWeight: 600 },
+    td: { padding: "8px 10px", borderBottom: "1px solid rgba(245,239,224,0.08)" },
+  };
+
+  if (!token) {
+    return (
+      <div style={styleA.page}>
+        <div style={{ ...styleA.box, maxWidth: 360, paddingTop: 80 }}>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, marginBottom: 20 }}>Admin Girişi</h1>
+          <form onSubmit={handleLogin}>
+            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={styleA.input} required />
+            <input type="password" placeholder="Şifrə" value={password} onChange={(e) => setPassword(e.target.value)} style={styleA.input} required />
+            {error && <p style={{ color: "#C97B6E", fontSize: 13, marginBottom: 10 }}>{error}</p>}
+            <button type="submit" style={styleA.btn} disabled={loading}>{loading ? "..." : "Daxil ol"}</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  const regFiltered = (registrations || []).filter((r) => !search || (r.name || "").toLowerCase().includes(search.toLowerCase()));
+  const resFiltered = (results || []).filter((r) => !search || (r.user_name || "").toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div style={styleA.page}>
+      <div style={styleA.box}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26 }}>Admin Panel</h1>
+          <button onClick={logout} style={{ ...styleA.btn, background: "transparent", border: "1px solid rgba(245,239,224,0.3)", color: "#F5EFE0" }}>Çıxış</button>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <button style={styleA.tabBtn(tab === "results")} onClick={() => setTab("results")}>Test Nəticələri ({results ? results.length : "..."})</button>
+          <button style={styleA.tabBtn(tab === "registrations")} onClick={() => setTab("registrations")}>Qeydiyyatlar ({registrations ? registrations.length : "..."})</button>
+        </div>
+
+        <input placeholder="Ad üzrə axtar..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...styleA.input, maxWidth: 300 }} />
+
+        <div style={{ overflowX: "auto" }}>
+          {tab === "results" ? (
+            <table style={styleA.table}>
+              <thead>
+                <tr>
+                  <th style={styleA.th}>Ad</th>
+                  <th style={styleA.th}>Rejim</th>
+                  <th style={styleA.th}>Səviyyə</th>
+                  <th style={styleA.th}>Bal</th>
+                  <th style={styleA.th}>Tarix</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resFiltered.map((r) => (
+                  <tr key={r.id}>
+                    <td style={styleA.td}>{r.user_name}</td>
+                    <td style={styleA.td}>{r.mode === "level" ? "Səviyyə imtahanı" : "Səviyyəni yoxla"}</td>
+                    <td style={styleA.td}>{r.level}</td>
+                    <td style={styleA.td}>{r.score != null ? `${r.score}%` : "—"}</td>
+                    <td style={styleA.td}>{new Date(r.created_at).toLocaleString("az-AZ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table style={styleA.table}>
+              <thead>
+                <tr>
+                  <th style={styleA.th}>Ad</th>
+                  <th style={styleA.th}>Telefon</th>
+                  <th style={styleA.th}>Kurs</th>
+                  <th style={styleA.th}>Tarix</th>
+                </tr>
+              </thead>
+              <tbody>
+                {regFiltered.map((r) => (
+                  <tr key={r.id}>
+                    <td style={styleA.td}>{r.name}</td>
+                    <td style={styleA.td}>{r.phone}</td>
+                    <td style={styleA.td}>{r.course}</td>
+                    <td style={styleA.td}>{new Date(r.created_at).toLocaleString("az-AZ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  return isAdmin ? <AdminPanel /> : <InnerApp />;
+}

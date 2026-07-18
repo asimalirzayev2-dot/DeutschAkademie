@@ -25,3 +25,48 @@ export async function sbInsert(table, row) {
   });
   if (!res.ok) throw new Error(`Supabase insert error: ${res.status}`);
 }
+
+// ---- Admin auth ----
+export async function adminLogin(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error("Giriş uğursuz oldu");
+  return res.json(); // { access_token, refresh_token, ... }
+}
+
+export async function sbAuth(path, accessToken) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
+  return res.json();
+}
+
+// ---- Auth (for the admin panel) ----
+export async function signIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error("Giriş uğursuz oldu");
+  const data = await res.json();
+  return data.access_token;
+}
+
+export async function sbAuthed(path, token) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
+  return res.json();
+}
