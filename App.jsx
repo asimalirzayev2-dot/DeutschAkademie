@@ -504,6 +504,15 @@ function InnerApp() {
   return null;
 }
 
+const BOOKS = [
+  { key: "dict", title: "Lüğət", desc: "Alman-Azərbaycan / Azərbaycan-Alman lüğət kitabı.", url: "https://asimalirzayev.gumroad.com/l/pyako" },
+  { key: "a1", title: "A1 Test Kitabı", desc: "Başlanğıc səviyyə — qrammatika izahı + test sualları.", url: "https://asimalirzayev.gumroad.com/l/dtwnie" },
+  { key: "a2", title: "A2 Test Kitabı", desc: "Orta-başlanğıc səviyyə — qrammatika izahı + test sualları.", url: "https://asimalirzayev.gumroad.com/l/jlftu" },
+  { key: "b1", title: "B1 Test Kitabı", desc: "Orta səviyyə — qrammatika izahı + test sualları.", url: "https://asimalirzayev.gumroad.com/l/rpilx" },
+  { key: "b2", title: "B2 Test Kitabı", desc: "Yuxarı-orta səviyyə — qrammatika izahı + test sualları.", url: "https://asimalirzayev.gumroad.com/l/tizlnl" },
+  { key: "a1a2", title: "A1 + A2 Paketi", desc: "Hər iki başlanğıc səviyyə bir paketdə, endirimli qiymətə.", url: "https://asimalirzayev.gumroad.com/l/qopvbl" },
+];
+
 function LessonVocab({ level, num }) {
   const [vocab, setVocab] = useState(null);
   useEffect(() => {
@@ -745,6 +754,7 @@ function Portal({ onStart }) {
     { key: "home", label: "Ana səhifə" },
     { key: "lessons", label: "Dərslər" },
     { key: "dictionary", label: "Lüğət" },
+    { key: "books", label: "Kitablar" },
     { key: "courses", label: "Kurslar" },
     { key: "contact", label: "Əlaqə" },
   ];
@@ -834,6 +844,11 @@ function Portal({ onStart }) {
                     <h3 style={portalStyles.cardTitle}>Kurslar</h3>
                     <p style={portalStyles.cardText}>Müəllim rəhbərliyi ilə qruplarda alman dili kursları.</p>
                   </TiltCard>
+                  <TiltCard onClick={() => setView("books")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
+                    <div style={portalStyles.cardIcon}>📘</div>
+                    <h3 style={portalStyles.cardTitle}>Kitablarımız</h3>
+                    <p style={portalStyles.cardText}>Çap materiallarımızı Gumroad üzərindən əldə et.</p>
+                  </TiltCard>
                   <div style={{ ...portalStyles.card, opacity: 0.45, cursor: "default" }}>
                     <div style={portalStyles.cardIcon}>🧩</div>
                     <h3 style={portalStyles.cardTitle}>Digər Fənlər</h3>
@@ -848,6 +863,29 @@ function Portal({ onStart }) {
         {view === "lessons" && <Reveal><LessonsView topicsByLevel={topicsByLevel} /></Reveal>}
 
         {view === "dictionary" && <Reveal><DictionaryView /></Reveal>}
+
+        {view === "books" && (
+          <Reveal>
+          <section style={portalStyles.section}>
+            <h2 style={portalStyles.h2}>Kitablarımız</h2>
+            <p style={{ ...portalStyles.body, marginBottom: 20 }}>
+              Hər səviyyə üçün ayrıca hazırlanmış qrammatika izahı və test toplusu. Gumroad üzərindən əldə edə bilərsən.
+            </p>
+            <div style={portalStyles.grid}>
+              {BOOKS.map((b) => (
+                <div key={b.key} style={portalStyles.card}>
+                  <div style={portalStyles.cardIcon}>📘</div>
+                  <h3 style={portalStyles.cardTitle}>{b.title}</h3>
+                  <p style={portalStyles.cardText}>{b.desc}</p>
+                  <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.ctaLink, textDecoration: "none" }}>
+                    Gumroad-da al <ChevronRight size={16} />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </section>
+          </Reveal>
+        )}
 
         {view === "courses" && (
           <Reveal>
