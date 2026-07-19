@@ -1023,6 +1023,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   const [view, setView] = useState("home"); // home | lessons | dictionary | courses | contact
   const [regForm, setRegForm] = useState({ name: "", phone: "", course: "A1" });
   const [regSent, setRegSent] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const glowRef = useRef(null);
   const [streak, setStreak] = useState(null);
 
@@ -1115,7 +1116,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
             </button>
             {session ? (
               <button
-                onClick={() => { if (window.confirm("Çıxış etmək istəyirsən?")) logout(); }}
+                onClick={() => setShowLogoutConfirm(true)}
                 style={portalStyles.navLink}
               >
                 {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""} · Çıxış
@@ -1137,6 +1138,19 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           saveSession={saveSession}
           refreshProfile={refreshProfile}
         />
+      )}
+
+      {showLogoutConfirm && (
+        <div style={portalStyles.modalOverlay} onClick={() => setShowLogoutConfirm(false)}>
+          <div style={{ ...portalStyles.modalBox, maxWidth: 320, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <img src={LOGO_URL} alt="" style={{ width: 44, height: 44, borderRadius: "50%", margin: "0 auto 14px" }} />
+            <p style={{ fontSize: 15.5, marginBottom: 22 }}>Deutsch Akademie-dən çıxış etmək istəyirsən?</p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button onClick={() => setShowLogoutConfirm(false)} style={portalStyles.secondaryBtnLight}>Xeyr</button>
+              <button onClick={() => { setShowLogoutConfirm(false); logout(); }} style={portalStyles.primaryBtn}>Bəli, çıx</button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div style={portalStyles.content}>
