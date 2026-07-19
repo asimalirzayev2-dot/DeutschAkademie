@@ -739,6 +739,8 @@ function LessonsView({ topicsByLevel }) {
   );
 }
 
+const LEVEL_DECOR = { A1: "🌼", A2: "🌿", B1: "🛡️", B2: "👑" };
+
 function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
   const [teachers, setTeachers] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -751,14 +753,19 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
     <section style={portalStyles.section}>
       <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
 
-      <div style={portalStyles.grid}>
+      <div style={{ display: "grid", gap: 10 }}>
         {(teachers || []).map((t) => (
-          <TiltCard key={t.id} onClick={() => setSelectedTeacher(t)} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-            <div style={portalStyles.cardIcon}>👤</div>
-            <h3 style={portalStyles.cardTitle}>{t.name}</h3>
-            <p style={portalStyles.cardText}>{t.bio || "Alman dili müəllimi"}</p>
-            <div style={portalStyles.ctaLink}>Profilə bax <ChevronRight size={16} /></div>
-          </TiltCard>
+          <button key={t.id} onClick={() => setSelectedTeacher(t)} style={portalStyles.teacherRow}>
+            <div style={portalStyles.teacherAvatarWrap}>
+              <div style={portalStyles.teacherAvatarDiamond} />
+              <div style={portalStyles.teacherAvatar}>{t.name?.[0] || "👤"}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={portalStyles.teacherName}>{t.name}</div>
+              <div style={portalStyles.teacherBioLine}>{t.bio || "Alman dili müəllimi"}</div>
+            </div>
+            <ChevronRight size={18} style={{ opacity: 0.5, flexShrink: 0 }} />
+          </button>
         ))}
         {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>Hələ müəllim əlavə olunmayıb.</p>}
       </div>
@@ -767,8 +774,14 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
         <div style={portalStyles.modalOverlay} onClick={() => setSelectedTeacher(null)}>
           <div style={{ ...portalStyles.modalBox, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setSelectedTeacher(null)} style={portalStyles.modalClose}>✕</button>
-            <h2 style={{ ...portalStyles.h2, marginBottom: 4 }}>{selectedTeacher.name}</h2>
-            {selectedTeacher.bio && <p style={{ ...portalStyles.body, marginBottom: 18 }}>{selectedTeacher.bio}</p>}
+            <div style={{ textAlign: "center", marginBottom: 14 }}>
+              <div style={{ ...portalStyles.teacherAvatarWrap, width: 66, height: 66, margin: "0 auto 14px" }}>
+                <div style={{ ...portalStyles.teacherAvatarDiamond, inset: 8 }} />
+                <div style={{ ...portalStyles.teacherAvatar, fontSize: 22 }}>{selectedTeacher.name?.[0] || "👤"}</div>
+              </div>
+              <h2 style={{ ...portalStyles.h2, marginBottom: 4 }}>{selectedTeacher.name}</h2>
+              {selectedTeacher.bio && <p style={{ ...portalStyles.body, fontSize: 13.5 }}>{selectedTeacher.bio}</p>}
+            </div>
 
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, marginBottom: 18 }}>
               <tbody>
@@ -811,7 +824,7 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
       {regSent ? (
         <p style={{ ...portalStyles.body, color: "#00D9A3" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlanılacaq.</p>
       ) : (
-        <div style={{ display: "grid", gap: 12, maxWidth: 360 }}>
+        <div style={{ display: "grid", gap: 12, maxWidth: 400 }}>
           <input placeholder="Adın" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
           <input placeholder="Telefon" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} style={portalStyles.input} />
           <select value={regForm.teacher || ""} onChange={(e) => {
@@ -821,9 +834,21 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
             <option value="">Müəllim seç...</option>
             {(teachers || []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
           </select>
-          <select value={regForm.course} onChange={(e) => setRegForm({ ...regForm, course: e.target.value })} style={portalStyles.input}>
-            {LEVELS.map((l) => <option key={l} value={l}>{l} səviyyəsi</option>)}
-          </select>
+          <div>
+            <p style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>Səviyyə</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {LEVELS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setRegForm({ ...regForm, course: l })}
+                  style={{ ...portalStyles.levelPill, ...(regForm.course === l ? portalStyles.levelPillActive : {}) }}
+                >
+                  <span style={{ fontSize: 15 }}>{LEVEL_DECOR[l]}</span> {l}
+                </button>
+              ))}
+            </div>
+          </div>
           <button onClick={() => {
             if (!regForm.name || !regForm.teacher) return;
             sbInsert("course_registrations", {
@@ -1227,11 +1252,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         const t = PAGE_THEME[view] || PAGE_THEME.home;
         return (
           <>
-            <svg style={portalStyles.watermark} viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice">
-              {Array.from({ length: 14 }).map((_, i) => (
-                <rect key={i} x={i * 60} y="0" width="14" height="300" fill={t.secondary} />
-              ))}
-              <rect x="0" y="0" width="800" height="40" fill={t.secondary} />
+            <svg style={portalStyles.watermark} viewBox="0 0 800 240" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <pattern id="diamondLattice" width="70" height="70" patternUnits="userSpaceOnUse">
+                  <rect x="20" y="20" width="30" height="30" fill="none" stroke={t.secondary} strokeWidth="1.4" transform="rotate(45 35 35)" />
+                </pattern>
+              </defs>
+              <rect x="0" y="0" width="800" height="240" fill="url(#diamondLattice)" />
             </svg>
             <svg style={portalStyles.cornerShapeBig} viewBox="0 0 100 100" preserveAspectRatio="none">
               <polygon points="0,100 0,25 75,100" fill={t.secondary} />
@@ -1444,7 +1471,7 @@ const portalStyles = {
     fontFamily: "'Inter', -apple-system, sans-serif", color: "#F7F1E6",
   },
   cursorGlow: { position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" },
-  watermark: { position: "absolute", top: 0, left: 0, width: "100%", height: 160, opacity: 0.035, pointerEvents: "none" },
+  watermark: { position: "absolute", top: 0, left: 0, width: "100%", height: 240, opacity: 0.06, pointerEvents: "none" },
   cornerShapeBig: { position: "absolute", bottom: 0, left: 0, width: "48%", height: "50%", opacity: 0.16, pointerEvents: "none" },
   cornerShapeSmall: { position: "absolute", top: 0, right: 0, width: "40%", height: "38%", opacity: 0.14, pointerEvents: "none" },
   thinDiamond: {
@@ -1521,6 +1548,28 @@ const portalStyles = {
     background: "rgba(255,255,255,0.04)", border: "1px solid rgba(247,241,230,0.1)",
     color: "#F7F1E6", textDecoration: "none", fontSize: 13.5,
   },
+  teacherRow: {
+    display: "flex", alignItems: "center", gap: 16, width: "100%", textAlign: "left",
+    padding: "12px 16px", borderRadius: 8, background: "rgba(255,255,255,0.035)",
+    border: "1px solid rgba(247,241,230,0.1)", cursor: "pointer", fontFamily: "inherit",
+  },
+  teacherAvatarWrap: { width: 46, height: 46, position: "relative", flexShrink: 0 },
+  teacherAvatarDiamond: {
+    position: "absolute", inset: 6, transform: "rotate(45deg)",
+    background: "linear-gradient(135deg,#FF9F1C,#E8C766)",
+  },
+  teacherAvatar: {
+    position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+    color: "#0A0A0C", fontWeight: 700, fontSize: 15,
+  },
+  teacherName: { fontWeight: 700, fontSize: 15, fontFamily: "'Fraunces', serif" },
+  teacherBioLine: { fontSize: 12.5, opacity: 0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  levelPill: {
+    display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999,
+    border: "1px solid rgba(247,241,230,0.2)", background: "transparent", color: "#F7F1E6", cursor: "pointer",
+    fontSize: 13.5, fontFamily: "inherit",
+  },
+  levelPillActive: { background: "#FF9F1C", color: "#0A0A0C", fontWeight: 700, borderColor: "#FF9F1C" },
   footer: { textAlign: "center", opacity: 0.4, fontSize: 12.5, marginTop: 20 },
   nav: {
     position: "relative", zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center",
