@@ -739,6 +739,104 @@ function LessonsView({ topicsByLevel }) {
   );
 }
 
+function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
+  const [teachers, setTeachers] = useState(null);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+
+  useEffect(() => {
+    sb("teachers?select=*&order=name").then(setTeachers).catch(() => setTeachers([]));
+  }, []);
+
+  return (
+    <section style={portalStyles.section}>
+      <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
+
+      <div style={portalStyles.grid}>
+        {(teachers || []).map((t) => (
+          <TiltCard key={t.id} onClick={() => setSelectedTeacher(t)} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
+            <div style={portalStyles.cardIcon}>👤</div>
+            <h3 style={portalStyles.cardTitle}>{t.name}</h3>
+            <p style={portalStyles.cardText}>{t.bio || "Alman dili müəllimi"}</p>
+            <div style={portalStyles.ctaLink}>Profilə bax <ChevronRight size={16} /></div>
+          </TiltCard>
+        ))}
+        {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>Hələ müəllim əlavə olunmayıb.</p>}
+      </div>
+
+      {selectedTeacher && (
+        <div style={portalStyles.modalOverlay} onClick={() => setSelectedTeacher(null)}>
+          <div style={{ ...portalStyles.modalBox, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setSelectedTeacher(null)} style={portalStyles.modalClose}>✕</button>
+            <h2 style={{ ...portalStyles.h2, marginBottom: 4 }}>{selectedTeacher.name}</h2>
+            {selectedTeacher.bio && <p style={{ ...portalStyles.body, marginBottom: 18 }}>{selectedTeacher.bio}</p>}
+
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, marginBottom: 18 }}>
+              <tbody>
+                <tr>
+                  <td style={portalStyles.teacherTableLabel}>Səviyyələr</td>
+                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.levels || "—"}</td>
+                </tr>
+                <tr>
+                  <td style={portalStyles.teacherTableLabel}>Cədvəl</td>
+                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.schedule || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              {selectedTeacher.email && (
+                <a href={`mailto:${selectedTeacher.email}`} style={portalStyles.contactLine}>📧 {selectedTeacher.email}</a>
+              )}
+              {selectedTeacher.phone && (
+                <a href={`tel:${selectedTeacher.phone}`} style={portalStyles.contactLine}>📱 {selectedTeacher.phone}</a>
+              )}
+              {selectedTeacher.instagram && (
+                <a href={`https://instagram.com/${String(selectedTeacher.instagram).replace("@", "")}`} target="_blank" rel="noopener noreferrer" style={portalStyles.contactLine}>
+                  📷 {selectedTeacher.instagram}
+                </a>
+              )}
+            </div>
+
+            <button
+              onClick={() => { setSelectedTeacher(null); setRegForm({ ...regForm, teacher: selectedTeacher.name, teacherEmail: selectedTeacher.email }); }}
+              style={{ ...portalStyles.primaryBtn, width: "100%", marginTop: 20 }}
+            >
+              Bu müəllimlə qeydiyyatdan keç
+            </button>
+          </div>
+        </div>
+      )}
+
+      <h2 style={{ ...portalStyles.h2, marginTop: 32 }}>Qeydiyyat</h2>
+      {regSent ? (
+        <p style={{ ...portalStyles.body, color: "#00D9A3" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlanılacaq.</p>
+      ) : (
+        <div style={{ display: "grid", gap: 12, maxWidth: 360 }}>
+          <input placeholder="Adın" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
+          <input placeholder="Telefon" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} style={portalStyles.input} />
+          <select value={regForm.teacher || ""} onChange={(e) => {
+            const t = (teachers || []).find((x) => x.name === e.target.value);
+            setRegForm({ ...regForm, teacher: e.target.value, teacherEmail: t?.email || "" });
+          }} style={portalStyles.input}>
+            <option value="">Müəllim seç...</option>
+            {(teachers || []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+          </select>
+          <select value={regForm.course} onChange={(e) => setRegForm({ ...regForm, course: e.target.value })} style={portalStyles.input}>
+            {LEVELS.map((l) => <option key={l} value={l}>{l} səviyyəsi</option>)}
+          </select>
+          <button onClick={() => {
+            if (!regForm.name || !regForm.teacher) return;
+            sbInsert("course_registrations", {
+              name: regForm.name, phone: regForm.phone, course: regForm.course,
+            }).catch(() => {});
+            setRegSent(true);
+          }} style={portalStyles.primaryBtn}>Qeydiyyatdan keç</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DictionaryView() {
   const [query, setQuery] = useState("");
   const [direction, setDirection] = useState("de-az"); // de-az | az-de
@@ -1309,35 +1407,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "courses" && (session ? (
           <Reveal>
-          <section style={portalStyles.section}>
-            <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
-            <div style={portalStyles.grid}>
-              {LEVELS.map((lvl) => (
-                <div key={lvl} style={portalStyles.card}>
-                  <h3 style={portalStyles.cardTitle}>{lvl} Kursu</h3>
-                  <p style={portalStyles.cardText}>Qrup dərsləri, həftədə 2 dəfə. Cədvəl və qiymət üçün əlaqə saxla.</p>
-                </div>
-              ))}
-            </div>
-
-            <h2 style={{ ...portalStyles.h2, marginTop: 32 }}>Qeydiyyat</h2>
-            {regSent ? (
-              <p style={{ ...portalStyles.body, color: "#00D9A3" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlayacağıq.</p>
-            ) : (
-              <div style={{ display: "grid", gap: 12, maxWidth: 360 }}>
-                <input placeholder="Adın" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
-                <input placeholder="Telefon" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} style={portalStyles.input} />
-                <select value={regForm.course} onChange={(e) => setRegForm({ ...regForm, course: e.target.value })} style={portalStyles.input}>
-                  {LEVELS.map((l) => <option key={l} value={l}>{l} Kursu</option>)}
-                </select>
-                <button onClick={() => {
-                  if (!regForm.name) return;
-                  sbInsert("course_registrations", { name: regForm.name, phone: regForm.phone, course: regForm.course }).catch(() => {});
-                  setRegSent(true);
-                }} style={portalStyles.primaryBtn}>Qeydiyyatdan keç</button>
-              </div>
-            )}
-          </section>
+          <CoursesView regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} />
           </Reveal>
         ) : <AuthRequired setAuthModal={setAuthModal} />)}
 
@@ -1444,6 +1514,13 @@ const portalStyles = {
   cardTitle: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, margin: "0 0 8px", position: "relative" },
   cardText: { fontSize: 13.5, opacity: 0.7, lineHeight: 1.5, margin: 0, position: "relative" },
   ctaLink: { display: "flex", alignItems: "center", gap: 4, marginTop: 12, color: "#FF9F1C", fontSize: 13.5, fontWeight: 700, position: "relative" },
+  teacherTableLabel: { padding: "8px 0", opacity: 0.6, width: "35%", borderBottom: "1px solid rgba(247,241,230,0.1)" },
+  teacherTableVal: { padding: "8px 0", fontWeight: 600, borderBottom: "1px solid rgba(247,241,230,0.1)" },
+  contactLine: {
+    display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8,
+    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(247,241,230,0.1)",
+    color: "#F7F1E6", textDecoration: "none", fontSize: 13.5,
+  },
   footer: { textAlign: "center", opacity: 0.4, fontSize: 12.5, marginTop: 20 },
   nav: {
     position: "relative", zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center",
