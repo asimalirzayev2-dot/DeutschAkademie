@@ -1073,7 +1073,6 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "dictionary", label: "Lüğət" },
     { key: "books", label: "Kitablar" },
     { key: "courses", label: "Kurslar" },
-    { key: "premium", label: "Premium" },
     { key: "contact", label: "Əlaqə" },
   ];
 
@@ -1098,22 +1097,35 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <img src={LOGO_URL} alt="Deutsch Akademie" style={portalStyles.navEmblem} />
           <span style={portalStyles.navBrandText}>Deutsch Akademie</span>
         </div>
-        <div style={portalStyles.navLinks}>
-          {navItems.map((n) => (
-            <button key={n.key} onClick={() => setView(n.key)}
-              style={{ ...portalStyles.navLink, ...(view === n.key ? portalStyles.navLinkActive : {}) }}>
-              {n.label}
+        <div style={portalStyles.navGroupsWrap}>
+          <div style={portalStyles.navGroup}>
+            <span style={portalStyles.navGroupIcon} title="Bölmələr">♜</span>
+            {navItems.map((n) => (
+              <button key={n.key} onClick={() => setView(n.key)}
+                style={{ ...portalStyles.navLink, ...(view === n.key ? portalStyles.navLinkActive : {}) }}>
+                {n.label}
+              </button>
+            ))}
+          </div>
+          <div style={portalStyles.navGroup}>
+            <span style={portalStyles.navGroupIcon} title="Hesab">🛡️</span>
+            <button onClick={() => setView("premium")}
+              style={{ ...portalStyles.navLink, ...(view === "premium" ? portalStyles.navLinkActive : {}) }}>
+              Premium
             </button>
-          ))}
-          {session ? (
-            <button onClick={logout} style={portalStyles.navLink}>
-              {profile?.name || profile?.email || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""} · Çıxış
-            </button>
-          ) : (
-            <button onClick={() => setAuthModal("login")} style={{ ...portalStyles.navLink, color: "#FF9F1C", fontWeight: 700 }}>
-              Daxil ol
-            </button>
-          )}
+            {session ? (
+              <button
+                onClick={() => { if (window.confirm("Çıxış etmək istəyirsən?")) logout(); }}
+                style={portalStyles.navLink}
+              >
+                {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""} · Çıxış
+              </button>
+            ) : (
+              <button onClick={() => setAuthModal("login")} style={{ ...portalStyles.navLink, color: "#FF9F1C", fontWeight: 700 }}>
+                Daxil ol
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -1343,6 +1355,13 @@ const portalStyles = {
   navEmblem: { width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 },
   navBrandText: { fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, letterSpacing: -0.3 },
   navLinks: { display: "flex", gap: 2, flexWrap: "wrap" },
+  navGroupsWrap: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 },
+  navGroup: {
+    display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap",
+    padding: "4px 10px 4px 6px", borderRadius: 999, background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(247,241,230,0.08)",
+  },
+  navGroupIcon: { fontSize: 13, opacity: 0.55, marginRight: 4 },
   navLink: { background: "none", border: "none", color: "rgba(247,241,230,0.6)", fontSize: 13.5, padding: "8px 12px", borderRadius: 4, cursor: "pointer" },
   navLinkActive: { background: "rgba(255,159,28,0.14)", color: "#FF9F1C", fontWeight: 700 },
   pill: { padding: "8px 18px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "transparent", color: "#F7F1E6", cursor: "pointer", fontSize: 14 },
