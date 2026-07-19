@@ -974,13 +974,16 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
 
   return (
     <section style={portalStyles.section}>
-      <SectionHeader type="quiz" desc="Limitsiz giriş üçün" />
-      <h2 style={{ ...portalStyles.h2, color: "#E8C766" }}>✦ Premium</h2>
+      <div style={portalStyles.premiumHero}>
+        <div style={portalStyles.premiumCrown}>✦</div>
+        <h2 style={portalStyles.premiumTitle}>Premium Hesab Əldə Et</h2>
+        <p style={portalStyles.premiumTagline}>Limitsiz test, limitsiz "Səviyyəni Yoxla" — sərhədsiz öyrənmə</p>
+      </div>
 
       {isAdmin ? (
-        <p style={portalStyles.body}>Admin hesabı olaraq bütün funksiyalara limitsiz girişin var. 🎉</p>
+        <p style={{ ...portalStyles.body, textAlign: "center" }}>Admin hesabı olaraq bütün funksiyalara limitsiz girişin var. 🎉</p>
       ) : isPremium ? (
-        <p style={{ ...portalStyles.body, color: "#00D9A3" }}>✓ Premium aktivdir — istədiyin qədər test və "Səviyyəni Yoxla" istifadə edə bilərsən.</p>
+        <p style={{ ...portalStyles.body, textAlign: "center", color: "#00D9A3" }}>✓ Premium aktivdir — istədiyin qədər test və "Səviyyəni Yoxla" istifadə edə bilərsən.</p>
       ) : (
         <>
           <div style={portalStyles.grid}>
@@ -988,25 +991,49 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
               <h3 style={portalStyles.cardTitle}>Pulsuz (qeydiyyatlı)</h3>
               <p style={portalStyles.cardText}>Günə 3 test, 3 gündə 1 "Səviyyəni Yoxla"</p>
             </div>
-            <div style={{ ...portalStyles.card, border: "1px solid rgba(232,199,102,0.5)" }}>
+            <div style={portalStyles.premiumCard}>
               <h3 style={{ ...portalStyles.cardTitle, color: "#E8C766" }}>✦ Premium</h3>
               <p style={portalStyles.cardText}>Limitsiz test, limitsiz "Səviyyəni Yoxla"</p>
             </div>
           </div>
 
+          <div style={portalStyles.premiumSteps}>
+            <h3 style={{ ...portalStyles.h2, fontSize: 18, color: "#E8C766", marginBottom: 16 }}>Necə Premium əldə edim?</h3>
+            <div style={portalStyles.stepRow}>
+              <div style={{ ...portalStyles.stepNum, opacity: session ? 0.4 : 1 }}>1</div>
+              <div>
+                <p style={{ margin: 0, fontWeight: 600 }}>Qeydiyyatdan keç</p>
+                <p style={{ margin: "2px 0 0", fontSize: 13, opacity: 0.65 }}>{session ? "✓ Artıq qeydiyyatdan keçmisən" : "Pulsuzdur, 1 dəqiqə çəkir"}</p>
+              </div>
+            </div>
+            <div style={portalStyles.stepRow}>
+              <div style={portalStyles.stepNum}>2</div>
+              <div>
+                <p style={{ margin: 0, fontWeight: 600 }}>Aşağıdakı düymə ilə Gumroad-da abunə ol</p>
+                <p style={{ margin: "2px 0 0", fontSize: 13, opacity: 0.65 }}>Kartla ödəniş, aylıq abunəlik</p>
+              </div>
+            </div>
+            <div style={portalStyles.stepRow}>
+              <div style={portalStyles.stepNum}>3</div>
+              <div>
+                <p style={{ margin: 0, fontWeight: 600 }}>Email-inə gələn lisenziya kodunu bura yaz</p>
+                <p style={{ margin: "2px 0 0", fontSize: 13, opacity: 0.65 }}>Premium dərhal aktivləşir</p>
+              </div>
+            </div>
+          </div>
+
           {!session ? (
-            <div style={{ marginTop: 20 }}>
-              <p style={{ ...portalStyles.body, marginBottom: 12 }}>Premium almaq üçün əvvəlcə pulsuz qeydiyyatdan keç.</p>
-              <button onClick={() => setAuthModal("signup")} style={portalStyles.primaryBtn}>Qeydiyyatdan keç</button>
+            <div style={{ marginTop: 24, textAlign: "center" }}>
+              <button onClick={() => setAuthModal("signup")} style={portalStyles.primaryBtn}>Əvvəlcə Qeydiyyatdan Keç</button>
             </div>
           ) : (
-            <div style={{ marginTop: 24, maxWidth: 400 }}>
-              <a href="https://asimalirzayev.gumroad.com/l/zbihob" target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.primaryBtn, display: "inline-block", textDecoration: "none", marginBottom: 16 }}>
-                Gumroad-da abunə ol
+            <div style={{ marginTop: 28, maxWidth: 420, marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>
+              <a href="https://asimalirzayev.gumroad.com/l/zbihob" target="_blank" rel="noopener noreferrer" style={portalStyles.premiumCta}>
+                ✦ Premium Al
               </a>
-              <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 8 }}>Abunə olduqdan sonra email ilə aldığın lisenziya kodunu bura yaz:</p>
+              <p style={{ fontSize: 13, opacity: 0.65, margin: "20px 0 8px" }}>Abunə olduqdan sonra email ilə aldığın lisenziya kodunu bura yaz:</p>
               <input placeholder="Lisenziya kodu" value={licenseKey} onChange={(e) => setLicenseKey(e.target.value)} style={portalStyles.input} />
-              <button onClick={handleVerify} style={{ ...portalStyles.primaryBtn, marginTop: 10 }} disabled={status === "checking"}>
+              <button onClick={handleVerify} style={{ ...portalStyles.primaryBtn, marginTop: 10, width: "100%" }} disabled={status === "checking"}>
                 {status === "checking" ? "Yoxlanılır..." : "Kodu təsdiqlə"}
               </button>
               {status === "fail" && <p style={{ color: "#C97B6E", fontSize: 13, marginTop: 8 }}>Kod tapılmadı, yenidən yoxla.</p>}
@@ -1386,6 +1413,32 @@ const portalStyles = {
     transition: "opacity .2s",
   },
   cardCta: { border: "1px solid rgba(255,159,28,0.6)", background: "rgba(255,159,28,0.07)" },
+  premiumHero: { textAlign: "center", padding: "10px 0 36px" },
+  premiumCrown: {
+    fontSize: 30, color: "#E8C766", width: 64, height: 64, borderRadius: "50%", margin: "0 auto 16px",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "radial-gradient(circle, rgba(232,199,102,0.18), transparent 70%)",
+    border: "1.5px solid rgba(232,199,102,0.4)",
+  },
+  premiumTitle: { fontFamily: "'Fraunces', serif", fontSize: 30, fontWeight: 700, margin: 0, color: "#F3E8CE" },
+  premiumTagline: { opacity: 0.65, fontSize: 14.5, marginTop: 10 },
+  premiumCard: {
+    position: "relative", overflow: "hidden", borderRadius: 4, padding: 24,
+    background: "linear-gradient(160deg, rgba(232,199,102,0.12), rgba(232,199,102,0.03))",
+    border: "1px solid rgba(232,199,102,0.5)",
+  },
+  premiumSteps: { marginTop: 32, display: "grid", gap: 18 },
+  stepRow: { display: "flex", gap: 14, alignItems: "flex-start" },
+  stepNum: {
+    width: 28, height: 28, borderRadius: "50%", flexShrink: 0, fontSize: 13, fontWeight: 700,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "rgba(232,199,102,0.15)", color: "#E8C766", border: "1px solid rgba(232,199,102,0.4)",
+  },
+  premiumCta: {
+    display: "inline-block", textDecoration: "none", padding: "16px 40px", borderRadius: 8,
+    background: "linear-gradient(135deg, #E8C766, #C9A15A)", color: "#0A0A0C", fontWeight: 700, fontSize: 16,
+    boxShadow: "0 0 24px rgba(232,199,102,0.3)", letterSpacing: 0.3,
+  },
   cardIcon: { fontSize: 24, marginBottom: 12 },
   bookCover: { width: "100%", display: "block", aspectRatio: "2/3", objectFit: "cover" },
   cardTitle: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, margin: "0 0 8px", position: "relative" },
