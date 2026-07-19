@@ -48,6 +48,54 @@ export async function sbAuth(path, accessToken) {
   return res.json();
 }
 
+export async function sbAuthPatch(path, accessToken, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Supabase update error: ${res.status}`);
+}
+
+export async function sbAuthInsert(path, accessToken, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Supabase insert error: ${res.status}`);
+}
+
+export async function signUp(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || data.error_description || "Qeydiyyat uğursuz oldu");
+  return data;
+}
+
+export async function verifyGumroadLicense(licenseKey, productId) {
+  const body = new URLSearchParams();
+  body.append("product_id", productId);
+  body.append("license_key", licenseKey);
+  body.append("increment_uses_count", "false");
+  const res = await fetch("https://api.gumroad.com/v2/licenses/verify", { method: "POST", body });
+  return res.json();
+}
+
 // ---- Lesson PDF public URL (Storage bucket: lesson-pdfs) ----
 export function pdfUrl(level, num) {
   const padded = String(num).padStart(2, "0");
