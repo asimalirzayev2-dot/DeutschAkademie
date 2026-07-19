@@ -947,7 +947,7 @@ function AuthModal({ mode, onClose, onSwitch, saveSession, refreshProfile }) {
   );
 }
 
-const GUMROAD_PREMIUM_PRODUCT_ID = "REPLACE_WITH_YOUR_MEMBERSHIP_PRODUCT_ID";
+const GUMROAD_PREMIUM_PRODUCT_ID = "fz5uY92otxwP0OwN0g04bQ==";
 
 function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, setAuthModal }) {
   const [licenseKey, setLicenseKey] = useState("");
@@ -1001,7 +1001,7 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
             </div>
           ) : (
             <div style={{ marginTop: 24, maxWidth: 400 }}>
-              <a href="https://asimalirzayev.gumroad.com" target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.primaryBtn, display: "inline-block", textDecoration: "none", marginBottom: 16 }}>
+              <a href="https://asimalirzayev.gumroad.com/l/zbihob" target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.primaryBtn, display: "inline-block", textDecoration: "none", marginBottom: 16 }}>
                 Gumroad-da abunə ol
               </a>
               <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 8 }}>Abunə olduqdan sonra email ilə aldığın lisenziya kodunu bura yaz:</p>
@@ -1649,6 +1649,7 @@ function AdminPanel() {
   const [tab, setTab] = useState("results"); // results | registrations
   const [results, setResults] = useState(null);
   const [registrations, setRegistrations] = useState(null);
+  const [users, setUsers] = useState(null);
   const [search, setSearch] = useState("");
 
   async function handleLogin(e) {
@@ -1681,6 +1682,9 @@ function AdminPanel() {
     sbAuth("course_registrations?select=*&order=created_at.desc&limit=500", token)
       .then(setRegistrations)
       .catch(() => setRegistrations([]));
+    sbAuth("profiles?select=*&order=created_at.desc&limit=500", token)
+      .then(setUsers)
+      .catch(() => setUsers([]));
   }, [token]);
 
   const styleA = {
@@ -1712,6 +1716,7 @@ function AdminPanel() {
 
   const regFiltered = (registrations || []).filter((r) => !search || (r.name || "").toLowerCase().includes(search.toLowerCase()));
   const resFiltered = (results || []).filter((r) => !search || (r.user_name || "").toLowerCase().includes(search.toLowerCase()));
+  const usersFiltered = (users || []).filter((u) => !search || (u.name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div style={styleA.page}>
@@ -1723,7 +1728,8 @@ function AdminPanel() {
 
         <div style={{ marginBottom: 16 }}>
           <button style={styleA.tabBtn(tab === "results")} onClick={() => setTab("results")}>Test Nəticələri ({results ? results.length : "..."})</button>
-          <button style={styleA.tabBtn(tab === "registrations")} onClick={() => setTab("registrations")}>Qeydiyyatlar ({registrations ? registrations.length : "..."})</button>
+          <button style={styleA.tabBtn(tab === "registrations")} onClick={() => setTab("registrations")}>Kurs Qeydiyyatları ({registrations ? registrations.length : "..."})</button>
+          <button style={styleA.tabBtn(tab === "users")} onClick={() => setTab("users")}>İstifadəçilər ({users ? users.length : "..."})</button>
         </div>
 
         <input placeholder="Ad üzrə axtar..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...styleA.input, maxWidth: 300 }} />
@@ -1752,7 +1758,7 @@ function AdminPanel() {
                 ))}
               </tbody>
             </table>
-          ) : (
+          ) : tab === "registrations" ? (
             <table style={styleA.table}>
               <thead>
                 <tr>
@@ -1769,6 +1775,29 @@ function AdminPanel() {
                     <td style={styleA.td}>{r.phone}</td>
                     <td style={styleA.td}>{r.course}</td>
                     <td style={styleA.td}>{new Date(r.created_at).toLocaleString("az-AZ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table style={styleA.table}>
+              <thead>
+                <tr>
+                  <th style={styleA.th}>Ad</th>
+                  <th style={styleA.th}>Email</th>
+                  <th style={styleA.th}>Premium</th>
+                  <th style={styleA.th}>Bugünkü testlər</th>
+                  <th style={styleA.th}>Qeydiyyat tarixi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersFiltered.map((u) => (
+                  <tr key={u.id}>
+                    <td style={styleA.td}>{u.name || "—"}{u.is_admin ? " (Admin)" : ""}</td>
+                    <td style={styleA.td}>{u.email}</td>
+                    <td style={styleA.td}>{u.is_admin ? "—" : u.is_premium ? "✦ Bəli" : "Xeyr"}</td>
+                    <td style={styleA.td}>{u.tests_count || 0}</td>
+                    <td style={styleA.td}>{new Date(u.created_at).toLocaleString("az-AZ")}</td>
                   </tr>
                 ))}
               </tbody>
