@@ -739,7 +739,41 @@ function LessonsView({ topicsByLevel }) {
   );
 }
 
-const LEVEL_DECOR = { A1: "🌼", A2: "🌿", B1: "🛡️", B2: "👑" };
+function LevelIcon({ level, size = 15, color = "currentColor" }) {
+  const s = { width: size, height: size, display: "inline-block", verticalAlign: "-2px" };
+  const common = { fill: "none", stroke: color, strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (level) {
+    case "A1": // blossom — beginning
+      return (
+        <svg viewBox="0 0 24 24" style={s} {...common}>
+          <circle cx="12" cy="12" r="2.4" />
+          <path d="M12 9.6c0-2.4-1.5-4-3-4.6M12 9.6c0-2.4 1.5-4 3-4.6M12 14.4c0 2.4-1.5 4-3 4.6M12 14.4c0 2.4 1.5 4 3 4.6M9.6 12c-2.4 0-4-1.5-4.6-3M9.6 12c-2.4 0-4 1.5-4.6 3M14.4 12c2.4 0 4-1.5 4.6-3M14.4 12c2.4 0 4 1.5 4.6 3" />
+        </svg>
+      );
+    case "A2": // sprouting leaf — growth
+      return (
+        <svg viewBox="0 0 24 24" style={s} {...common}>
+          <path d="M5 19c0-7 4-12 14-13-1 9-6 13-14 13Z" />
+          <path d="M5 19c2-3 5-6 10-9" />
+        </svg>
+      );
+    case "B1": // shield — strength
+      return (
+        <svg viewBox="0 0 24 24" style={s} {...common}>
+          <path d="M12 3.5 5 6v6c0 4.5 3 7.5 7 8.5 4-1 7-4 7-8.5V6l-7-2.5Z" />
+        </svg>
+      );
+    case "B2": // crown — mastery
+      return (
+        <svg viewBox="0 0 24 24" style={s} {...common}>
+          <path d="M4 17h16l-1.4-7-3.6 3-3-5-3 5-3.6-3L4 17Z" />
+          <path d="M4 19.5h16" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
 
 function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
   const [teachers, setTeachers] = useState(null);
@@ -841,7 +875,7 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
                   onClick={() => setRegForm({ ...regForm, course: l })}
                   style={{ ...portalStyles.levelPill, ...(regForm.course === l ? portalStyles.levelPillActive : {}) }}
                 >
-                  <span style={{ fontSize: 15 }}>{LEVEL_DECOR[l]}</span> {l}
+                  <LevelIcon level={l} color={regForm.course === l ? "#0A0A0C" : "#FF9F1C"} /> {l}
                 </button>
               ))}
             </div>
