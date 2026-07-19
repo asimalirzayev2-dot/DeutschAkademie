@@ -269,6 +269,13 @@ function InnerApp() {
   }
 
   const [limitMsg, setLimitMsg] = useState("");
+  const [placementTeacher, setPlacementTeacher] = useState(null); // { email, name } | null
+
+  function startPlacementTest(teacherEmail, teacherName) {
+    setPlacementTeacher({ email: teacherEmail, name: teacherName });
+    setMode("check");
+    setScreen("setup");
+  }
 
   async function startTest() {
     const gate = mode === "level" ? canStartLevelTest() : canStartLevelCheck();
@@ -385,6 +392,16 @@ function InnerApp() {
         score: mode === "level" ? results.finalPct : null,
         details: results,
       }).catch(() => {});
+      if (mode === "check" && placementTeacher) {
+        notifyTeacher({
+          teacherEmail: placementTeacher.email,
+          teacherName: placementTeacher.name,
+          studentName: name || "Tələbə",
+          studentPhone: "—",
+          studentLevel: `Səviyyəni Yoxla nəticəsi: ${results.finalLevel}`,
+        });
+        setPlacementTeacher(null);
+      }
     }
     if (!finished) savedResultRef.current = false;
   }, [finished, results]);
@@ -404,6 +421,7 @@ function InnerApp() {
         saveSession={saveSession}
         logout={logout}
         refreshProfile={refreshProfile}
+        onStartPlacementTest={startPlacementTest}
       />
     );
   }
@@ -791,7 +809,7 @@ function LevelIcon({ level, size = 15, color = "currentColor" }) {
   }
 }
 
-function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
+function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacementTest }) {
   const [teachers, setTeachers] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
@@ -905,9 +923,18 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
               teacherEmail: regForm.teacherEmail, teacherName: regForm.teacher,
               studentName: regForm.name, studentPhone: regForm.phone, studentLevel: regForm.course,
             });
-            setRegSent(true);
+            if (regForm.course !== "A1" && onStartPlacementTest) {
+              onStartPlacementTest(regForm.teacherEmail, regForm.teacher);
+            } else {
+              setRegSent(true);
+            }
           }} style={portalStyles.primaryBtn}>Qeydiyyatdan keç</button>
         </div>
+      )}
+      {regForm.course !== "A1" && !regSent && (
+        <p style={{ fontSize: 12.5, opacity: 0.6, marginTop: 10, maxWidth: 400 }}>
+          Qeyd: A1-dən yuxarı səviyyələr üçün qeydiyyatdan sonra hansı mövzuları bildiyini yoxlamaq üçün qısa bir testə yönləndiriləcəksən — nəticə birbaşa müəllimə göndəriləcək.
+        </p>
       )}
     </section>
   );
@@ -1220,7 +1247,7 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
   );
 }
 
-function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setAuthModal, saveSession, logout, refreshProfile }) {
+function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setAuthModal, saveSession, logout, refreshProfile, onStartPlacementTest }) {
   const [view, setView] = useState("home"); // home | lessons | dictionary | courses | contact
   const [regForm, setRegForm] = useState({ name: "", phone: "", course: "A1" });
   const [regSent, setRegSent] = useState(false);
@@ -1485,7 +1512,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "courses" && (session ? (
           <Reveal>
-          <CoursesView regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} />
+          <CoursesView regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} onStartPlacementTest={onStartPlacementTest} />
           </Reveal>
         ) : <AuthRequired setAuthModal={setAuthModal} />)}
 
