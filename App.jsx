@@ -753,18 +753,15 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent }) {
     <section style={portalStyles.section}>
       <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
 
-      <div style={{ display: "grid", gap: 10 }}>
+      <div style={portalStyles.teacherGrid}>
         {(teachers || []).map((t) => (
-          <button key={t.id} onClick={() => setSelectedTeacher(t)} style={portalStyles.teacherRow}>
-            <div style={portalStyles.teacherAvatarWrap}>
+          <button key={t.id} onClick={() => setSelectedTeacher(t)} style={portalStyles.teacherTile}>
+            <div style={{ ...portalStyles.teacherAvatarWrap, margin: "0 auto 14px" }}>
               <div style={portalStyles.teacherAvatarDiamond} />
               <div style={portalStyles.teacherAvatar}>{t.name?.[0] || "👤"}</div>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={portalStyles.teacherName}>{t.name}</div>
-              <div style={portalStyles.teacherBioLine}>{t.bio || "Alman dili müəllimi"}</div>
-            </div>
-            <ChevronRight size={18} style={{ opacity: 0.5, flexShrink: 0 }} />
+            <div style={portalStyles.teacherEliteName}>{t.name}</div>
+            <div style={portalStyles.teacherEliteBio}>{t.bio || "Alman dili müəllimi"}</div>
           </button>
         ))}
         {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>Hələ müəllim əlavə olunmayıb.</p>}
@@ -1553,6 +1550,14 @@ const portalStyles = {
     padding: "12px 16px", borderRadius: 8, background: "rgba(255,255,255,0.035)",
     border: "1px solid rgba(247,241,230,0.1)", cursor: "pointer", fontFamily: "inherit",
   },
+  teacherGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 16, maxWidth: 520 },
+  teacherTile: {
+    display: "block", textAlign: "center", padding: "26px 16px", borderRadius: 4, cursor: "pointer",
+    background: "linear-gradient(160deg, rgba(232,199,102,0.08), rgba(232,199,102,0.02))",
+    border: "1px solid rgba(232,199,102,0.3)", fontFamily: "inherit",
+  },
+  teacherEliteName: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: "#F3E8CE", letterSpacing: 0.2 },
+  teacherEliteBio: { fontSize: 12, opacity: 0.6, marginTop: 6, fontStyle: "italic" },
   teacherAvatarWrap: { width: 46, height: 46, position: "relative", flexShrink: 0 },
   teacherAvatarDiamond: {
     position: "absolute", inset: 6, transform: "rotate(45deg)",
