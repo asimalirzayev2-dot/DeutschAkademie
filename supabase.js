@@ -76,11 +76,11 @@ export async function sbAuthInsert(path, accessToken, body) {
   if (!res.ok) throw new Error(`Supabase insert error: ${res.status}`);
 }
 
-export async function signUp(email, password) {
+export async function signUp(email, password, name) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
     headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, data: { name } }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.msg || data.error_description || "Qeydiyyat uğursuz oldu");

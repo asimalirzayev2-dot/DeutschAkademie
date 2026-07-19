@@ -104,8 +104,19 @@ function InnerApp() {
     if (!sess) { setProfile(null); return; }
     try {
       const rows = await sbAuth(`profiles?id=eq.${sess.user.id}&select=*`, sess.access_token);
-      setProfile(rows[0] || null);
-      if (rows[0]?.name) setName(rows[0].name);
+      if (rows[0]) {
+        setProfile(rows[0]);
+        if (rows[0].name) setName(rows[0].name);
+      } else {
+        // First login after email confirmation — profile wasn't created yet at signup time.
+        const metaName = sess.user.user_metadata?.name || "";
+        try {
+          await sbAuthInsert("profiles", sess.access_token, { id: sess.user.id, email: sess.user.email, name: metaName });
+        } catch {}
+        const rows2 = await sbAuth(`profiles?id=eq.${sess.user.id}&select=*`, sess.access_token);
+        setProfile(rows2[0] || null);
+        if (rows2[0]?.name) setName(rows2[0].name);
+      }
     } catch {
       setProfile(null);
     }
@@ -856,9 +867,12 @@ function AuthModal({ mode, onClose, onSwitch, saveSession, refreshProfile }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [confirmMsg, setConfirmMsg] = useState("");
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setConfirmMsg("");
     if (mode === "signup" && password !== password2) {
       setError("Şifrələr üst-üstə düşmür.");
       return;
@@ -870,28 +884,27 @@ function AuthModal({ mode, onClose, onSwitch, saveSession, refreshProfile }) {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const data = await signUp(email, password);
-        if (!data.access_token) {
-          setError("Qeydiyyat tamamlandı, amma giriş tələb olunur — 'Daxil ol'a keç.");
-          setLoading(false);
-          return;
+        const data = await signUp(email, password, name.trim());
+        if (data.access_token) {
+          saveSession(data);
+          await refreshProfile(data);
+          onClose();
+        } else {
+          setConfirmMsg("Qeydiyyat qəbul olundu! Email ünvanına göndərdiyimiz təsdiq linkinə bas, sonra bu pəncərədən \"Daxil ol\"a keç.");
         }
-        await sbAuthInsert("profiles", data.access_token, { id: data.user.id, email, name });
-        saveSession(data);
-        await refreshProfile(data);
       } else {
         const data = await adminLogin(email, password);
         if (!data.access_token) {
-          setError("Email və ya şifrə yanlışdır.");
+          setError("Email və ya şifrə yanlışdır, ya da hələ email təsdiqlənməyib.");
           setLoading(false);
           return;
         }
         saveSession(data);
         await refreshProfile(data);
+        onClose();
       }
-      onClose();
     } catch (err) {
-      setError(mode === "signup" ? "Qeydiyyat uğursuz oldu (bəlkə bu email artıq istifadə olunub)." : "Email və ya şifrə yanlışdır.");
+      setError(mode === "signup" ? "Qeydiyyat uğursuz oldu (bəlkə bu email artıq istifadə olunub)." : "Email və ya şifrə yanlışdır, ya da hələ email təsdiqlənməyib.");
     } finally {
       setLoading(false);
     }
@@ -917,6 +930,7 @@ function AuthModal({ mode, onClose, onSwitch, saveSession, refreshProfile }) {
             <input type="password" placeholder="Şifrəni təkrarla" value={password2} onChange={(e) => setPassword2(e.target.value)} style={portalStyles.input} required />
           )}
           {error && <p style={{ color: "#C97B6E", fontSize: 13, marginBottom: 10 }}>{error}</p>}
+          {confirmMsg && <p style={{ color: "#E8C766", fontSize: 13, marginBottom: 10 }}>{confirmMsg}</p>}
           <button type="submit" style={portalStyles.primaryBtn} disabled={loading}>
             {loading ? "..." : mode === "signup" ? "Qeydiyyatdan keç" : "Daxil ol"}
           </button>
