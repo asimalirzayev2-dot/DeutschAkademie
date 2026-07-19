@@ -1473,12 +1473,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <Reveal>
           <section style={portalStyles.section}>
             <SectionHeader type="contact" desc="Suallarınız üçün bizimlə əlaqə saxlayın" />
-            <p style={portalStyles.body}>
-              Suallarınız üçün bizimlə əlaqə saxlaya bilərsiniz.<br /><br />
-              📧 E-poçt: info@deutschakademie.az<br />
-              📱 Telefon: +994 XX XXX XX XX<br />
-              📍 Bakı, Azərbaycan
-            </p>
+            <p style={{ ...portalStyles.body, marginBottom: 20 }}>Suallarınız üçün bizimlə əlaqə saxlaya bilərsiniz.</p>
+            <div style={{ display: "grid", gap: 10, maxWidth: 380 }}>
+              <a href="https://wa.me/994605114975" target="_blank" rel="noopener noreferrer" style={portalStyles.contactLine}>💬 WhatsApp: +994 60 511 49 75</a>
+              <a href="mailto:asimalirzayev2@gmail.com" style={portalStyles.contactLine}>📧 asimalirzayev2@gmail.com</a>
+              <a href="https://instagram.com/alirza.asim" target="_blank" rel="noopener noreferrer" style={portalStyles.contactLine}>📷 @alirza.asim</a>
+              <div style={portalStyles.contactLine}>📍 Trier, Deutschland</div>
+            </div>
           </section>
           </Reveal>
         )}
