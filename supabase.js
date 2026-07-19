@@ -34,7 +34,7 @@ export async function adminLogin(email, password) {
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) throw new Error("Giriş uğursuz oldu");
-  return res.json(); // { access_token, refresh_token, ... }
+  return res.json();
 }
 
 export async function sbAuth(path, accessToken) {
@@ -48,25 +48,8 @@ export async function sbAuth(path, accessToken) {
   return res.json();
 }
 
-// ---- Auth (for the admin panel) ----
-export async function signIn(email, password) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) throw new Error("Giriş uğursuz oldu");
-  const data = await res.json();
-  return data.access_token;
-}
-
-export async function sbAuthed(path, token) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
-  return res.json();
+// ---- Lesson PDF public URL (Storage bucket: lesson-pdfs) ----
+export function pdfUrl(level, num) {
+  const padded = String(num).padStart(2, "0");
+  return `${SUPABASE_URL}/storage/v1/object/public/lesson-pdfs/${level}_${padded}.pdf`;
 }
