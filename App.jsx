@@ -1089,8 +1089,36 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       `}</style>
 
       <div ref={glowRef} style={portalStyles.cursorGlow} />
-      <div style={{ ...portalStyles.bigShape, top: "-18%", right: "-14%", background: "linear-gradient(135deg,#FF9F1C,#E63946)" }} />
-      <div style={portalStyles.bigShapeOutline} />
+      {(() => {
+        const PAGE_THEME = {
+          home: { primary: "#FF9F1C", secondary: "#2FBFA0" },
+          lessons: { primary: "#FF9F1C", secondary: "#2FBFA0" },
+          dictionary: { primary: "#2FBFA0", secondary: "#4FC3E8" },
+          books: { primary: "#B98CE8", secondary: "#2FBFA0" },
+          courses: { primary: "#6FD19A", secondary: "#2FBFA0" },
+          premium: { primary: "#E8C766", secondary: "#2FBFA0" },
+          contact: { primary: "#E86C8C", secondary: "#2FBFA0" },
+        };
+        const t = PAGE_THEME[view] || PAGE_THEME.home;
+        return (
+          <>
+            <svg style={portalStyles.watermark} viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <rect key={i} x={i * 60} y="0" width="14" height="300" fill={t.secondary} />
+              ))}
+              <rect x="0" y="0" width="800" height="40" fill={t.secondary} />
+            </svg>
+            <svg style={portalStyles.cornerShapeBig} viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polygon points="0,100 0,25 75,100" fill={t.secondary} />
+            </svg>
+            <svg style={portalStyles.cornerShapeSmall} viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polygon points="100,0 100,50 50,0" fill={t.primary} />
+            </svg>
+            <div style={{ ...portalStyles.thinDiamond, borderColor: `${t.primary}66` }} />
+            <div style={{ ...portalStyles.thinSquare, borderColor: `${t.secondary}90` }} />
+          </>
+        );
+      })()}
 
       {/* Nav bar */}
       <nav style={portalStyles.nav}>
@@ -1319,13 +1347,16 @@ const portalStyles = {
     fontFamily: "'Inter', -apple-system, sans-serif", color: "#F7F1E6",
   },
   cursorGlow: { position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" },
-  bigShape: {
-    position: "absolute", width: 520, height: 520, opacity: 0.22, filter: "blur(2px)", pointerEvents: "none",
-    clipPath: "polygon(30% 0%, 100% 0%, 70% 100%, 0% 100%)",
+  watermark: { position: "absolute", top: 0, left: 0, width: "100%", height: 160, opacity: 0.035, pointerEvents: "none" },
+  cornerShapeBig: { position: "absolute", bottom: 0, left: 0, width: "48%", height: "50%", opacity: 0.16, pointerEvents: "none" },
+  cornerShapeSmall: { position: "absolute", top: 0, right: 0, width: "40%", height: "38%", opacity: 0.14, pointerEvents: "none" },
+  thinDiamond: {
+    position: "absolute", top: "22%", right: "8%", width: 70, height: 70,
+    border: "1.5px solid rgba(255,159,28,0.35)", transform: "rotate(45deg)", pointerEvents: "none",
   },
-  bigShapeOutline: {
-    position: "absolute", bottom: "-10%", left: "-6%", width: 340, height: 340, opacity: 0.5, pointerEvents: "none",
-    border: "1.5px solid rgba(255,159,28,0.35)", transform: "rotate(12deg)",
+  thinSquare: {
+    position: "absolute", bottom: "12%", right: "20%", width: 46, height: 46,
+    border: "1.5px solid rgba(47,191,160,0.4)", transform: "rotate(12deg)", pointerEvents: "none",
   },
   blob: { position: "absolute", width: 380, height: 380, borderRadius: "50%", filter: "blur(85px)", opacity: 0.45, pointerEvents: "none" },
   angular: { position: "absolute", width: 130, height: 130, opacity: 0.28, filter: "blur(1px)", pointerEvents: "none", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" },
