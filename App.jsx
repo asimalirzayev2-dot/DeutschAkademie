@@ -589,7 +589,7 @@ function LessonsView({ topicsByLevel }) {
                   <div style={portalStyles.lessonBodyWrap}>
                     <pre style={portalStyles.lessonBody}>{l.content}</pre>
                     <a href={pdfUrl(level, l.num)} target="_blank" rel="noopener noreferrer" style={portalStyles.pdfLink}>
-                      📄 Genişləndirilmiş izahı PDF olaraq endir
+                      ✦ Genişləndirilmiş izahı PDF olaraq endir
                     </a>
                     <LessonVocab level={level} num={l.num} />
                   </div>
@@ -1032,9 +1032,11 @@ const portalStyles = {
   vocabBox: { margin: "0 16px 18px", padding: 16, background: "rgba(255,159,28,0.06)", border: "1px solid rgba(255,159,28,0.25)", borderRadius: 4 },
   vocabTitle: { fontSize: 13, fontWeight: 700, color: "#FF9F1C" },
   pdfLink: {
-    display: "inline-flex", alignItems: "center", gap: 6, margin: "0 16px 18px", padding: "10px 16px",
-    background: "rgba(255,159,28,0.1)", border: "1px solid rgba(255,159,28,0.35)", borderRadius: 8,
-    color: "#FF9F1C", fontSize: 13.5, fontWeight: 600, textDecoration: "none",
+    display: "inline-flex", alignItems: "center", gap: 8, margin: "0 16px 18px", padding: "11px 18px",
+    background: "linear-gradient(135deg, rgba(212,175,55,0.14), rgba(212,175,55,0.05))",
+    border: "1px solid rgba(212,175,55,0.55)", borderRadius: 8,
+    color: "#E8C766", fontSize: 13.5, fontWeight: 700, textDecoration: "none",
+    letterSpacing: 0.2, boxShadow: "0 0 14px rgba(212,175,55,0.12)",
   },
   dictRow: { background: "rgba(255,255,255,0.035)", borderRadius: 4, padding: "10px 14px", borderLeft: "3px solid #FF9F1C" },
   dictTerm: { fontWeight: 700, fontSize: 14.5 },
