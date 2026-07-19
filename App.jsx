@@ -566,7 +566,7 @@ function LessonsView({ topicsByLevel }) {
 
   return (
     <section style={portalStyles.section}>
-      <h2 style={portalStyles.h2}>Dərslər</h2>
+      <SectionHeader type="lessons" desc="Səviyyəyə görə qrammatika izahları" />
       <p style={{ ...portalStyles.body, marginBottom: 20 }}>Səviyyə seç, mövzuya klikləyib izahı aç.</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         {LEVELS.map((lvl) => (
@@ -628,7 +628,7 @@ function DictionaryView() {
 
   return (
     <section style={portalStyles.section}>
-      <h2 style={portalStyles.h2}>Lüğət</h2>
+      <SectionHeader type="dictionary" desc="İki istiqamətli söz axtarışı" />
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         <button onClick={() => setDirection("de-az")} style={{ ...portalStyles.pill, ...(direction === "de-az" ? portalStyles.pillActive : {}) }}>Alman → Azərbaycan</button>
         <button onClick={() => setDirection("az-de")} style={{ ...portalStyles.pill, ...(direction === "az-de" ? portalStyles.pillActive : {}) }}>Azərbaycan → Alman</button>
@@ -837,13 +837,13 @@ function Portal({ onStart }) {
                 <h2 style={portalStyles.h2}>Fəaliyyətimiz</h2>
                 <div style={portalStyles.grid}>
                   <TiltCard onClick={() => setView("lessons")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <div style={portalStyles.cardIcon}>📚</div>
-                    <h3 style={portalStyles.cardTitle}>Dərslər</h3>
+                    <IconBadge type="lessons" />
+                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Dərslər</h3>
                     <p style={portalStyles.cardText}>A1-dən B2-yə qədər səviyyələr üzrə qrammatika izahları.</p>
                   </TiltCard>
                   <TiltCard onClick={() => setView("dictionary")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <div style={portalStyles.cardIcon}>📖</div>
-                    <h3 style={portalStyles.cardTitle}>Lüğət</h3>
+                    <IconBadge type="dictionary" />
+                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Lüğət</h3>
                     <p style={portalStyles.cardText}>Mövzulara görə qruplaşdırılmış alman-azərbaycan lüğəti.</p>
                   </TiltCard>
                   <TiltCard onClick={onStart} style={{ ...portalStyles.card, ...portalStyles.cardCta, cursor: "pointer", textAlign: "left" }}>
@@ -853,13 +853,13 @@ function Portal({ onStart }) {
                     <div style={portalStyles.ctaLink}>Testə başla <ChevronRight size={16} /></div>
                   </TiltCard>
                   <TiltCard onClick={() => setView("courses")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <div style={portalStyles.cardIcon}>🎓</div>
-                    <h3 style={portalStyles.cardTitle}>Kurslar</h3>
+                    <IconBadge type="courses" />
+                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Kurslar</h3>
                     <p style={portalStyles.cardText}>Müəllim rəhbərliyi ilə qruplarda alman dili kursları.</p>
                   </TiltCard>
                   <TiltCard onClick={() => setView("books")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <div style={portalStyles.cardIcon}>📘</div>
-                    <h3 style={portalStyles.cardTitle}>Kitablarımız</h3>
+                    <IconBadge type="books" />
+                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Kitablarımız</h3>
                     <p style={portalStyles.cardText}>Çap materiallarımızı Gumroad üzərindən əldə et.</p>
                   </TiltCard>
                   <div style={{ ...portalStyles.card, opacity: 0.45, cursor: "default" }}>
@@ -880,7 +880,7 @@ function Portal({ onStart }) {
         {view === "books" && (
           <Reveal>
           <section style={portalStyles.section}>
-            <h2 style={portalStyles.h2}>Kitablarımız</h2>
+            <SectionHeader type="books" desc="Çap materiallarımız, Gumroad üzərindən" />
             <p style={{ ...portalStyles.body, marginBottom: 20 }}>
               Hər səviyyə üçün ayrıca hazırlanmış qrammatika izahı və test toplusu. Gumroad üzərindən əldə edə bilərsən.
             </p>
@@ -905,7 +905,7 @@ function Portal({ onStart }) {
         {view === "courses" && (
           <Reveal>
           <section style={portalStyles.section}>
-            <h2 style={portalStyles.h2}>Kurslar</h2>
+            <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
             <div style={portalStyles.grid}>
               {LEVELS.map((lvl) => (
                 <div key={lvl} style={portalStyles.card}>
@@ -939,7 +939,7 @@ function Portal({ onStart }) {
         {view === "contact" && (
           <Reveal>
           <section style={portalStyles.section}>
-            <h2 style={portalStyles.h2}>Əlaqə</h2>
+            <SectionHeader type="contact" desc="Suallarınız üçün bizimlə əlaqə saxlayın" />
             <p style={portalStyles.body}>
               Suallarınız üçün bizimlə əlaqə saxlaya bilərsiniz.<br /><br />
               📧 E-poçt: info@deutschakademie.az<br />
@@ -1068,6 +1068,94 @@ function CircularScore({ value, color, tier = 1 }) {
         {display}%
       </text>
     </svg>
+  );
+}
+
+const SECTION_THEME = {
+  lessons: { color: "#FF9F1C", soft: "rgba(255,159,28,0.14)", label: "Dərslər" },
+  dictionary: { color: "#4FC3E8", soft: "rgba(79,195,232,0.14)", label: "Lüğət" },
+  books: { color: "#B98CE8", soft: "rgba(185,140,232,0.14)", label: "Kitablar" },
+  courses: { color: "#6FD19A", soft: "rgba(111,209,154,0.14)", label: "Kurslar" },
+  contact: { color: "#E86C8C", soft: "rgba(232,108,140,0.14)", label: "Əlaqə" },
+  quiz: { color: "#FFD580", soft: "rgba(255,213,128,0.14)", label: "Özünü Yoxla" },
+};
+
+function SectionIcon({ type, size = 24, color = "currentColor" }) {
+  const s = { width: size, height: size, display: "block" };
+  switch (type) {
+    case "lessons":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 5.5c2.2-1 5-1 8 0v13c-3-1-5.8-1-8 0v-13Z" />
+          <path d="M20 5.5c-2.2-1-5-1-8 0v13c3-1 5.8-1 8 0v-13Z" />
+        </svg>
+      );
+    case "dictionary":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="4" width="12" height="16" rx="1.5" />
+          <path d="M7.5 8.5h5M7.5 12h5" />
+          <circle cx="17" cy="17" r="3" />
+          <path d="M19.3 19.3 21 21" />
+        </svg>
+      );
+    case "books":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3.5" y="8" width="4.5" height="12" rx="0.8" />
+          <rect x="9.5" y="5" width="4.5" height="15" rx="0.8" />
+          <rect x="15.5" y="9" width="4.5" height="11" rx="0.8" />
+        </svg>
+      );
+    case "courses":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3 2 8l10 5 10-5-10-5Z" />
+          <path d="M6 10.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-5.5" />
+        </svg>
+      );
+    case "contact":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5.5" width="18" height="13" rx="1.8" />
+          <path d="M3.5 6.5 12 13l8.5-6.5" />
+        </svg>
+      );
+    case "quiz":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9.2 9.5a2.8 2.8 0 1 1 3.9 2.6c-.9.4-1.1.9-1.1 1.7" />
+          <circle cx="12" cy="17" r="0.15" fill={color} stroke="none" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function IconBadge({ type, size = 44 }) {
+  const t = SECTION_THEME[type];
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", background: t.soft,
+      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+    }}>
+      <SectionIcon type={type} size={Math.round(size * 0.5)} color={t.color} />
+    </div>
+  );
+}
+
+function SectionHeader({ type, desc }) {
+  const t = SECTION_THEME[type];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+      <IconBadge type={type} size={48} />
+      <div>
+        <h2 style={{ ...portalStyles.h2, marginBottom: desc ? 2 : 0, color: t.color }}>{t.label}</h2>
+        {desc && <p style={{ margin: 0, fontSize: 13, opacity: 0.6 }}>{desc}</p>}
+      </div>
+    </div>
   );
 }
 
