@@ -1659,7 +1659,10 @@ const portalStyles = {
     border: "1px solid rgba(232,199,102,0.3)", fontFamily: "inherit",
   },
   teacherEliteName: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: "#F3E8CE", letterSpacing: 0.2 },
-  teacherEliteBio: { fontSize: 12, opacity: 0.6, marginTop: 6, fontStyle: "italic" },
+  teacherEliteBio: {
+    fontSize: 12.5, opacity: 0.7, marginTop: 6, fontStyle: "normal", lineHeight: 1.4,
+    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+  },
   teacherAvatarWrap: { width: 46, height: 46, position: "relative", flexShrink: 0 },
   teacherAvatarDiamond: {
     position: "absolute", inset: 6, transform: "rotate(45deg)",
