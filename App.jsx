@@ -837,31 +837,19 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacemen
 
       {selectedTeacher && (
         <div style={portalStyles.modalOverlay} onClick={() => setSelectedTeacher(null)}>
-          <div style={{ ...portalStyles.modalBox, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ ...portalStyles.modalBox, maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setSelectedTeacher(null)} style={portalStyles.modalClose}>✕</button>
-            <div style={{ textAlign: "center", marginBottom: 14 }}>
+
+            <div style={{ textAlign: "center", marginBottom: 18 }}>
               <div style={{ ...portalStyles.teacherAvatarWrap, width: 66, height: 66, margin: "0 auto 14px" }}>
                 <div style={{ ...portalStyles.teacherAvatarDiamond, inset: 8 }} />
                 <div style={{ ...portalStyles.teacherAvatar, fontSize: 22 }}>{selectedTeacher.name?.[0] || "👤"}</div>
               </div>
-              <h2 style={{ ...portalStyles.h2, marginBottom: 4 }}>{selectedTeacher.name}</h2>
-              {selectedTeacher.bio && <p style={{ ...portalStyles.body, fontSize: 13.5 }}>{selectedTeacher.bio}</p>}
+              <h2 style={{ ...portalStyles.h2, marginBottom: 2 }}>{selectedTeacher.name}</h2>
+              {selectedTeacher.address && <p style={{ fontSize: 12.5, opacity: 0.55, margin: 0 }}>📍 {selectedTeacher.address}</p>}
             </div>
 
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, marginBottom: 18 }}>
-              <tbody>
-                <tr>
-                  <td style={portalStyles.teacherTableLabel}>Səviyyələr</td>
-                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.levels || "—"}</td>
-                </tr>
-                <tr>
-                  <td style={portalStyles.teacherTableLabel}>Cədvəl</td>
-                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.schedule || "—"}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gap: 10, marginBottom: 22 }}>
               {selectedTeacher.email && (
                 <a href={`mailto:${selectedTeacher.email}`} style={portalStyles.contactLine}>📧 {selectedTeacher.email}</a>
               )}
@@ -874,6 +862,32 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacemen
                 </a>
               )}
             </div>
+
+            {selectedTeacher.bio && (
+              <div style={portalStyles.teacherAboutBox}>
+                <div style={portalStyles.teacherAboutLabel}>Haqqında</div>
+                <p style={portalStyles.teacherAboutText}>{selectedTeacher.bio}</p>
+              </div>
+            )}
+
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, marginBottom: 6 }}>
+              <tbody>
+                <tr>
+                  <td style={portalStyles.teacherTableLabel}>Səviyyələr</td>
+                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.levels || "—"}</td>
+                </tr>
+                <tr>
+                  <td style={portalStyles.teacherTableLabel}>Dərs Forması</td>
+                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.format || "—"}</td>
+                </tr>
+                {selectedTeacher.schedule && (
+                  <tr>
+                    <td style={portalStyles.teacherTableLabel}>Cədvəl</td>
+                    <td style={portalStyles.teacherTableVal}>{selectedTeacher.schedule}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
             <button
               onClick={() => { setSelectedTeacher(null); setRegForm({ ...regForm, teacher: selectedTeacher.name, teacherEmail: selectedTeacher.email }); }}
@@ -1622,6 +1636,12 @@ const portalStyles = {
   ctaLink: { display: "flex", alignItems: "center", gap: 4, marginTop: 12, color: "#FF9F1C", fontSize: 13.5, fontWeight: 700, position: "relative" },
   teacherTableLabel: { padding: "8px 0", opacity: 0.6, width: "35%", borderBottom: "1px solid rgba(247,241,230,0.1)" },
   teacherTableVal: { padding: "8px 0", fontWeight: 600, borderBottom: "1px solid rgba(247,241,230,0.1)" },
+  teacherAboutBox: {
+    borderTop: "1px solid rgba(232,199,102,0.25)", borderBottom: "1px solid rgba(232,199,102,0.25)",
+    padding: "16px 2px", marginBottom: 18,
+  },
+  teacherAboutLabel: { fontFamily: "'Fraunces', serif", fontSize: 13, color: "#E8C766", letterSpacing: 0.5, marginBottom: 8, fontWeight: 700 },
+  teacherAboutText: { fontSize: 14, lineHeight: 1.7, opacity: 0.85, fontStyle: "italic", margin: 0 },
   contactLine: {
     display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8,
     background: "rgba(255,255,255,0.04)", border: "1px solid rgba(247,241,230,0.1)",
