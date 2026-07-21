@@ -1343,8 +1343,8 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
     <section style={portalStyles.section}>
       <div style={portalStyles.premiumHero}>
         <div style={portalStyles.premiumCrown}>✦</div>
-        <h2 style={portalStyles.premiumTitle}>Premium Hesab Əldə Et</h2>
-        <p style={portalStyles.premiumTagline}>Limitsiz test, limitsiz "Səviyyəni Yoxla" — sərhədsiz öyrənmə</p>
+        <h2 style={portalStyles.premiumTitle}>Deutsch Akademie Premium</h2>
+        <p style={portalStyles.premiumTagline}>Alman dilini öyrənmək bir yarışdır — Premium səni önə keçirir: sərhədsiz məşq, şəxsi diqqət və əl çatmaz materiallar.</p>
       </div>
 
       {isAdmin ? (
@@ -1356,16 +1356,34 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
         <PremiumPerks session={session} profile={profile} />
       ) : (
         <>
-          <div style={portalStyles.grid}>
-            <div style={portalStyles.card}>
-              <h3 style={portalStyles.cardTitle}>Pulsuz (qeydiyyatlı)</h3>
-              <p style={portalStyles.cardText}>Günə 3 test, 3 gündə 1 "Səviyyəni Yoxla", dərs izahları</p>
-            </div>
-            <div style={portalStyles.premiumCard}>
-              <h3 style={{ ...portalStyles.cardTitle, color: "#E8C766" }}>✦ Premium</h3>
-              <p style={portalStyles.cardText}>Limitsiz test, limitsiz "Səviyyəni Yoxla", PDF endirmə, Danışıq Sessiyası, Bonus testlər</p>
-            </div>
-          </div>
+          <table style={portalStyles.premiumTable}>
+            <thead>
+              <tr>
+                <th style={portalStyles.premiumTableHeadEmpty}></th>
+                <th style={portalStyles.premiumTableHead}>Pulsuz</th>
+                <th style={{ ...portalStyles.premiumTableHead, color: "#E8C766" }}>✦ Premium</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Gündəlik test sayı", "3 test / gün", "Limitsiz"],
+                ["\"Səviyyəni Yoxla\"", "3 gündə 1 dəfə", "İstədiyin qədər"],
+                ["Dərs izahları", "✓", "✓"],
+                ["Genişləndirilmiş PDF kitabxanası", "✗", "✓ Bütün mövzular"],
+                ["Mənimlə (Asim) Danışıq Sessiyası", "✗", "✓ Mövzu seç, birbaşa əlaqə"],
+                ["Bonus təkrar testləri", "✗", "✓ Yalnız Premium-a xüsusi"],
+              ].map((row, i) => (
+                <tr key={i}>
+                  <td style={portalStyles.premiumTableLabel}>{row[0]}</td>
+                  <td style={portalStyles.premiumTableVal}>{row[1]}</td>
+                  <td style={{ ...portalStyles.premiumTableVal, color: "#E8C766", fontWeight: 700 }}>{row[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ ...portalStyles.body, textAlign: "center", fontSize: 13, opacity: 0.6, marginTop: 14 }}>
+            Aylıq cəmi 4.99 € — bir fincan qəhvədən ucuz, məqsədinə çatmaq üçün sərhədsiz imkan.
+          </p>
 
           <div style={portalStyles.premiumSteps}>
             <h3 style={{ ...portalStyles.h2, fontSize: 18, color: "#E8C766", marginBottom: 16 }}>Necə Premium əldə edim?</h3>
@@ -1806,6 +1824,11 @@ const portalStyles = {
     border: "1px solid rgba(232,199,102,0.5)",
   },
   premiumSteps: { marginTop: 32, display: "grid", gap: 18 },
+  premiumTable: { width: "100%", borderCollapse: "collapse", maxWidth: 460 },
+  premiumTableHeadEmpty: { width: "45%" },
+  premiumTableHead: { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "10px 6px", borderBottom: "1px solid rgba(247,241,230,0.15)" },
+  premiumTableLabel: { padding: "10px 6px", fontSize: 12.5, opacity: 0.75, borderBottom: "1px solid rgba(247,241,230,0.08)" },
+  premiumTableVal: { padding: "10px 6px", fontSize: 12.5, textAlign: "center", borderBottom: "1px solid rgba(247,241,230,0.08)" },
   stepRow: { display: "flex", gap: 14, alignItems: "flex-start" },
   stepNum: {
     width: 28, height: 28, borderRadius: "50%", flexShrink: 0, fontSize: 13, fontWeight: 700,
