@@ -87,6 +87,29 @@ export async function signUp(email, password, name) {
   return data;
 }
 
+export async function resetPasswordRequest(email) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.msg || "Sorğu göndərilmədi");
+  }
+}
+
+export async function updatePasswordWithToken(accessToken, newPassword) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: "PUT",
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ password: newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || "Şifrə yenilənmədi");
+  return data;
+}
+
 export async function verifyGumroadLicense(licenseKey, productId) {
   const body = new URLSearchParams();
   body.append("product_id", productId);
