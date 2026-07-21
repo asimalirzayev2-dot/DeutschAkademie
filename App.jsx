@@ -29,7 +29,7 @@ const LEVELS = ["A1", "A2", "B1", "B2"];
 const FAQ_ITEMS = [
   { q: "Necə qeydiyyatdan keçim?", a: "Yuxarı sağ küncdəki \"Daxil ol\" düyməsinə bas → açılan pəncərədə \"Qeydiyyatdan keç\"ə keç. Adını, email-ini və şifrəni yaz, \"Qeydiyyatdan keç\" düyməsinə bas. Email ünvanına bir təsdiq linki gələcək — ora bax (spam qovluğunu da yoxla), linkə bas. Sonra eyni email+şifrə ilə \"Daxil ol\" edə bilərsən." },
   { q: "Test limitlərim nədir?", a: "Qeydiyyatsız (qonaq): cəmi 1 dəfə, 20 suallıq bir test. Qeydiyyatlı (pulsuz hesab): gündə 3 test və 3 gündə 1 dəfə \"Səviyyəni Yoxla\". Premium: hər ikisi limitsizdir." },
-  { q: "Premium nə verir?", a: "Limitsiz test və limitsiz \"Səviyyəni Yoxla\", dərs izahlarının genişləndirilmiş PDF-ini endirmək imkanı, mənimlə (Asim) birbaşa \"Danışıq Sessiyası\" təşkil etmək və yalnız Premium üzvlərə xüsusi bonus təkrar testləri. Ətraflı və qiymət üçün yuxarı naviqasiyada \"Premium\" bölməsinə bax." },
+  { q: "Premium nə verir?", a: "Limitsiz test və limitsiz \"Səviyyəni Yoxla\", dərs izahlarının genişləndirilmiş PDF-ini endirmək imkanı, tədrisdən kənar mövzularda fərdi Danışıq Sessiyası təşkil etmək və yalnız Premium üzvlərə xüsusi bonus təkrar testləri. Ətraflı və qiymət üçün yuxarı naviqasiyada \"Premium\" bölməsinə bax." },
   { q: "PDF-ləri necə əldə edirəm?", a: "Dərslər bölməsində istədiyin səviyyəni seç, bir mövzunu aç — mövzunun altında \"PDF olaraq endir\" düyməsi görünəcək. Bu, yalnız Premium üzvlər üçün açıqdır; Premium deyilsənsə, düymə səni Premium səhifəsinə yönləndirəcək." },
   { q: "Şifrəmi unutmuşam, nə edim?", a: "\"Daxil ol\" pəncərəsini aç, aşağıda \"Şifrəni unutmusan?\" yazısına bas. Email-ini yaz, \"Bərpa linkini göndər\"ə bas. Email-inə gələn linkə basdıqda birbaşa yeni şifrə təyin etmək üçün pəncərə açılacaq." },
   { q: "Müəllimlə necə əlaqə saxlayıram?", a: "Kurslar bölməsində istədiyin müəllimin kartına bas — profili açılacaq, orada email, telefon (WhatsApp) və Instagram keçidləri var, birbaşa yaza bilərsən." },
@@ -1282,9 +1282,9 @@ function PremiumPerks({ session, profile }) {
       </p>
 
       <div style={portalStyles.premiumPerkBox}>
-        <h3 style={portalStyles.premiumPerkTitle}>🗣️ Danışıq Sessiyası</h3>
+        <h3 style={portalStyles.premiumPerkTitle}>🗣️ Fərdi Danışıq Sessiyası</h3>
         <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
-          Mövzu seç, birbaşa mənə (Asim) mesaj getsin — danışıq praktikası üçün əlaqə saxlayaram.
+          Tədrisdən kənar mövzularda əlavə danışıq təcrübəsi — mövzu seç, sorğun akademiyanın rəhbərliyinə göndərilsin, əlaqə saxlanılsın.
         </p>
         {sent ? (
           <p style={{ color: "#00D9A3", fontSize: 13.5 }}>✓ Sorğun göndərildi, tezliklə əlaqə saxlanılacaq!</p>
@@ -1370,7 +1370,7 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
                 ["\"Səviyyəni Yoxla\"", "3 gündə 1 dəfə", "İstədiyin qədər"],
                 ["Dərs izahları", "✓", "✓"],
                 ["Genişləndirilmiş PDF kitabxanası", "✗", "✓ Bütün mövzular"],
-                ["Mənimlə (Asim) Danışıq Sessiyası", "✗", "✓ Mövzu seç, birbaşa əlaqə"],
+                ["Fərdi Danışıq Sessiyası", "✗", "✓ Mövzu seç, birbaşa əlaqə"],
                 ["Bonus təkrar testləri", "✗", "✓ Yalnız Premium-a xüsusi"],
               ].map((row, i) => (
                 <tr key={i}>
