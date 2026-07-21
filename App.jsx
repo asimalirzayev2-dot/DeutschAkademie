@@ -1439,6 +1439,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   const [regForm, setRegForm] = useState({ name: "", phone: "", course: "A1" });
   const [regSent, setRegSent] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [botOpen, setBotOpen] = useState(false);
   const [botQuestion, setBotQuestion] = useState(null);
   const glowRef = useRef(null);
@@ -1503,6 +1504,12 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
         button, input, select { -webkit-tap-highlight-color: transparent; appearance: none; outline: none; font-family: inherit; }
         button:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,0.6); }
+        .desktop-nav-groups { display: flex; }
+        .mobile-hamburger-btn { display: none; }
+        @media (max-width: 860px) {
+          .desktop-nav-groups { display: none !important; }
+          .mobile-hamburger-btn { display: flex !important; }
+        }
       `}</style>
 
       <div ref={glowRef} style={portalStyles.cursorGlow} />
@@ -1545,7 +1552,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <img src={LOGO_URL} alt="Deutsch Akademie" style={portalStyles.navEmblem} />
           <span style={portalStyles.navBrandText}>Deutsch Akademie</span>
         </div>
-        <div style={portalStyles.navGroupsWrap}>
+        <div className="desktop-nav-groups" style={portalStyles.navGroupsWrap}>
           <div style={portalStyles.navGroup}>
             <span style={portalStyles.navGroupIcon} title="Bölmələr">♜</span>
             {navItems.map((n) => (
@@ -1575,7 +1582,36 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
             )}
           </div>
         </div>
+
+        <button className="mobile-hamburger-btn" onClick={() => setMobileMenuOpen((v) => !v)} style={portalStyles.hamburgerBtn}>
+          {mobileMenuOpen ? "✕" : "☰"}
+        </button>
       </nav>
+
+      {mobileMenuOpen && (
+        <div style={portalStyles.mobileMenuPanel}>
+          {navItems.map((n) => (
+            <button key={n.key} onClick={() => { setView(n.key); setMobileMenuOpen(false); }}
+              style={{ ...portalStyles.mobileMenuItem, ...(view === n.key ? portalStyles.mobileMenuItemActive : {}) }}>
+              {n.label}
+            </button>
+          ))}
+          <div style={portalStyles.mobileMenuDivider} />
+          <button onClick={() => { setView("premium"); setMobileMenuOpen(false); }}
+            style={{ ...portalStyles.mobileMenuItem, ...(view === "premium" ? portalStyles.mobileMenuItemActive : {}) }}>
+            ✦ Premium
+          </button>
+          {session ? (
+            <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }} style={portalStyles.mobileMenuItem}>
+              {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""} · Çıxış
+            </button>
+          ) : (
+            <button onClick={() => { setMobileMenuOpen(false); setAuthModal("login"); }} style={{ ...portalStyles.mobileMenuItem, color: "#FF9F1C", fontWeight: 700 }}>
+              Daxil ol
+            </button>
+          )}
+        </div>
+      )}
 
       {authModal && (
         <AuthModal
@@ -1913,6 +1949,22 @@ const portalStyles = {
     border: "1px solid rgba(247,241,230,0.08)",
   },
   navGroupIcon: { fontSize: 13, opacity: 0.55, marginRight: 4 },
+  hamburgerBtn: {
+    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(247,241,230,0.15)", borderRadius: 8,
+    color: "#F7F1E6", width: 42, height: 38, fontSize: 18, cursor: "pointer", alignItems: "center", justifyContent: "center",
+  },
+  mobileMenuPanel: {
+    position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: 4,
+    padding: "10px 20px 18px", borderBottom: "1px solid rgba(247,241,230,0.1)",
+    background: "rgba(10,10,12,0.6)",
+  },
+  mobileMenuItem: {
+    display: "block", width: "100%", textAlign: "left", padding: "12px 14px", borderRadius: 8,
+    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.08)", color: "#F7F1E6",
+    fontSize: 14.5, cursor: "pointer", fontFamily: "inherit",
+  },
+  mobileMenuItemActive: { background: "rgba(255,159,28,0.15)", borderColor: "rgba(255,159,28,0.4)", color: "#FF9F1C", fontWeight: 700 },
+  mobileMenuDivider: { height: 1, background: "rgba(247,241,230,0.1)", margin: "6px 0" },
   navLink: { background: "none", border: "none", color: "rgba(247,241,230,0.6)", fontSize: 13.5, padding: "8px 12px", borderRadius: 4, cursor: "pointer" },
   navLinkActive: { background: "rgba(255,159,28,0.14)", color: "#FF9F1C", fontWeight: 700 },
   pill: { padding: "8px 18px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "transparent", color: "#F7F1E6", cursor: "pointer", fontSize: 14 },
