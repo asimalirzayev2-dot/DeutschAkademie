@@ -806,11 +806,12 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView 
 
 function EagleIcon({ size = 26, color = "#0A0A0C" }) {
   return (
-    <svg viewBox="0 0 48 48" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M24 10c-2 3-3 5-3 8l-14 6 6 2 8-2c-1 3-3 5-6 7l4 1c3-1 6-3 8-6 2 3 5 5 8 6l4-1c-3-2-5-4-6-7l8 2 6-2-14-6c0-3-1-5-3-8Z" fill={color} opacity="0.15" />
-      <path d="M24 10c-2 3-3 5-3 8l-14 6 6 2 8-2c-1 3-3 5-6 7l4 1c3-1 6-3 8-6 2 3 5 5 8 6l4-1c-3-2-5-4-6-7l8 2 6-2-14-6c0-3-1-5-3-8Z" />
-      <circle cx="24" cy="14" r="1.4" fill={color} stroke="none" />
-      <path d="M22 15l-3 1.5 3 .5Z" fill={color} />
+    <svg viewBox="0 0 64 64" width={size} height={size}>
+      <path
+        fill={color}
+        d="M32 6c1.5 2 2 4 2 6.5l16-4-9 8 13 3-13 2 7 9-11-5c1 4 3 7 6 10l-9-3c-1 3-1 6 0 9l-9-6-9 6c1-3 1-6 0-9l-9 3c3-3 5-6 6-10l-11 5 7-9-13-2 13-3-9-8 16 4c0-2.5.5-4.5 2-6.5Z"
+      />
+      <circle cx="32" cy="14" r="2.2" fill="#fff" opacity="0.9" />
     </svg>
   );
 }
@@ -1583,6 +1584,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       )}
 
       {/* Support bot */}
+      {(isPremium || isAdmin) && <div style={portalStyles.botCrownBadge}>👑</div>}
       <button onClick={() => setBotOpen((v) => !v)} style={portalStyles.botFab}>
         {botOpen ? "✕" : <EagleIcon size={26} color="#0A0A0C" />}
       </button>
@@ -1902,8 +1904,12 @@ const portalStyles = {
   gatePrompt: { textAlign: "center", padding: "60px 20px", opacity: 0.9 },
   botFab: {
     position: "fixed", bottom: 22, right: 22, zIndex: 40, width: 54, height: 54, borderRadius: "50%",
-    background: "#FF9F1C", color: "#0A0A0C", border: "none", fontSize: 22, cursor: "pointer",
+    background: "#2FBFA0", color: "#0A0A0C", border: "none", fontSize: 22, cursor: "pointer",
     boxShadow: "0 4px 18px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
+  },
+  botCrownBadge: {
+    position: "fixed", bottom: 62, right: 18, zIndex: 41, fontSize: 20, pointerEvents: "none",
+    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
   },
   botPanel: {
     position: "fixed", bottom: 86, right: 22, zIndex: 40, width: 300, maxHeight: "60vh", overflowY: "auto",
