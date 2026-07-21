@@ -712,7 +712,7 @@ function LessonVocab({ level, num }) {
   );
 }
 
-function LessonsView({ topicsByLevel }) {
+function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView }) {
   const [level, setLevel] = useState("A1");
   const [openTopic, setOpenTopic] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -749,9 +749,15 @@ function LessonsView({ topicsByLevel }) {
                 {isOpen && (
                   <div style={portalStyles.lessonBodyWrap}>
                     <pre style={portalStyles.lessonBody}>{l.content}</pre>
-                    <a href={pdfUrl(level, l.num)} target="_blank" rel="noopener noreferrer" style={portalStyles.pdfLink}>
-                      ✦ Genişləndirilmiş izahı PDF olaraq endir
-                    </a>
+                    {(isPremium || isAdmin) ? (
+                      <a href={pdfUrl(level, l.num)} target="_blank" rel="noopener noreferrer" style={portalStyles.pdfLink}>
+                        ✦ Genişləndirilmiş izahı PDF olaraq endir
+                      </a>
+                    ) : (
+                      <button onClick={() => setView("premium")} style={portalStyles.pdfLinkLocked}>
+                        🔒 PDF endirmək üçün Premium lazımdır
+                      </button>
+                    )}
                     <LessonVocab level={level} num={l.num} />
                   </div>
                 )}
@@ -1164,6 +1170,68 @@ function AuthModal({ mode, onClose, onSwitch, saveSession, refreshProfile }) {
 
 const GUMROAD_PREMIUM_PRODUCT_ID = "fz5uY92otxwP0OwN0g04bQ==";
 
+const TALK_TOPICS = [
+  "Gündəlik həyat", "Səyahət və turizm", "İş və karyera", "Ailə və dostlar",
+  "Hobbilər və maraqlar", "Almaniyada yaşam", "Sərbəst mövzu",
+];
+
+function PremiumPerks({ session, profile }) {
+  const [topic, setTopic] = useState(null);
+  const [sent, setSent] = useState(false);
+
+  function requestSession() {
+    if (!topic) return;
+    notifyTeacher({
+      teacherEmail: "asimalirzayev2@gmail.com",
+      teacherName: "Asim",
+      studentName: `[Danışıq Sessiyası] ${profile?.name || "Tələbə"}`,
+      studentPhone: session?.user?.email || "—",
+      studentLevel: topic,
+    });
+    setSent(true);
+  }
+
+  return (
+    <>
+      <p style={{ ...portalStyles.body, textAlign: "center", color: "#00D9A3", marginBottom: 28 }}>
+        ✓ Premium aktivdir — istədiyin qədər test və "Səviyyəni Yoxla" istifadə edə bilərsən.
+      </p>
+
+      <div style={portalStyles.premiumPerkBox}>
+        <h3 style={portalStyles.premiumPerkTitle}>🗣️ Danışıq Sessiyası</h3>
+        <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
+          Mövzu seç, birbaşa mənə (Asim) mesaj getsin — danışıq praktikası üçün əlaqə saxlayaram.
+        </p>
+        {sent ? (
+          <p style={{ color: "#00D9A3", fontSize: 13.5 }}>✓ Sorğun göndərildi, tezliklə əlaqə saxlanılacaq!</p>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+              {TALK_TOPICS.map((t) => (
+                <button key={t} onClick={() => setTopic(t)}
+                  style={{ ...portalStyles.levelPill, ...(topic === t ? portalStyles.levelPillActive : {}) }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <button onClick={requestSession} style={portalStyles.primaryBtn} disabled={!topic}>Sorğu Göndər</button>
+          </>
+        )}
+      </div>
+
+      <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16 }}>
+        <h3 style={portalStyles.premiumPerkTitle}>📘 Bonus Təkrar Testləri</h3>
+        <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
+          Yalnız Premium üzvlərə xüsusi — bütün mövzuları əhatə edən əlavə təkrar sualları.
+        </p>
+        <a href="https://krtfwdhdxspljykdglzp.supabase.co/storage/v1/object/public/lesson-pdfs/A1_BONUS.pdf" target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.primaryBtn, display: "inline-block", textDecoration: "none" }}>
+          A1 Bonus Testini Endir
+        </a>
+      </div>
+    </>
+  );
+}
+
 function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, setAuthModal }) {
   const [licenseKey, setLicenseKey] = useState("");
   const [status, setStatus] = useState(""); // "", "checking", "ok", "fail"
@@ -1196,19 +1264,22 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
       </div>
 
       {isAdmin ? (
-        <p style={{ ...portalStyles.body, textAlign: "center" }}>Admin hesabı olaraq bütün funksiyalara limitsiz girişin var. 🎉</p>
+        <>
+          <p style={{ ...portalStyles.body, textAlign: "center", marginBottom: 24 }}>Admin hesabı olaraq bütün funksiyalara limitsiz girişin var. 🎉</p>
+          <PremiumPerks session={session} profile={profile} />
+        </>
       ) : isPremium ? (
-        <p style={{ ...portalStyles.body, textAlign: "center", color: "#00D9A3" }}>✓ Premium aktivdir — istədiyin qədər test və "Səviyyəni Yoxla" istifadə edə bilərsən.</p>
+        <PremiumPerks session={session} profile={profile} />
       ) : (
         <>
           <div style={portalStyles.grid}>
             <div style={portalStyles.card}>
               <h3 style={portalStyles.cardTitle}>Pulsuz (qeydiyyatlı)</h3>
-              <p style={portalStyles.cardText}>Günə 3 test, 3 gündə 1 "Səviyyəni Yoxla"</p>
+              <p style={portalStyles.cardText}>Günə 3 test, 3 gündə 1 "Səviyyəni Yoxla", dərs izahları</p>
             </div>
             <div style={portalStyles.premiumCard}>
               <h3 style={{ ...portalStyles.cardTitle, color: "#E8C766" }}>✦ Premium</h3>
-              <p style={portalStyles.cardText}>Limitsiz test, limitsiz "Səviyyəni Yoxla"</p>
+              <p style={portalStyles.cardText}>Limitsiz test, limitsiz "Səviyyəni Yoxla", PDF endirmə, Danışıq Sessiyası, Bonus testlər</p>
             </div>
           </div>
 
@@ -1495,7 +1566,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           </>
         )}
 
-        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "dictionary" && (session ? <Reveal><DictionaryView /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
@@ -1629,6 +1700,11 @@ const portalStyles = {
     background: "linear-gradient(135deg, #E8C766, #C9A15A)", color: "#0A0A0C", fontWeight: 700, fontSize: 16,
     boxShadow: "0 0 24px rgba(232,199,102,0.3)", letterSpacing: 0.3,
   },
+  premiumPerkBox: {
+    borderRadius: 4, padding: "20px 22px",
+    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)",
+  },
+  premiumPerkTitle: { fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, marginBottom: 8, marginTop: 0 },
   cardIcon: { fontSize: 24, marginBottom: 12 },
   bookCover: { width: "100%", display: "block", aspectRatio: "2/3", objectFit: "cover" },
   cardTitle: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, margin: "0 0 8px", position: "relative" },
@@ -1724,6 +1800,11 @@ const portalStyles = {
     border: "1px solid rgba(212,175,55,0.55)", borderRadius: 8,
     color: "#E8C766", fontSize: 13.5, fontWeight: 700, textDecoration: "none",
     letterSpacing: 0.2, boxShadow: "0 0 14px rgba(212,175,55,0.12)",
+  },
+  pdfLinkLocked: {
+    display: "inline-flex", alignItems: "center", gap: 8, margin: "0 16px 18px", padding: "11px 18px",
+    background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(247,241,230,0.25)", borderRadius: 8,
+    color: "rgba(247,241,230,0.55)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
   },
   modalOverlay: {
     position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 50,
