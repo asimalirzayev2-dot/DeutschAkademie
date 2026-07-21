@@ -712,6 +712,37 @@ const BOOKS = [
   { key: "a1a2", cover: "a1a2", title: "A1 + A2 Paketi", desc: "Hər iki başlanğıc səviyyə bir paketdə, endirimli qiymətə.", url: "https://asimalirzayev.gumroad.com/l/qopvbl" },
 ];
 
+function WordOfDay() {
+  const [word, setWord] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    sb("dictionary?direction=eq.de-az&select=term,translation&limit=1")
+      .then((countRows) => {
+        // Get total count via a cheap trick: fetch a small window, then pick offset by day-of-year
+        const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+        const offset = (dayOfYear * 37) % 5000; // spread across dictionary, wraps safely
+        sb(`dictionary?direction=eq.de-az&select=term,translation&limit=1&offset=${offset}`)
+          .then((rows) => { if (alive && rows[0]) setWord(rows[0]); })
+          .catch(() => {});
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  if (!word) return null;
+  return (
+    <div style={portalStyles.wordOfDayCard}>
+      <span style={portalStyles.wordOfDayLabel}>📅 Günün Sözü</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+        <span style={portalStyles.wordOfDayTerm}>{word.term}</span>
+        <button onClick={() => speakGerman(word.term)} style={portalStyles.speakBtn}>🔊</button>
+      </div>
+      <span style={portalStyles.wordOfDayTrans}>{word.translation}</span>
+    </div>
+  );
+}
+
 function LessonVocab({ level, num }) {
   const [vocab, setVocab] = useState(null);
   useEffect(() => {
@@ -997,6 +1028,29 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacemen
   );
 }
 
+function speakGerman(text) {
+  try {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "de-DE";
+    utter.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  } catch {}
+}
+
+function exportAnki(rows, direction) {
+  const lines = rows.map((r) =>
+    direction === "de-az" ? `${r.term}\t${r.translation}` : `${r.translation}\t${r.term}`
+  );
+  const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "deutsch-akademie-lugat.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function DictionaryView() {
   const [query, setQuery] = useState("");
   const [direction, setDirection] = useState("de-az"); // de-az | az-de
@@ -1030,11 +1084,19 @@ function DictionaryView() {
       <p style={{ fontSize: 12.5, opacity: 0.55, marginTop: 8 }}>
         Minlərlə söz bu lüğətdə mövcuddur — axtarmaq üçün ən azı 2 hərf yaz
       </p>
+      {results.length > 0 && (
+        <button onClick={() => exportAnki(results, direction)} style={{ ...portalStyles.pill, marginTop: 10 }}>
+          📇 Bu nəticələri Anki üçün endir
+        </button>
+      )}
       <div style={{ display: "grid", gap: 8, marginTop: 16, maxHeight: 420, overflowY: "auto" }}>
         {results.map((r, i) => (
-          <div key={i} style={portalStyles.dictRow}>
-            <div style={portalStyles.dictTerm}>{r.term}</div>
-            <div style={portalStyles.dictTrans}>{r.translation}</div>
+          <div key={i} style={{ ...portalStyles.dictRow, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={portalStyles.dictTerm}>{r.term}</div>
+              <div style={portalStyles.dictTrans}>{r.translation}</div>
+            </div>
+            <button onClick={() => speakGerman(direction === "de-az" ? r.term : r.translation)} style={portalStyles.speakBtn} title="Tələffüzü dinlə">🔊</button>
           </div>
         ))}
         {query.trim().length >= 2 && results.length === 0 && (
@@ -1681,6 +1743,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                 <div style={portalStyles.titleRule} />
                 <p style={portalStyles.tagline}>Alman dilini Azərbaycan dilində öyrənənlər üçün</p>
                 {streak > 0 && <div style={portalStyles.streakBadge}>🔥 {streak} gündür ardıcıl buradasan</div>}
+                <WordOfDay />
               </div>
             </Reveal>
 
@@ -1831,6 +1894,13 @@ const portalStyles = {
   titleRule: { width: 64, height: 3, background: "#FF9F1C", margin: "20px auto 0" },
   tagline: { opacity: 0.65, fontSize: 15, marginTop: 18, letterSpacing: 0.3 },
   streakBadge: { display: "inline-block", marginTop: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(255,159,28,0.12)", border: "1px solid rgba(255,159,28,0.3)", fontSize: 12.5 },
+  wordOfDayCard: {
+    display: "inline-block", marginTop: 18, padding: "14px 22px", borderRadius: 10,
+    background: "rgba(47,191,160,0.08)", border: "1px solid rgba(47,191,160,0.3)", textAlign: "left",
+  },
+  wordOfDayLabel: { fontSize: 11, opacity: 0.6, letterSpacing: 0.5 },
+  wordOfDayTerm: { fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: "#2FBFA0" },
+  wordOfDayTrans: { display: "block", fontSize: 13, opacity: 0.75, marginTop: 2 },
   section: { marginBottom: 40 },
   h2: { fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 700, color: "#F7F1E6", marginBottom: 14, letterSpacing: -0.5 },
   body: { lineHeight: 1.7, fontSize: 15.5, opacity: 0.75 },
@@ -2050,6 +2120,10 @@ const portalStyles = {
   dictRow: { background: "rgba(255,255,255,0.035)", borderRadius: 4, padding: "10px 14px", borderLeft: "3px solid #FF9F1C" },
   dictTerm: { fontWeight: 700, fontSize: 14.5 },
   dictTrans: { fontSize: 13, opacity: 0.7, marginTop: 2 },
+  speakBtn: {
+    background: "rgba(255,159,28,0.1)", border: "1px solid rgba(255,159,28,0.3)", borderRadius: "50%",
+    width: 34, height: 34, fontSize: 15, cursor: "pointer", flexShrink: 0,
+  },
 };
 
 function CircularScore({ value, color, tier = 1 }) {
