@@ -110,6 +110,20 @@ export async function updatePasswordWithToken(accessToken, newPassword) {
   return data;
 }
 
+// ---- Google OAuth (redirect flow, no supabase-js SDK needed) ----
+export function signInWithGoogle() {
+  const redirectTo = window.location.origin + window.location.pathname;
+  window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+}
+
+export async function getUserFromToken(accessToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error("İstifadəçi məlumatı alınmadı");
+  return res.json();
+}
+
 export async function verifyGumroadLicense(licenseKey, productId) {
   const body = new URLSearchParams();
   body.append("product_id", productId);
