@@ -733,12 +733,22 @@ function WordOfDay() {
   if (!word) return null;
   return (
     <div style={portalStyles.wordOfDayCard}>
-      <span style={portalStyles.wordOfDayLabel}>📅 Günün Sözü</span>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
-        <span style={portalStyles.wordOfDayTerm}>{word.term}</span>
-        <button onClick={() => speakGerman(word.term)} style={portalStyles.speakBtn}>🔊</button>
+      <svg viewBox="0 0 100 100" style={portalStyles.cloverBg}>
+        <g fill="#2FBFA0">
+          <circle cx="50" cy="30" r="18" />
+          <circle cx="50" cy="70" r="18" />
+          <circle cx="30" cy="50" r="18" />
+          <circle cx="70" cy="50" r="18" />
+        </g>
+      </svg>
+      <div style={{ position: "relative" }}>
+        <span style={portalStyles.wordOfDayLabel}>🍀 Günün Sözü</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+          <span style={portalStyles.wordOfDayTerm}>{word.term}</span>
+          <button onClick={() => speakGerman(word.term)} style={portalStyles.speakBtn}>🔊</button>
+        </div>
+        <span style={portalStyles.wordOfDayTrans}>{word.translation}</span>
       </div>
-      <span style={portalStyles.wordOfDayTrans}>{word.translation}</span>
     </div>
   );
 }
@@ -840,9 +850,9 @@ function EagleIcon({ size = 26, color = "#0A0A0C" }) {
     <svg viewBox="0 0 64 64" width={size} height={size}>
       <path
         fill={color}
-        d="M32 6c1.5 2 2 4 2 6.5l16-4-9 8 13 3-13 2 7 9-11-5c1 4 3 7 6 10l-9-3c-1 3-1 6 0 9l-9-6-9 6c1-3 1-6 0-9l-9 3c3-3 5-6 6-10l-11 5 7-9-13-2 13-3-9-8 16 4c0-2.5.5-4.5 2-6.5Z"
+        d="M14 34c2-8 8-14 16-16-2-2-3-4-3-6 4 1 7 3 9 6 6 1 11 5 13 10-3-1-5-1-7 0 4 2 7 5 8 9-3-1-6-1-8 1 2 3 3 6 2 10-2-2-4-3-6-3 0 3-1 6-3 8-1-3-3-5-6-6-3 3-7 5-11 5-1-3 0-6 2-8-4 0-8-2-10-5 3 0 6-1 8-3-4-1-7-4-9-8 2 0 4 0 5 1-1-1-1-2-0-3Z"
       />
-      <circle cx="32" cy="14" r="2.2" fill="#fff" opacity="0.9" />
+      <path fill="#fff" opacity="0.85" d="M40 26l4 2-4 1 1-3Z" />
     </svg>
   );
 }
@@ -1700,10 +1710,22 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       )}
 
       {/* Support bot */}
-      {(isPremium || isAdmin) && <div style={portalStyles.botCrownBadge}>👑</div>}
-      <button onClick={() => setBotOpen((v) => !v)} style={portalStyles.botFab}>
-        {botOpen ? "✕" : <EagleIcon size={26} color="#0A0A0C" />}
-      </button>
+      <div style={portalStyles.botFabWrap}>
+        {(isPremium || isAdmin) && (
+          <svg viewBox="0 0 60 30" style={portalStyles.laurelCrown}>
+            <g fill="none" stroke="#E8C766" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M28 26C20 24 12 18 10 8" />
+              <path d="M12 10l-3 1 1-3M14 15l-3 0 0-3M18 20l-3-1 0-3" />
+              <path d="M32 26c8-2 16-8 18-18" />
+              <path d="M48 10l3 1-1-3M46 15l3 0 0-3M42 20l3-1 0-3" />
+            </g>
+            <circle cx="30" cy="26" r="2.4" fill="#E8C766" />
+          </svg>
+        )}
+        <button onClick={() => setBotOpen((v) => !v)} style={portalStyles.botFab}>
+          {botOpen ? "✕" : <EagleIcon size={26} color="#0A0A0C" />}
+        </button>
+      </div>
       {botOpen && (
         <div style={portalStyles.botPanel}>
           <div style={portalStyles.botHeader}>
@@ -1743,7 +1765,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                 <div style={portalStyles.titleRule} />
                 <p style={portalStyles.tagline}>Alman dilini Azərbaycan dilində öyrənənlər üçün</p>
                 {streak > 0 && <div style={portalStyles.streakBadge}>🔥 {streak} gündür ardıcıl buradasan</div>}
-                <WordOfDay />
+                <div style={{ marginTop: 22 }}><WordOfDay /></div>
               </div>
             </Reveal>
 
@@ -1895,9 +1917,11 @@ const portalStyles = {
   tagline: { opacity: 0.65, fontSize: 15, marginTop: 18, letterSpacing: 0.3 },
   streakBadge: { display: "inline-block", marginTop: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(255,159,28,0.12)", border: "1px solid rgba(255,159,28,0.3)", fontSize: 12.5 },
   wordOfDayCard: {
-    display: "inline-block", marginTop: 18, padding: "14px 22px", borderRadius: 10,
-    background: "rgba(47,191,160,0.08)", border: "1px solid rgba(47,191,160,0.3)", textAlign: "left",
+    position: "relative", overflow: "hidden", display: "inline-block", marginTop: 18, padding: "18px 28px",
+    borderRadius: 12, background: "rgba(47,191,160,0.06)", border: "1px solid rgba(47,191,160,0.3)", textAlign: "left",
+    minWidth: 260,
   },
+  cloverBg: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 140, height: 140, opacity: 0.08, pointerEvents: "none" },
   wordOfDayLabel: { fontSize: 11, opacity: 0.6, letterSpacing: 0.5 },
   wordOfDayTerm: { fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: "#2FBFA0" },
   wordOfDayTrans: { display: "block", fontSize: 13, opacity: 0.75, marginTop: 2 },
@@ -2048,13 +2072,14 @@ const portalStyles = {
   premiumDot: { color: "#E8C766", marginLeft: 4 },
   gatePrompt: { textAlign: "center", padding: "60px 20px", opacity: 0.9 },
   botFab: {
-    position: "fixed", bottom: 22, right: 22, zIndex: 40, width: 54, height: 54, borderRadius: "50%",
+    position: "relative", width: 54, height: 54, borderRadius: "50%",
     background: "#2FBFA0", color: "#0A0A0C", border: "none", fontSize: 22, cursor: "pointer",
     boxShadow: "0 4px 18px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
   },
-  botCrownBadge: {
-    position: "fixed", bottom: 62, right: 18, zIndex: 41, fontSize: 20, pointerEvents: "none",
-    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
+  botFabWrap: { position: "fixed", bottom: 22, right: 22, zIndex: 40, width: 54, height: 54 },
+  laurelCrown: {
+    position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", width: 58, height: 26,
+    pointerEvents: "none", filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.5))",
   },
   botPanel: {
     position: "fixed", bottom: 86, right: 22, zIndex: 40, width: 300, maxHeight: "60vh", overflowY: "auto",
