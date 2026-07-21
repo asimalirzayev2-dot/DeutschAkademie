@@ -829,7 +829,7 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacemen
               <div style={portalStyles.teacherAvatar}>{t.name?.[0] || "👤"}</div>
             </div>
             <div style={portalStyles.teacherEliteName}>{t.name}</div>
-            <div style={portalStyles.teacherEliteBio}>{t.bio || "Alman dili müəllimi"}</div>
+            <div style={portalStyles.teacherHint}>Profilə bax</div>
           </button>
         ))}
         {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>Hələ müəllim əlavə olunmayıb.</p>}
@@ -1659,6 +1659,7 @@ const portalStyles = {
     border: "1px solid rgba(232,199,102,0.3)", fontFamily: "inherit",
   },
   teacherEliteName: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: "#F3E8CE", letterSpacing: 0.2 },
+  teacherHint: { fontSize: 11.5, color: "#E8C766", opacity: 0.65, marginTop: 6, letterSpacing: 0.3 },
   teacherEliteBio: {
     fontSize: 12.5, opacity: 0.7, marginTop: 6, fontStyle: "normal", lineHeight: 1.4,
     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
