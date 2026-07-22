@@ -2810,7 +2810,29 @@ function AdminPanel() {
   );
 }
 
+function NotFoundPage() {
+  return (
+    <div style={{
+      minHeight: "100vh", background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)",
+      color: "#F7F1E6", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", padding: 20, textAlign: "center",
+    }}>
+      <img src={LOGO_URL} alt="Deutsch Akademie" style={{ width: 64, height: 64, borderRadius: "50%", marginBottom: 20 }} />
+      <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, margin: "0 0 8px", color: "#FF9F1C" }}>404</h1>
+      <p style={{ fontSize: 16, opacity: 0.75, marginBottom: 24 }}>Bu səhifə tapılmadı.</p>
+      <a href="/" style={{
+        background: "#FF9F1C", color: "#0A0A0C", textDecoration: "none", fontWeight: 700,
+        padding: "12px 28px", borderRadius: 8, fontSize: 14.5,
+      }}>Ana səhifəyə qayıt</a>
+    </div>
+  );
+}
+
 export default function App() {
-  const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
-  return isAdmin ? <AdminPanel /> : <InnerApp />;
+  const path = typeof window !== "undefined" ? window.location.pathname : "/";
+  const isAdmin = path.startsWith("/admin");
+  const isKnownPath = path === "/" || path === "" || isAdmin;
+  if (isAdmin) return <AdminPanel />;
+  if (!isKnownPath) return <NotFoundPage />;
+  return <InnerApp />;
 }
