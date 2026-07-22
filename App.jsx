@@ -2351,6 +2351,7 @@ const SECTION_THEME = {
   courses: { color: "#6FD19A", soft: "rgba(111,209,154,0.14)", label: "Kurslar" },
   contact: { color: "#E86C8C", soft: "rgba(232,108,140,0.14)", label: "Əlaqə" },
   quiz: { color: "#FFD580", soft: "rgba(255,213,128,0.14)", label: "Özünü Yoxla" },
+  premium: { color: "#E8C766", soft: "rgba(232,199,102,0.14)", label: "Profilim" },
 };
 
 function SectionIcon({ type, size = 24, color = "currentColor" }) {
