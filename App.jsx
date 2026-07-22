@@ -2289,19 +2289,6 @@ const portalStyles = {
     background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(247,241,230,0.25)", borderRadius: 8,
     color: "rgba(247,241,230,0.55)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
   },
-  modalOverlay: {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 50,
-    display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
-  },
-  modalBox: {
-    background: "#141416", border: "1px solid rgba(255,159,28,0.25)", borderRadius: 14,
-    padding: 28, maxWidth: 360, width: "100%", position: "relative",
-  },
-  modalClose: {
-    position: "absolute", top: 14, right: 14, background: "none", border: "none",
-    color: "rgba(245,239,224,0.5)", fontSize: 16, cursor: "pointer",
-  },
-  linkBtn: { background: "none", border: "none", color: "#FF9F1C", fontWeight: 700, cursor: "pointer", fontSize: 13, padding: 0 },
   authRequiredBox: {
     textAlign: "center", padding: "50px 20px", background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,159,28,0.2)", borderRadius: 14,
