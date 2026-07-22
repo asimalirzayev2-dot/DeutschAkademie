@@ -129,6 +129,14 @@ function InnerApp() {
   const [recoveryToken, setRecoveryToken] = useState(null);
 
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) localStorage.setItem("pendingRef", ref);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
       const params = new URLSearchParams(hash.replace("#", ""));
@@ -165,8 +173,11 @@ function InnerApp() {
       } else {
         // First login after email confirmation — profile wasn't created yet at signup time.
         const metaName = sess.user.user_metadata?.name || "";
+        let referredBy = null;
+        try { referredBy = localStorage.getItem("pendingRef") || null; } catch {}
         try {
-          await sbAuthInsert("profiles", sess.access_token, { id: sess.user.id, email: sess.user.email, name: metaName });
+          await sbAuthInsert("profiles", sess.access_token, { id: sess.user.id, email: sess.user.email, name: metaName, referred_by: referredBy });
+          try { localStorage.removeItem("pendingRef"); } catch {}
         } catch {}
         const rows2 = await sbAuth(`profiles?id=eq.${sess.user.id}&select=*`, sess.access_token);
         setProfile(rows2[0] || null);
@@ -192,7 +203,7 @@ function InnerApp() {
   }
 
   const isAdmin = !!profile?.is_admin;
-  const isPremium = isAdmin || !!profile?.is_premium;
+  const isPremium = isAdmin || (!!profile?.is_premium && (!profile?.premium_until || new Date(profile.premium_until) > new Date()));
 
   function todayStr() {
     return new Date().toISOString().slice(0, 10);
@@ -426,6 +437,7 @@ function InnerApp() {
       savedResultRef.current = true;
       sbInsert("test_results", {
         user_name: name || "Qonaq",
+        user_id: session?.user?.id || null,
         mode,
         level: mode === "level" ? selectedLevel : results.finalLevel,
         score: mode === "level" ? results.finalPct : null,
@@ -1412,6 +1424,111 @@ function PremiumPerks({ session, profile }) {
   );
 }
 
+function ProfileChart({ points }) {
+  if (!points || points.length < 2) return null;
+  const W = 320, H = 100, pad = 10;
+  const maxY = 100, minY = 0;
+  const stepX = (W - pad * 2) / (points.length - 1);
+  const coords = points.map((p, i) => {
+    const x = pad + i * stepX;
+    const y = H - pad - ((p - minY) / (maxY - minY)) * (H - pad * 2);
+    return `${x},${y}`;
+  });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ marginTop: 10 }}>
+      <polyline points={coords.join(" ")} fill="none" stroke="#2FBFA0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {coords.map((c, i) => {
+        const [x, y] = c.split(",");
+        return <circle key={i} cx={x} cy={y} r="3.5" fill="#2FBFA0" />;
+      })}
+    </svg>
+  );
+}
+
+function ProfileView({ session, profile, isAdmin, isPremium }) {
+  const [results, setResults] = useState(null);
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    if (!session) return;
+    sbAuth(`test_results?user_id=eq.${session.user.id}&mode=eq.level&select=score,created_at&order=created_at.asc&limit=30`, session.access_token)
+      .then(setResults).catch(() => setResults([]));
+    try {
+      const v = JSON.parse(localStorage.getItem("visitStreak") || "null");
+      if (v?.count) setStreak(v.count);
+    } catch {}
+  }, [session]);
+
+  const scores = (results || []).map((r) => r.score).filter((s) => s != null);
+  const testCount = results ? results.length : 0;
+  const bestScore = scores.length ? Math.max(...scores) : 0;
+
+  const badges = [
+    { id: "first", label: "İlk Addım", icon: "🎯", earned: testCount >= 1, desc: "İlk testini tamamladın" },
+    { id: "streak7", label: "7 Gün Ardıcıl", icon: "🔥", earned: streak >= 7, desc: "7 gün ardıcıl sayta girdin" },
+    { id: "five", label: "5 Test", icon: "📝", earned: testCount >= 5, desc: "5 test tamamladın" },
+    { id: "high", label: "Yüksək Bal", icon: "⭐", earned: bestScore >= 80, desc: "Bir testdə 80%+ topladın" },
+    { id: "perfect", label: "Mükəmməl", icon: "🏆", earned: bestScore >= 95, desc: "Bir testdə 95%+ topladın" },
+  ];
+
+  const referralLink = session ? `${window.location.origin}/?ref=${session.user.id}` : "";
+  const [copied, setCopied] = useState(false);
+  function copyReferral() {
+    navigator.clipboard?.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (!session) return <AuthRequired setAuthModal={() => {}} />;
+
+  return (
+    <section style={portalStyles.section}>
+      <SectionHeader type="premium" desc="Sənin irəliləyişin və nailiyyətlərin" />
+      <h2 style={portalStyles.h2}>Profilim</h2>
+
+      <div style={portalStyles.premiumPerkBox}>
+        <h3 style={portalStyles.premiumPerkTitle}>📈 İrəliləyiş Qrafiki</h3>
+        {scores.length >= 2 ? (
+          <>
+            <ProfileChart points={scores} />
+            <p style={{ fontSize: 12, opacity: 0.6, marginTop: 6 }}>Son {scores.length} imtahan nəticən (%)</p>
+          </>
+        ) : (
+          <p style={{ ...portalStyles.body, fontSize: 13.5 }}>Qrafik üçün ən azı 2 imtahan lazımdır — davam et!</p>
+        )}
+      </div>
+
+      <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16 }}>
+        <h3 style={portalStyles.premiumPerkTitle}>🏅 Nailiyyətlər</h3>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+          {badges.map((b) => (
+            <div key={b.id} style={{ ...portalStyles.badgeCard, opacity: b.earned ? 1 : 0.3 }} title={b.desc}>
+              <div style={{ fontSize: 22 }}>{b.icon}</div>
+              <div style={portalStyles.badgeLabel}>{b.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16 }}>
+        <h3 style={portalStyles.premiumPerkTitle}>🎁 Dostunu Dəvət Et</h3>
+        <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 12 }}>
+          Bu linki dostuna göndər — o qeydiyyatdan keçəndə sənə <b>3 gün pulsuz Premium</b> hədiyyə olunur!
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input readOnly value={referralLink} style={{ ...portalStyles.input, marginBottom: 0, fontSize: 12 }} />
+          <button onClick={copyReferral} style={{ ...portalStyles.primaryBtn, flexShrink: 0 }}>{copied ? "✓" : "Kopyala"}</button>
+        </div>
+        {isPremium && profile?.premium_until && (
+          <p style={{ fontSize: 12, opacity: 0.6, marginTop: 10 }}>
+            Dəvətlə qazanılan Premium bitmə tarixi: {new Date(profile.premium_until).toLocaleDateString("az-AZ")}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, setAuthModal }) {
   const [licenseKey, setLicenseKey] = useState("");
   const [status, setStatus] = useState(""); // "", "checking", "ok", "fail"
@@ -1665,12 +1782,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               Premium
             </button>
             {session ? (
-              <button
-                onClick={() => setShowLogoutConfirm(true)}
-                style={portalStyles.navLink}
-              >
-                {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""} · Çıxış
-              </button>
+              <>
+                <button onClick={() => setView("profile")}
+                  style={{ ...portalStyles.navLink, ...(view === "profile" ? portalStyles.navLinkActive : {}) }}>
+                  {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""}
+                </button>
+                <button onClick={() => setShowLogoutConfirm(true)} style={portalStyles.navLink}>Çıxış</button>
+              </>
             ) : (
               <button onClick={() => setAuthModal("login")} style={{ ...portalStyles.navLink, color: "#FF9F1C", fontWeight: 700 }}>
                 Daxil ol
@@ -1698,9 +1816,14 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
             ✦ Premium
           </button>
           {session ? (
-            <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }} style={portalStyles.mobileMenuItem}>
-              {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""} · Çıxış
-            </button>
+            <>
+              <button onClick={() => { setMobileMenuOpen(false); setView("profile"); }} style={portalStyles.mobileMenuItem}>
+                {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""}
+              </button>
+              <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }} style={portalStyles.mobileMenuItem}>
+                Çıxış
+              </button>
+            </>
           ) : (
             <button onClick={() => { setMobileMenuOpen(false); setAuthModal("login"); }} style={{ ...portalStyles.mobileMenuItem, color: "#FF9F1C", fontWeight: 700 }}>
               Daxil ol
@@ -1902,6 +2025,12 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           </Reveal>
         )}
 
+        {view === "profile" && (
+          <Reveal>
+          <ProfileView session={session} profile={profile} isAdmin={isAdmin} isPremium={isPremium} />
+          </Reveal>
+        )}
+
         <footer style={portalStyles.footer}>© 2026 Asim Alirzayev — Deutsch Akademie</footer>
       </div>
     </div>
@@ -1999,6 +2128,11 @@ const portalStyles = {
     background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)",
   },
   premiumPerkTitle: { fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, marginBottom: 8, marginTop: 0 },
+  badgeCard: {
+    width: 90, textAlign: "center", padding: "12px 8px", borderRadius: 8,
+    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)",
+  },
+  badgeLabel: { fontSize: 10.5, marginTop: 6, opacity: 0.85 },
   cardIcon: { fontSize: 24, marginBottom: 12 },
   bookCover: { width: "100%", display: "block", aspectRatio: "2/3", objectFit: "cover" },
   cardTitle: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, margin: "0 0 8px", position: "relative" },
