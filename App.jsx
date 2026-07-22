@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen } from "lucide-react";
+import { Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Crown, Bird } from "lucide-react";
 import emailjs from "@emailjs/browser";
 import { sb, sbInsert, adminLogin, sbAuth, sbAuthPatch, sbAuthInsert, signUp, verifyGumroadLicense, pdfUrl, resetPasswordRequest, updatePasswordWithToken, fetchOAuthUser, getGoogleLoginUrl } from "./supabase";
 
@@ -869,18 +869,6 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView 
         </div>
       )}
     </section>
-  );
-}
-
-function EagleIcon({ size = 26, color = "#0A0A0C" }) {
-  return (
-    <svg viewBox="0 0 64 64" width={size} height={size}>
-      <path
-        fill={color}
-        d="M14 34c2-8 8-14 16-16-2-2-3-4-3-6 4 1 7 3 9 6 6 1 11 5 13 10-3-1-5-1-7 0 4 2 7 5 8 9-3-1-6-1-8 1 2 3 3 6 2 10-2-2-4-3-6-3 0 3-1 6-3 8-1-3-3-5-6-6-3 3-7 5-11 5-1-3 0-6 2-8-4 0-8-2-10-5 3 0 6-1 8-3-4-1-7-4-9-8 2 0 4 0 5 1-1-1-1-2-0-3Z"
-      />
-      <path fill="#fff" opacity="0.85" d="M40 26l4 2-4 1 1-3Z" />
-    </svg>
   );
 }
 
@@ -1859,24 +1847,18 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       {/* Support bot */}
       <div style={portalStyles.botFabWrap}>
         {(isPremium || isAdmin) && (
-          <svg viewBox="0 0 60 30" style={portalStyles.laurelCrown}>
-            <g fill="none" stroke="#E8C766" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M28 26C20 24 12 18 10 8" />
-              <path d="M12 10l-3 1 1-3M14 15l-3 0 0-3M18 20l-3-1 0-3" />
-              <path d="M32 26c8-2 16-8 18-18" />
-              <path d="M48 10l3 1-1-3M46 15l3 0 0-3M42 20l3-1 0-3" />
-            </g>
-            <circle cx="30" cy="26" r="2.4" fill="#E8C766" />
-          </svg>
+          <div style={portalStyles.crownBadge}>
+            <Crown size={22} color="#E8C766" fill="#E8C766" style={{ filter: "drop-shadow(0 0 4px rgba(232,199,102,0.8))" }} />
+          </div>
         )}
         <button onClick={() => setBotOpen((v) => !v)} style={portalStyles.botFab}>
-          {botOpen ? "✕" : <EagleIcon size={26} color="#0A0A0C" />}
+          {botOpen ? "✕" : <Bird size={26} color="#fff" strokeWidth={2.2} />}
         </button>
       </div>
       {botOpen && (
         <div style={portalStyles.botPanel}>
           <div style={portalStyles.botHeader}>
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}><EagleIcon size={18} color="#FF9F1C" /> Dəstək</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Bird size={18} color="#FF9F1C" /> Dəstək</span>
             <button onClick={() => { setBotOpen(false); setBotQuestion(null); }} style={portalStyles.botClose}>✕</button>
           </div>
           <div style={portalStyles.botBody}>
@@ -2245,9 +2227,9 @@ const portalStyles = {
     boxShadow: "0 4px 18px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
   },
   botFabWrap: { position: "fixed", bottom: 22, right: 22, zIndex: 40, width: 54, height: 54 },
-  laurelCrown: {
-    position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", width: 58, height: 26,
-    pointerEvents: "none", filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.5))",
+  crownBadge: {
+    position: "absolute", top: -14, left: "50%", transform: "translateX(-50%) rotate(0deg)",
+    pointerEvents: "none", zIndex: 1,
   },
   botPanel: {
     position: "fixed", bottom: 86, right: 22, zIndex: 40, width: 300, maxHeight: "60vh", overflowY: "auto",
