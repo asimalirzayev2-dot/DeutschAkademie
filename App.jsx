@@ -1513,7 +1513,7 @@ function ProfileView({ session, profile, isAdmin, isPremium }) {
       <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16 }}>
         <h3 style={portalStyles.premiumPerkTitle}>🎁 Dostunu Dəvət Et</h3>
         <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 12 }}>
-          Bu linki dostuna göndər — o qeydiyyatdan keçəndə sənə <b>3 gün pulsuz Premium</b> hədiyyə olunur!
+          Bu linki dostlarına göndər — <b>3 nəfər</b> qeydiyyatdan keçəndə <b>10 gün</b>, <b>5 nəfər</b> qeydiyyatdan keçəndə <b>15 gün pulsuz Premium</b> qazanırsan!
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <input readOnly value={referralLink} style={{ ...portalStyles.input, marginBottom: 0, fontSize: 12 }} />
