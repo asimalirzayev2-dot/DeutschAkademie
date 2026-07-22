@@ -130,6 +130,15 @@ function InnerApp() {
 
   useEffect(() => {
     try {
+      if (!sessionStorage.getItem("visitLogged")) {
+        sessionStorage.setItem("visitLogged", "1");
+        sbInsert("page_visits", {}).catch(() => {});
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get("ref");
       if (ref) localStorage.setItem("pendingRef", ref);
@@ -906,6 +915,53 @@ function LevelIcon({ level, size = 15, color = "currentColor" }) {
     default:
       return null;
   }
+}
+
+function ContactForm() {
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  function handleSend() {
+    if (!name.trim() || !message.trim()) return;
+    setSending(true);
+    notifyTeacher({
+      teacherEmail: "asimalirzayev2@gmail.com",
+      teacherName: "Asim",
+      studentName: `[Bizə Yazın] ${name.trim()}`,
+      studentPhone: "—",
+      studentLevel: message.trim(),
+    });
+    setSending(false);
+    setSent(true);
+  }
+
+  return (
+    <div style={portalStyles.premiumPerkBox}>
+      <h3 style={portalStyles.premiumPerkTitle}>✉️ Bizə Yazın</h3>
+      {sent ? (
+        <p style={{ color: "#00D9A3", fontSize: 13.5 }}>✓ Mesajın göndərildi, tezliklə cavab veriləcək!</p>
+      ) : (
+        <>
+          <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 12 }}>
+            Sualın, təklifin, ya da sadəcə demək istədiyin bir şey var? Aşağıya yaz, birbaşa bizə çatacaq.
+          </p>
+          <input placeholder="Adın" value={name} onChange={(e) => setName(e.target.value)} style={portalStyles.input} />
+          <textarea
+            placeholder="Mesajın..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={4}
+            style={{ ...portalStyles.input, resize: "vertical", fontFamily: "inherit" }}
+          />
+          <button onClick={handleSend} style={portalStyles.primaryBtn} disabled={sending}>
+            {sending ? "Göndərilir..." : "Göndər"}
+          </button>
+        </>
+      )}
+    </div>
+  );
 }
 
 function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacementTest }) {
@@ -1991,12 +2047,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <section style={portalStyles.section}>
             <SectionHeader type="contact" desc="Suallarınız üçün bizimlə əlaqə saxlayın" />
             <p style={{ ...portalStyles.body, marginBottom: 20 }}>Suallarınız üçün bizimlə əlaqə saxlaya bilərsiniz.</p>
-            <div style={{ display: "grid", gap: 10, maxWidth: 380 }}>
+            <div style={{ display: "grid", gap: 10, maxWidth: 380, marginBottom: 28 }}>
               <a href="https://wa.me/994605114975" target="_blank" rel="noopener noreferrer" style={portalStyles.contactLine}>💬 WhatsApp: +994 60 511 49 75</a>
               <a href="mailto:asimalirzayev2@gmail.com" style={portalStyles.contactLine}>📧 asimalirzayev2@gmail.com</a>
               <a href="https://instagram.com/alirza.asim" target="_blank" rel="noopener noreferrer" style={portalStyles.contactLine}>📷 @alirza.asim</a>
               <div style={portalStyles.contactLine}>📍 Trier, Deutschland</div>
             </div>
+            <ContactForm />
           </section>
           </Reveal>
         )}
@@ -2538,10 +2595,11 @@ function AdminPanel() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("results"); // results | registrations
+  const [tab, setTab] = useState("results"); // results | registrations | users | analytics
   const [results, setResults] = useState(null);
   const [registrations, setRegistrations] = useState(null);
   const [users, setUsers] = useState(null);
+  const [visits, setVisits] = useState(null);
   const [search, setSearch] = useState("");
 
   async function handleLogin(e) {
@@ -2577,6 +2635,9 @@ function AdminPanel() {
     sbAuth("profiles?select=*&order=created_at.desc&limit=500", token)
       .then(setUsers)
       .catch(() => setUsers([]));
+    sbAuth("page_visits?select=created_at&order=created_at.desc&limit=2000", token)
+      .then(setVisits)
+      .catch(() => setVisits([]));
   }, [token]);
 
   const styleA = {
@@ -2622,6 +2683,7 @@ function AdminPanel() {
           <button style={styleA.tabBtn(tab === "results")} onClick={() => setTab("results")}>Test Nəticələri ({results ? results.length : "..."})</button>
           <button style={styleA.tabBtn(tab === "registrations")} onClick={() => setTab("registrations")}>Kurs Qeydiyyatları ({registrations ? registrations.length : "..."})</button>
           <button style={styleA.tabBtn(tab === "users")} onClick={() => setTab("users")}>İstifadəçilər ({users ? users.length : "..."})</button>
+          <button style={styleA.tabBtn(tab === "analytics")} onClick={() => setTab("analytics")}>Analitika</button>
         </div>
 
         <input placeholder="Ad üzrə axtar..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...styleA.input, maxWidth: 300 }} />
@@ -2671,7 +2733,7 @@ function AdminPanel() {
                 ))}
               </tbody>
             </table>
-          ) : (
+          ) : tab === "users" ? (
             <table style={styleA.table}>
               <thead>
                 <tr>
@@ -2694,6 +2756,53 @@ function AdminPanel() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            (() => {
+              const todayStr = new Date().toISOString().slice(0, 10);
+              const visitsToday = (visits || []).filter((v) => v.created_at?.slice(0, 10) === todayStr).length;
+              const usersToday = (users || []).filter((u) => u.created_at?.slice(0, 10) === todayStr).length;
+              const last7 = Array.from({ length: 7 }).map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (6 - i));
+                const key = d.toISOString().slice(0, 10);
+                return {
+                  day: d.toLocaleDateString("az-AZ", { weekday: "short" }),
+                  visits: (visits || []).filter((v) => v.created_at?.slice(0, 10) === key).length,
+                  signups: (users || []).filter((u) => u.created_at?.slice(0, 10) === key).length,
+                };
+              });
+              return (
+                <div>
+                  <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+                    <div style={{ background: "rgba(255,159,28,0.08)", border: "1px solid rgba(255,159,28,0.3)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
+                      <div style={{ fontSize: 26, fontWeight: 700 }}>{visitsToday}</div>
+                      <div style={{ fontSize: 12.5, opacity: 0.7 }}>Bugünkü ziyarət</div>
+                    </div>
+                    <div style={{ background: "rgba(47,191,160,0.08)", border: "1px solid rgba(47,191,160,0.3)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
+                      <div style={{ fontSize: 26, fontWeight: 700 }}>{usersToday}</div>
+                      <div style={{ fontSize: 12.5, opacity: 0.7 }}>Bugünkü qeydiyyat</div>
+                    </div>
+                    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,239,224,0.15)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
+                      <div style={{ fontSize: 26, fontWeight: 700 }}>{visits ? visits.length : "..."}</div>
+                      <div style={{ fontSize: 12.5, opacity: 0.7 }}>Ümumi ziyarət (son 2000)</div>
+                    </div>
+                  </div>
+                  <h3 style={{ fontSize: 15, marginBottom: 12, opacity: 0.85 }}>Son 7 gün</h3>
+                  <table style={styleA.table}>
+                    <thead><tr><th style={styleA.th}>Gün</th><th style={styleA.th}>Ziyarət</th><th style={styleA.th}>Qeydiyyat</th></tr></thead>
+                    <tbody>
+                      {last7.map((d, i) => (
+                        <tr key={i}>
+                          <td style={styleA.td}>{d.day}</td>
+                          <td style={styleA.td}>{d.visits}</td>
+                          <td style={styleA.td}>{d.signups}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()
           )}
         </div>
       </div>
