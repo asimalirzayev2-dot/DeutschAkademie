@@ -861,6 +861,69 @@ function WordOfDay() {
   );
 }
 
+function AdlerChat({ chatInput, setChatInput, chatMessages, setChatMessages, chatLoading, setChatLoading }) {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [chatMessages]);
+
+  async function handleSend() {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    const newMessages = [...chatMessages, { role: "user", text }];
+    setChatMessages(newMessages);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const res = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
+      setChatMessages([...newMessages, { role: "adler", text: data.reply }]);
+    } catch (err) {
+      setChatMessages([...newMessages, { role: "adler", text: "Üzr istəyirəm, cavab verə bilmədim — bir az sonra yenidən sına." }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: 360 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", marginBottom: 10 }}>
+        {chatMessages.length === 0 && (
+          <p style={{ fontSize: 12.5, opacity: 0.6, margin: 0 }}>
+            Salam! Mən Adler-əm 🦅 — alman dili haqqında nə soruşsan, kömək etməyə çalışaram. Nədən danışaq?
+          </p>
+        )}
+        {chatMessages.map((m, i) => (
+          <div key={i} style={{
+            marginBottom: 10, padding: "8px 12px", borderRadius: 8, fontSize: 13, lineHeight: 1.5,
+            background: m.role === "user" ? "rgba(255,159,28,0.1)" : "rgba(232,199,102,0.08)",
+            marginLeft: m.role === "user" ? 20 : 0, marginRight: m.role === "user" ? 0 : 20,
+          }}>
+            {m.text}
+          </div>
+        ))}
+        {chatLoading && <p style={{ fontSize: 12.5, opacity: 0.5 }}>Adler yazır...</p>}
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+          placeholder="Sualını yaz..."
+          style={{ ...portalStyles.input, marginBottom: 0, flex: 1 }}
+        />
+        <button onClick={handleSend} disabled={chatLoading || !chatInput.trim()} style={{ ...portalStyles.primaryBtn, flexShrink: 0, padding: "10px 16px" }}>→</button>
+      </div>
+    </div>
+  );
+}
+
 function LessonVocab({ level, num }) {
   const [vocab, setVocab] = useState(null);
   useEffect(() => {
@@ -1488,59 +1551,6 @@ const TALK_TOPICS = [
   "Hobbilər və maraqlar", "Almaniyada yaşam", "Sərbəst mövzu",
 ];
 
-function SongPoemExplainer() {
-  const [input, setInput] = useState("");
-  const [reply, setReply] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleAsk() {
-    if (!input.trim() || loading) return;
-    setLoading(true);
-    setError("");
-    setReply("");
-    try {
-      const res = await fetch("/api/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
-      setReply(data.reply);
-    } catch (err) {
-      setError(err.message || "Bir xəta baş verdi, yenidən sına.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div style={portalStyles.premiumPerkBox}>
-      <h3 style={portalStyles.premiumPerkTitle}>🎵 Mahnı/Şeir İzahı (AI)</h3>
-      <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
-        Bir alman mahnısı, şeiri, atalar sözü və ya deyim eşitmisən? Adını (ya da qısa bir hissəsini) yaz, mövzusunu və mənasını izah edim — sözlərini təkrarlamadan.
-      </p>
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder='Məsələn: "99 Luftballons" nə haqqındadır?'
-        rows={3}
-        style={{ ...portalStyles.input, resize: "vertical", fontFamily: "inherit" }}
-      />
-      <button onClick={handleAsk} style={portalStyles.primaryBtn} disabled={loading || !input.trim()}>
-        {loading ? "Düşünürəm..." : "Soruş"}
-      </button>
-      {error && <p style={{ color: "#C97B6E", fontSize: 13, marginTop: 10 }}>{error}</p>}
-      {reply && (
-        <div style={{ marginTop: 14, padding: "14px 16px", background: "rgba(232,199,102,0.06)", border: "1px solid rgba(232,199,102,0.25)", borderRadius: 8, fontSize: 13.5, lineHeight: 1.7 }}>
-          {reply}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function PremiumPerks({ session, profile, onStart }) {
   const [topic, setTopic] = useState(null);
   const [sent, setSent] = useState(false);
@@ -1594,10 +1604,6 @@ function PremiumPerks({ session, profile, onStart }) {
           Bonus Testinə Başla →
         </button>
         <p style={{ fontSize: 11.5, opacity: 0.55, marginTop: 8 }}>Açılan səhifədə "✦ Premium Bonus Test" kartına bas.</p>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <SongPoemExplainer />
       </div>
     </>
   );
@@ -1834,6 +1840,9 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [botOpen, setBotOpen] = useState(false);
   const [botQuestion, setBotQuestion] = useState(null);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
   const glowRef = useRef(null);
   const [streak, setStreak] = useState(null);
 
@@ -2049,11 +2058,19 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       {botOpen && (
         <div style={portalStyles.botPanel}>
           <div style={portalStyles.botHeader}>
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Bird size={18} color="#FF9F1C" /> Dəstək</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Bird size={18} color="#FF9F1C" /> {(isPremium || isAdmin) ? "Adler" : "Dəstək"}
+            </span>
             <button onClick={() => { setBotOpen(false); setBotQuestion(null); }} style={portalStyles.botClose}>✕</button>
           </div>
           <div style={portalStyles.botBody}>
-            {botQuestion ? (
+            {(isPremium || isAdmin) ? (
+              <AdlerChat
+                chatInput={chatInput} setChatInput={setChatInput}
+                chatMessages={chatMessages} setChatMessages={setChatMessages}
+                chatLoading={chatLoading} setChatLoading={setChatLoading}
+              />
+            ) : botQuestion ? (
               <>
                 <button onClick={() => setBotQuestion(null)} style={portalStyles.botBack}>← Geri</button>
                 <p style={portalStyles.botAnswerQ}>{botQuestion.q}</p>
