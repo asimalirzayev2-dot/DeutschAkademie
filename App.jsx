@@ -336,7 +336,31 @@ function InnerApp() {
     setScreen("setup");
   }
 
+  async function buildBonusTest() {
+    const rows = await sb(`bonus_questions?level=eq.A1&select=id,category,passage,question,option_a,option_b,option_c,correct&limit=200`);
+    const letterToIdx = { A: 0, B: 1, C: 2 };
+    const pool = rows.map((r) => ({
+      id: r.id, level: "A1", topic: r.category, passage: r.passage || null, q: r.question,
+      options: [r.option_a, r.option_b, r.option_c],
+      correct: letterToIdx[r.correct] ?? 0,
+    }));
+    return shuffle(pool).map((q) => shuffleOptions(q));
+  }
+
   async function startTest() {
+    if (mode === "bonus") {
+      if (!isPremium) { setScreen("portal"); return; }
+      setLimitMsg("");
+      setAnswers({});
+      setOpenAnswers({});
+      setCurrent(0);
+      setTimeLeft(45 * 60);
+      setFinished(false);
+      const qs = await buildBonusTest();
+      setQuestions(qs);
+      setScreen("test");
+      return;
+    }
     const gate = mode === "level" ? canStartLevelTest() : canStartLevelCheck();
     if (!gate.ok) {
       if (gate.reason === "guest_used") setLimitMsg("Qonaq kimi yalnız 1 pulsuz test həll edə bilərsən. Davam etmək üçün qeydiyyatdan keç.");
@@ -363,7 +387,7 @@ function InnerApp() {
     clearTimeout(timerRef.current);
     setFinished(true);
     if (mode === "level") recordTestUsage();
-    else recordLevelCheckUsage();
+    else if (mode === "check") recordLevelCheckUsage();
   }
 
   const results = useMemo(() => {
@@ -520,6 +544,18 @@ function InnerApp() {
               <div style={{ fontSize: 20, fontWeight: 700 }}>🔍 Səviyyəni yoxla</div>
               <div style={{ fontSize: 12, opacity: 0.85 }}>A1→B2 qarışıq, 45 sual</div>
             </button>
+            <button
+              onClick={() => {
+                if (isPremium) { setMode("bonus"); setScreen("setup"); }
+                else { setScreen("portal"); }
+              }}
+              style={{ ...styles.card, ...styles.cardGold, gridColumn: "span 2", border: "1px solid rgba(232,199,102,0.6)", background: "linear-gradient(135deg, rgba(232,199,102,0.12), rgba(232,199,102,0.04))" }}
+            >
+              <div style={{ fontSize: 20, fontWeight: 700 }}>✦ Premium Bonus Test</div>
+              <div style={{ fontSize: 12, opacity: 0.85 }}>
+                {isPremium ? "A1 · 100 sual · Oxu, Dinləmə, Qrammatika, Lüğət" : "🔒 Premium üzvlərə xüsusi — bas, Premium səhifəsinə keç"}
+              </div>
+            </button>
           </div>
         </div>
       </Shell>
@@ -561,7 +597,10 @@ function InnerApp() {
   if (screen === "test" && !finished) {
     const q = questions[current];
     if (!q) return <Shell><p>Sual tapılmadı.</p></Shell>;
-    const theme = accentFor(q.level);
+    const theme = mode === "bonus"
+      ? { accent: "#E8C766", soft: "rgba(232,199,102,0.16)", tier: 4 }
+      : accentFor(q.level);
+    const CATEGORY_LABEL = { reading: "📖 Oxu Anlama", listening: "🎧 Dinləmə", grammar: "📐 Qrammatika", vocab: "📚 Lüğət" };
     return (
       <Shell wide>
         <style>{`
@@ -581,7 +620,29 @@ function InnerApp() {
 
         <div key={q.id} className="q-card" style={{ ...styles.questionCard, margin: "20px 0", borderColor: theme.soft, position: "relative", overflow: "hidden" }}>
           <EleganceOrnament tier={theme.tier} color={theme.accent} />
-          <div style={{ fontSize: 12, color: theme.accent, marginBottom: 10, fontWeight: 600, letterSpacing: 0.3, transition: "color .4s" }}>{q.level} · {q.topic}</div>
+          <div style={{ fontSize: 12, color: theme.accent, marginBottom: 10, fontWeight: 600, letterSpacing: 0.3, transition: "color .4s" }}>
+            {mode === "bonus" ? `✦ Premium Bonus · ${CATEGORY_LABEL[q.topic] || q.topic}` : `${q.level} · ${q.topic}`}
+          </div>
+          {q.passage && (
+            <div style={{
+              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)", borderRadius: 8,
+              padding: "14px 16px", marginBottom: 16, fontSize: 14, lineHeight: 1.7, opacity: 0.9,
+            }}>
+              {q.topic === "listening" && (
+                <button
+                  onClick={() => speakGerman(q.passage)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "6px 14px",
+                    borderRadius: 20, background: "rgba(232,199,102,0.15)", border: "1px solid rgba(232,199,102,0.4)",
+                    color: "#E8C766", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  ▶️ Dinlə
+                </button>
+              )}
+              <div>{q.passage}</div>
+            </div>
+          )}
           <p style={styles.question}>{q.q}</p>
 
           {q.isOpen ? (
@@ -1411,7 +1472,7 @@ const TALK_TOPICS = [
   "Hobbilər və maraqlar", "Almaniyada yaşam", "Sərbəst mövzu",
 ];
 
-function PremiumPerks({ session, profile }) {
+function PremiumPerks({ session, profile, onStart }) {
   const [topic, setTopic] = useState(null);
   const [sent, setSent] = useState(false);
 
@@ -1460,9 +1521,10 @@ function PremiumPerks({ session, profile }) {
         <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
           Yalnız Premium üzvlərə xüsusi — bütün mövzuları əhatə edən əlavə təkrar sualları.
         </p>
-        <a href="https://krtfwdhdxspljykdglzp.supabase.co/storage/v1/object/public/lesson-pdfs/A1_BONUS.pdf" target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.primaryBtn, display: "inline-block", textDecoration: "none" }}>
-          A1 Bonus Testini Endir
-        </a>
+        <button onClick={() => onStart && onStart()} style={{ ...portalStyles.primaryBtn, display: "inline-block" }}>
+          Bonus Testinə Başla →
+        </button>
+        <p style={{ fontSize: 11.5, opacity: 0.55, marginTop: 8 }}>Açılan səhifədə "✦ Premium Bonus Test" kartına bas.</p>
       </div>
     </>
   );
@@ -1573,7 +1635,7 @@ function ProfileView({ session, profile, isAdmin, isPremium }) {
   );
 }
 
-function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, setAuthModal }) {
+function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, setAuthModal, onStart }) {
   const [licenseKey, setLicenseKey] = useState("");
   const [status, setStatus] = useState(""); // "", "checking", "ok", "fail"
 
@@ -1607,10 +1669,10 @@ function PremiumView({ session, profile, isAdmin, isPremium, refreshProfile, set
       {isAdmin ? (
         <>
           <p style={{ ...portalStyles.body, textAlign: "center", marginBottom: 24 }}>Admin hesabı olaraq bütün funksiyalara limitsiz girişin var. 🎉</p>
-          <PremiumPerks session={session} profile={profile} />
+          <PremiumPerks session={session} profile={profile} onStart={onStart} />
         </>
       ) : isPremium ? (
-        <PremiumPerks session={session} profile={profile} />
+        <PremiumPerks session={session} profile={profile} onStart={onStart} />
       ) : (
         <>
           <table style={portalStyles.premiumTable}>
@@ -2060,7 +2122,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "premium" && (
           <Reveal>
-          <PremiumView session={session} profile={profile} isAdmin={isAdmin} isPremium={isPremium} refreshProfile={refreshProfile} setAuthModal={setAuthModal} />
+          <PremiumView session={session} profile={profile} isAdmin={isAdmin} isPremium={isPremium} refreshProfile={refreshProfile} setAuthModal={setAuthModal} onStart={onStart} />
           </Reveal>
         )}
 
