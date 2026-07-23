@@ -344,7 +344,8 @@ function InnerApp() {
       options: [r.option_a, r.option_b, r.option_c],
       correct: letterToIdx[r.correct] ?? 0,
     }));
-    return shuffle(pool).map((q) => shuffleOptions(q));
+    const picked = shuffle(pool).slice(0, 25);
+    return picked.map((q) => shuffleOptions(q));
   }
 
   async function startTest() {
@@ -354,7 +355,7 @@ function InnerApp() {
       setAnswers({});
       setOpenAnswers({});
       setCurrent(0);
-      setTimeLeft(45 * 60);
+      setTimeLeft(25 * 60);
       setFinished(false);
       const qs = await buildBonusTest();
       setQuestions(qs);
@@ -485,10 +486,20 @@ function InnerApp() {
           studentLevel: `Səviyyəni Yoxla nəticəsi: ${results.finalLevel}`,
         });
         setPlacementTeacher(null);
+      } else if (profile?.assigned_teacher_email) {
+        const modeLabel = mode === "level" ? `${selectedLevel} səviyyə imtahanı` : mode === "check" ? "Səviyyəni Yoxla" : "Bonus Test";
+        const scoreLabel = mode === "level" ? `${results.finalPct}%` : mode === "check" ? results.finalLevel : `${results.levelStats?.A1?.pct ?? "—"}%`;
+        notifyTeacher({
+          teacherEmail: profile.assigned_teacher_email,
+          teacherName: profile.assigned_teacher_name || "Müəllim",
+          studentName: profile?.name || name || "Tələbə",
+          studentPhone: "—",
+          studentLevel: `${modeLabel} nəticəsi: ${scoreLabel}`,
+        });
       }
     }
     if (!finished) savedResultRef.current = false;
-  }, [finished, results]);
+  }, [finished, results, profile]);
 
   /* ---------------- SCREENS ---------------- */
 
@@ -1025,7 +1036,7 @@ function ContactForm() {
   );
 }
 
-function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacementTest }) {
+function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacementTest, session, refreshProfile }) {
   const [teachers, setTeachers] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
@@ -1153,6 +1164,11 @@ function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacemen
               teacherEmail: regForm.teacherEmail, teacherName: regForm.teacher,
               studentName: regForm.name, studentPhone: regForm.phone, studentLevel: regForm.course,
             });
+            if (session) {
+              sbAuthPatch(`profiles?id=eq.${session.user.id}`, session.access_token, {
+                assigned_teacher_email: regForm.teacherEmail, assigned_teacher_name: regForm.teacher,
+              }).then(() => refreshProfile && refreshProfile(session)).catch(() => {});
+            }
             if (regForm.course !== "A1" && onStartPlacementTest) {
               onStartPlacementTest(regForm.teacherEmail, regForm.teacher);
             } else {
@@ -1519,7 +1535,7 @@ function PremiumPerks({ session, profile, onStart }) {
       <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16 }}>
         <h3 style={portalStyles.premiumPerkTitle}>📘 Bonus Təkrar Testləri</h3>
         <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
-          Yalnız Premium üzvlərə xüsusi — bütün mövzuları əhatə edən əlavə təkrar sualları.
+          Yalnız Premium üzvlərə xüsusi — 100 sualdan ibarət bank, hər cəhddə 25 fərqli sual (25 dəqiqə).
         </p>
         <button onClick={() => onStart && onStart()} style={{ ...portalStyles.primaryBtn, display: "inline-block" }}>
           Bonus Testinə Başla →
@@ -2100,7 +2116,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "courses" && (session ? (
           <Reveal>
-          <CoursesView regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} onStartPlacementTest={onStartPlacementTest} />
+          <CoursesView regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} onStartPlacementTest={onStartPlacementTest} session={session} refreshProfile={refreshProfile} />
           </Reveal>
         ) : <AuthRequired setAuthModal={setAuthModal} />)}
 
