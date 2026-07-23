@@ -1488,6 +1488,59 @@ const TALK_TOPICS = [
   "Hobbilər və maraqlar", "Almaniyada yaşam", "Sərbəst mövzu",
 ];
 
+function SongPoemExplainer() {
+  const [input, setInput] = useState("");
+  const [reply, setReply] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleAsk() {
+    if (!input.trim() || loading) return;
+    setLoading(true);
+    setError("");
+    setReply("");
+    try {
+      const res = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
+      setReply(data.reply);
+    } catch (err) {
+      setError(err.message || "Bir xəta baş verdi, yenidən sına.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={portalStyles.premiumPerkBox}>
+      <h3 style={portalStyles.premiumPerkTitle}>🎵 Mahnı/Şeir İzahı (AI)</h3>
+      <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
+        Bir alman mahnısı, şeiri, atalar sözü və ya deyim eşitmisən? Adını (ya da qısa bir hissəsini) yaz, mövzusunu və mənasını izah edim — sözlərini təkrarlamadan.
+      </p>
+      <textarea
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder='Məsələn: "99 Luftballons" nə haqqındadır?'
+        rows={3}
+        style={{ ...portalStyles.input, resize: "vertical", fontFamily: "inherit" }}
+      />
+      <button onClick={handleAsk} style={portalStyles.primaryBtn} disabled={loading || !input.trim()}>
+        {loading ? "Düşünürəm..." : "Soruş"}
+      </button>
+      {error && <p style={{ color: "#C97B6E", fontSize: 13, marginTop: 10 }}>{error}</p>}
+      {reply && (
+        <div style={{ marginTop: 14, padding: "14px 16px", background: "rgba(232,199,102,0.06)", border: "1px solid rgba(232,199,102,0.25)", borderRadius: 8, fontSize: 13.5, lineHeight: 1.7 }}>
+          {reply}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PremiumPerks({ session, profile, onStart }) {
   const [topic, setTopic] = useState(null);
   const [sent, setSent] = useState(false);
@@ -1541,6 +1594,10 @@ function PremiumPerks({ session, profile, onStart }) {
           Bonus Testinə Başla →
         </button>
         <p style={{ fontSize: 11.5, opacity: 0.55, marginTop: 8 }}>Açılan səhifədə "✦ Premium Bonus Test" kartına bas.</p>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <SongPoemExplainer />
       </div>
     </>
   );
