@@ -937,7 +937,12 @@ function LessonPathView({ session, profile }) {
   const [shared, setShared] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
-  const T = { bg: "#F4FBF9", card: "#FFFFFF", border: "rgba(47,191,160,0.25)", accent: "#1F9E85", accentSoft: "rgba(47,191,160,0.12)", text: "#0F3A32", textSoft: "rgba(15,58,50,0.65)" };
+  const T = {
+    bg: "#191510", card: "rgba(255,255,255,0.035)", border: "rgba(47,191,160,0.28)",
+    accent: "#2FBFA0", accentSoft: "rgba(47,191,160,0.14)",
+    warm: "#FF9F1C", warmSoft: "rgba(255,159,28,0.14)",
+    text: "#F7F1E6", textSoft: "rgba(247,241,230,0.65)",
+  };
 
   useEffect(() => {
     if (!session) return;
@@ -1121,14 +1126,14 @@ function LessonPathView({ session, profile }) {
             }}>
               <div style={{
                 width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                background: fullyPassed ? T.accent : T.accentSoft, color: fullyPassed ? "#fff" : T.accent, fontSize: 13, fontWeight: 700,
+                background: fullyPassed ? T.accent : T.warmSoft, color: fullyPassed ? "#fff" : T.warm, fontSize: 13, fontWeight: 700,
               }}>{fullyPassed ? "✓" : dayGroup.day}</div>
               <h4 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, color: T.text }}>Gün {dayGroup.day}</h4>
               {!unlocked && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 əvvəlki günü bitir</span>}
             </div>
 
             {unlocked && !fullyPassed && dayIdx > 0 && dailyAdvances >= 1 && !isDayFullyPassed(days[dayIdx - 1]?.lessons || []) === false && dailyAdvances >= 1 && dayGroup.lessons.every((l) => !progress[l.num]) && (
-              <div style={{ ...wrapStyle, background: T.accentSoft, marginBottom: 10, padding: "12px 16px" }}>
+              <div style={{ ...wrapStyle, background: T.warmSoft, marginBottom: 10, padding: "12px 16px" }}>
                 <p style={{ margin: 0, fontSize: 13.5, color: T.text }}>🌙 Bugünkü günlük məqsədin bitib, sabah davam et 🙂</p>
               </div>
             )}
