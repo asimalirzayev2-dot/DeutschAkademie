@@ -924,6 +924,39 @@ function AdlerChat({ chatInput, setChatInput, chatMessages, setChatMessages, cha
   );
 }
 
+function GrowingTree({ progress, completedDays, totalDays, T }) {
+  const trunkH = 40 + progress * 90;
+  const branches = Math.max(2, Math.round(progress * 9) + 2);
+  const baseX = 140, baseY = 190;
+  const leaves = [];
+  for (let i = 0; i < branches; i++) {
+    const t = i / Math.max(1, branches - 1);
+    const branchY = baseY - trunkH * (0.25 + 0.7 * t);
+    const side = i % 2 === 0 ? 1 : -1;
+    const length = 28 + t * 34;
+    const endX = baseX + side * length;
+    const endY = branchY - length * 0.4;
+    const color = i % 3 === 0 ? "#FF9F1C" : "#2FBFA0";
+    const r = 9 + t * 7;
+    leaves.push({ branchY, endX, endY, color, r });
+  }
+  return (
+    <div style={{ textAlign: "center", marginBottom: 18 }}>
+      <svg viewBox="0 0 280 210" width="100%" height="150" style={{ maxWidth: 260 }}>
+        <line x1="20" y1={baseY} x2="260" y2={baseY} stroke="rgba(247,241,230,0.15)" strokeWidth="2" />
+        <line x1={baseX} y1={baseY} x2={baseX} y2={baseY - trunkH} stroke="#8A6A4A" strokeWidth="8" strokeLinecap="round" />
+        {leaves.map((l, i) => (
+          <g key={i}>
+            <line x1={baseX} y1={l.branchY} x2={l.endX} y2={l.endY} stroke="#8A6A4A" strokeWidth="4" strokeLinecap="round" />
+            <circle cx={l.endX} cy={l.endY} r={l.r} fill={l.color} />
+          </g>
+        ))}
+      </svg>
+      <p style={{ fontSize: 12.5, color: T.textSoft, margin: "4px 0 0" }}>{completedDays} / {totalDays} gün tamamlandı</p>
+    </div>
+  );
+}
+
 function LessonPathView({ session, profile }) {
   const [level, setLevel] = useState("A1");
   const [lessons, setLessons] = useState([]);
@@ -1045,7 +1078,16 @@ function LessonPathView({ session, profile }) {
     setShared(true);
   }
 
-  const wrapStyle = { background: T.bg, borderRadius: 14, padding: "18px 16px", border: `1px solid ${T.border}` };
+  const wrapStyle = {
+    background: `
+      radial-gradient(ellipse 220px 100px at 15% 10%, rgba(47,191,160,0.16), transparent 70%),
+      radial-gradient(ellipse 200px 90px at 85% 25%, rgba(255,159,28,0.14), transparent 70%),
+      radial-gradient(ellipse 180px 80px at 20% 70%, rgba(255,159,28,0.10), transparent 70%),
+      radial-gradient(ellipse 240px 110px at 80% 85%, rgba(47,191,160,0.13), transparent 70%),
+      ${T.bg}
+    `,
+    borderRadius: 14, padding: "18px 16px", border: `1px solid ${T.border}`,
+  };
   const btnPrimary = { background: T.accent, color: "#fff", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer" };
   const btnSecondary = { background: "#fff", color: T.accent, border: `1px solid ${T.accent}`, borderRadius: 8, padding: "10px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer" };
 
@@ -1102,8 +1144,14 @@ function LessonPathView({ session, profile }) {
   }
 
   // Day-grouped lesson list screen
+  const completedDays = days.filter((d) => isDayFullyPassed(d.lessons)).length;
+  const totalDays = days.length || 1;
+  const treeProgress = Math.min(1, completedDays / totalDays);
+
   return (
     <div style={wrapStyle}>
+      <GrowingTree progress={treeProgress} completedDays={completedDays} totalDays={totalDays} T={T} />
+
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {LEVELS.map((lvl) => (
           <button key={lvl} onClick={() => setLevel(lvl)}
