@@ -924,6 +924,204 @@ function AdlerChat({ chatInput, setChatInput, chatMessages, setChatMessages, cha
   );
 }
 
+function LessonPathView({ session, profile }) {
+  const [level, setLevel] = useState("A1");
+  const [lessons, setLessons] = useState([]);
+  const [progress, setProgress] = useState({});
+  const [dailyCount, setDailyCount] = useState(0);
+  const [openLesson, setOpenLesson] = useState(null);
+  const [quizQs, setQuizQs] = useState(null);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizResult, setQuizResult] = useState(null);
+  const [shared, setShared] = useState(false);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    if (!session) return;
+    sb(`lessons?level=eq.${level}&select=level,num,title,content`)
+      .then((rows) => setLessons(rows.sort((a, b) => parseInt(a.num) - parseInt(b.num))))
+      .catch(() => setLessons([]));
+    sbAuth(`user_lesson_progress?user_id=eq.${session.user.id}&level=eq.${level}&select=lesson_num,passed,best_score`, session.access_token)
+      .then((rows) => {
+        const map = {};
+        rows.forEach((r) => { map[r.lesson_num] = r; });
+        setProgress(map);
+      }).catch(() => setProgress({}));
+    sbAuth(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}&select=lessons_completed`, session.access_token)
+      .then((rows) => setDailyCount(rows[0]?.lessons_completed || 0))
+      .catch(() => setDailyCount(0));
+  }, [level, session]);
+
+  if (!session) return <AuthRequired setAuthModal={() => {}} />;
+
+  function isUnlocked(index) {
+    if (index === 0) return true;
+    const prevNum = lessons[index - 1]?.num;
+    return !!progress[prevNum]?.passed;
+  }
+
+  async function startQuiz(lessonNum) {
+    if (dailyCount >= 3 && !progress[lessonNum]?.passed) return; // daily cap, unless retaking an already-passed lesson
+    const rows = await sb(`lesson_questions?level=eq.${level}&lesson_num=eq.${lessonNum}&select=id,category,question,option_a,option_b,option_c,correct&limit=100`);
+    const letterToIdx = { A: 0, B: 1, C: 2 };
+    const pool = rows.map((r) => ({
+      id: r.id, q: r.question, options: [r.option_a, r.option_b, r.option_c],
+      correct: letterToIdx[r.correct] ?? 0,
+    }));
+    const picked = shuffle(pool).slice(0, 20).map((q) => shuffleOptions(q));
+    setQuizQs({ lessonNum, questions: picked });
+    setQuizAnswers({});
+    setQuizIdx(0);
+    setQuizResult(null);
+    setShared(false);
+  }
+
+  async function finishQuiz() {
+    const { lessonNum, questions } = quizQs;
+    let correctCount = 0;
+    questions.forEach((q, i) => { if (quizAnswers[i] === q.correct) correctCount++; });
+    const pct = Math.round((correctCount / questions.length) * 100);
+    const passed = pct >= 75;
+    const wasAlreadyPassed = !!progress[lessonNum]?.passed;
+
+    await sbAuthInsert("user_lesson_progress", session.access_token, {
+      user_id: session.user.id, level, lesson_num: lessonNum,
+      passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0),
+      attempts: (progress[lessonNum]?.attempts || 0) + 1,
+    }).catch(() => {
+      sbAuthPatch(`user_lesson_progress?user_id=eq.${session.user.id}&level=eq.${level}&lesson_num=eq.${lessonNum}`, session.access_token, {
+        passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0),
+        attempts: (progress[lessonNum]?.attempts || 0) + 1,
+      }).catch(() => {});
+    });
+
+    if (passed && !wasAlreadyPassed) {
+      const newCount = dailyCount + 1;
+      setDailyCount(newCount);
+      sbAuthInsert("user_daily_lessons", session.access_token, { user_id: session.user.id, lesson_date: today, lessons_completed: newCount })
+        .catch(() => {
+          sbAuthPatch(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}`, session.access_token, { lessons_completed: newCount }).catch(() => {});
+        });
+    }
+
+    setProgress({ ...progress, [lessonNum]: { passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0) } });
+    setQuizResult({ pct, passed, lessonNum });
+  }
+
+  function shareWithTeacher() {
+    if (!profile?.assigned_teacher_email || !quizResult) return;
+    notifyTeacher({
+      teacherEmail: profile.assigned_teacher_email, teacherName: profile.assigned_teacher_name || "Müəllim",
+      studentName: profile?.name || "Tələbə", studentPhone: "—",
+      studentLevel: `Dərs ${quizResult.lessonNum} nəticəsi: ${quizResult.pct}%`,
+    });
+    setShared(true);
+  }
+
+  // Quiz-taking screen
+  if (quizQs && !quizResult) {
+    const q = quizQs.questions[quizIdx];
+    return (
+      <div style={portalStyles.premiumPerkBox}>
+        <p style={{ fontSize: 12.5, opacity: 0.6, marginBottom: 8 }}>Sual {quizIdx + 1}/{quizQs.questions.length}</p>
+        <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{q.q}</p>
+        <div style={{ display: "grid", gap: 8 }}>
+          {q.options.map((opt, i) => (
+            <button key={i} onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: i })}
+              style={{ ...portalStyles.pill, textAlign: "left", ...(quizAnswers[quizIdx] === i ? portalStyles.pillActive : {}) }}>
+              {opt}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+          <button onClick={() => setQuizIdx(Math.max(0, quizIdx - 1))} disabled={quizIdx === 0} style={portalStyles.secondaryBtnLight}>← Geri</button>
+          {quizIdx < quizQs.questions.length - 1 ? (
+            <button onClick={() => setQuizIdx(quizIdx + 1)} style={portalStyles.primaryBtn}>İrəli →</button>
+          ) : (
+            <button onClick={finishQuiz} style={portalStyles.primaryBtn}>Bitir</button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Quiz result screen
+  if (quizResult) {
+    return (
+      <div style={portalStyles.premiumPerkBox}>
+        <h3 style={portalStyles.premiumPerkTitle}>{quizResult.passed ? "✓ Keçdin!" : "Təkrar Lazımdır"}</h3>
+        <p style={{ fontSize: 28, fontWeight: 700, color: quizResult.passed ? "#00D9A3" : "#C97B6E" }}>{quizResult.pct}%</p>
+        <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
+          {quizResult.passed ? "Növbəti dərsə keçə bilərsən." : "75% və yuxarı lazımdır — dərsi bir daha nəzərdən keçirib yenidən sına."}
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => { setQuizQs(null); setQuizResult(null); }} style={portalStyles.primaryBtn}>Davam Et</button>
+          {profile?.assigned_teacher_email && !shared && (
+            <button onClick={shareWithTeacher} style={portalStyles.secondaryBtnLight}>Müəlliminlə Paylaş</button>
+          )}
+          {shared && <span style={{ fontSize: 12.5, color: "#00D9A3", alignSelf: "center" }}>✓ Paylaşıldı</span>}
+        </div>
+      </div>
+    );
+  }
+
+  // Lesson list screen
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        {LEVELS.map((lvl) => (
+          <button key={lvl} onClick={() => setLevel(lvl)} style={{ ...portalStyles.pill, ...(level === lvl ? portalStyles.pillActive : {}) }}>{lvl}</button>
+        ))}
+      </div>
+
+      {dailyCount >= 3 && (
+        <div style={{ ...portalStyles.premiumPerkBox, marginBottom: 16, textAlign: "center", background: "rgba(232,199,102,0.06)" }}>
+          <p style={{ margin: 0, fontSize: 14 }}>🌙 Bu gün yaxşı çalışdın dostum, istirahət et 🙂</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.6 }}>Sabah yeni dərslərə davam edə bilərsən.</p>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gap: 10 }}>
+        {lessons.map((l, i) => {
+          const unlocked = isUnlocked(i);
+          const lessonProgress = progress[l.num];
+          const isOpen = openLesson === l.num;
+          const canQuiz = unlocked && (dailyCount < 3 || lessonProgress?.passed);
+          return (
+            <div key={l.num} style={{ ...portalStyles.lessonCard, opacity: unlocked ? 1 : 0.45 }}>
+              <button
+                onClick={() => unlocked && setOpenLesson(isOpen ? null : l.num)}
+                style={portalStyles.lessonHeader}
+                disabled={!unlocked}
+              >
+                <span>{unlocked ? (lessonProgress?.passed ? "✓ " : "") : "🔒 "}{l.num}. {l.title}</span>
+                {unlocked && <ChevronRight size={16} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }} />}
+              </button>
+              {isOpen && unlocked && (
+                <div style={portalStyles.lessonBodyWrap}>
+                  <pre style={portalStyles.lessonBody}>{l.content}</pre>
+                  {lessonProgress?.best_score != null && (
+                    <p style={{ fontSize: 12, opacity: 0.6, margin: "0 16px 10px" }}>Ən yaxşı nəticən: {lessonProgress.best_score}%</p>
+                  )}
+                  {canQuiz ? (
+                    <button onClick={() => startQuiz(l.num)} style={{ ...portalStyles.primaryBtn, margin: "0 16px 16px" }}>
+                      {lessonProgress?.passed ? "Yenidən Sına" : "Hazıram, Test Et"}
+                    </button>
+                  ) : (
+                    <p style={{ fontSize: 12.5, opacity: 0.55, margin: "0 16px 16px" }}>Bugünkü dərs limitin bitib — sabah davam et.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function LessonVocab({ level, num }) {
   const [vocab, setVocab] = useState(null);
   useEffect(() => {
@@ -949,7 +1147,8 @@ function LessonVocab({ level, num }) {
   );
 }
 
-function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView }) {
+function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView, session, profile }) {
+  const [subTab, setSubTab] = useState("path"); // path | browse
   const [level, setLevel] = useState("A1");
   const [openTopic, setOpenTopic] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -965,6 +1164,15 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView 
   return (
     <section style={portalStyles.section}>
       <SectionHeader type="lessons" desc="Səviyyəyə görə qrammatika izahları" />
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        <button onClick={() => setSubTab("path")} style={{ ...portalStyles.pill, ...(subTab === "path" ? portalStyles.pillActive : {}) }}>📚 Dərs Yolu</button>
+        <button onClick={() => setSubTab("browse")} style={{ ...portalStyles.pill, ...(subTab === "browse" ? portalStyles.pillActive : {}) }}>📖 Sərbəst Baxış</button>
+      </div>
+
+      {subTab === "path" && <LessonPathView session={session} profile={profile} />}
+
+      {subTab === "browse" && (
+      <>
       <p style={{ ...portalStyles.body, marginBottom: 20 }}>Səviyyə seç, mövzuya klikləyib izahı aç.</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         {LEVELS.map((lvl) => (
@@ -1011,6 +1219,8 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView 
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </section>
   );
@@ -1633,6 +1843,7 @@ function ProfileChart({ points }) {
 function ProfileView({ session, profile, isAdmin, isPremium }) {
   const [results, setResults] = useState(null);
   const [streak, setStreak] = useState(0);
+  const [teacherWhatsapp, setTeacherWhatsapp] = useState(null);
 
   useEffect(() => {
     if (!session) return;
@@ -1642,7 +1853,12 @@ function ProfileView({ session, profile, isAdmin, isPremium }) {
       const v = JSON.parse(localStorage.getItem("visitStreak") || "null");
       if (v?.count) setStreak(v.count);
     } catch {}
-  }, [session]);
+    if (profile?.assigned_teacher_email) {
+      sb(`teachers?email=eq.${encodeURIComponent(profile.assigned_teacher_email)}&select=whatsapp_group_link&limit=1`)
+        .then((rows) => setTeacherWhatsapp(rows[0]?.whatsapp_group_link || null))
+        .catch(() => setTeacherWhatsapp(null));
+    }
+  }, [session, profile]);
 
   const scores = (results || []).map((r) => r.score).filter((s) => s != null);
   const testCount = results ? results.length : 0;
@@ -1709,6 +1925,30 @@ function ProfileView({ session, profile, isAdmin, isPremium }) {
             Dəvətlə qazanılan Premium bitmə tarixi: {new Date(profile.premium_until).toLocaleDateString("az-AZ")}
           </p>
         )}
+      </div>
+
+      {teacherWhatsapp && (
+        <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16 }}>
+          <h3 style={portalStyles.premiumPerkTitle}>💬 Müəlliminin WhatsApp Qrupu</h3>
+          <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 12 }}>
+            Müəllimin sənin üçün bir WhatsApp qrupu paylaşıb — istəsən qoşula bilərsən.
+          </p>
+          <a href={teacherWhatsapp} target="_blank" rel="noopener noreferrer" style={{ ...portalStyles.primaryBtn, display: "inline-block", textDecoration: "none" }}>
+            Qrupa Qoşul →
+          </a>
+        </div>
+      )}
+
+      <div style={{ ...portalStyles.premiumPerkBox, marginTop: 16, textAlign: "center" }}>
+        <h3 style={portalStyles.premiumPerkTitle}>📱 Portalı Paylaş</h3>
+        <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 12 }}>
+          Bu QR kodu skan edərək dostların birbaşa saytımıza keçid ala bilər.
+        </p>
+        <img
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent("https://deutschakademie.online")}`}
+          alt="QR kod"
+          style={{ width: 160, height: 160, borderRadius: 8, background: "#fff", padding: 8 }}
+        />
       </div>
     </section>
   );
@@ -2159,7 +2399,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           </>
         )}
 
-        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "dictionary" && (session ? <Reveal><DictionaryView /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
