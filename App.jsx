@@ -928,7 +928,7 @@ function LessonPathView({ session, profile }) {
   const [level, setLevel] = useState("A1");
   const [lessons, setLessons] = useState([]);
   const [progress, setProgress] = useState({});
-  const [dailyCount, setDailyCount] = useState(0);
+  const [dailyAdvances, setDailyAdvances] = useState(0);
   const [openLesson, setOpenLesson] = useState(null);
   const [quizQs, setQuizQs] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
@@ -937,10 +937,11 @@ function LessonPathView({ session, profile }) {
   const [shared, setShared] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
+  const T = { bg: "#F4FBF9", card: "#FFFFFF", border: "rgba(47,191,160,0.25)", accent: "#1F9E85", accentSoft: "rgba(47,191,160,0.12)", text: "#0F3A32", textSoft: "rgba(15,58,50,0.65)" };
 
   useEffect(() => {
     if (!session) return;
-    sb(`lessons?level=eq.${level}&select=level,num,title,content`)
+    sb(`lessons?level=eq.${level}&select=level,num,title,content,day_number`)
       .then((rows) => setLessons(rows.sort((a, b) => parseInt(a.num) - parseInt(b.num))))
       .catch(() => setLessons([]));
     sbAuth(`user_lesson_progress?user_id=eq.${session.user.id}&level=eq.${level}&select=lesson_num,passed,best_score`, session.access_token)
@@ -950,20 +951,31 @@ function LessonPathView({ session, profile }) {
         setProgress(map);
       }).catch(() => setProgress({}));
     sbAuth(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}&select=lessons_completed`, session.access_token)
-      .then((rows) => setDailyCount(rows[0]?.lessons_completed || 0))
-      .catch(() => setDailyCount(0));
+      .then((rows) => setDailyAdvances(rows[0]?.lessons_completed || 0))
+      .catch(() => setDailyAdvances(0));
   }, [level, session]);
 
   if (!session) return <AuthRequired setAuthModal={() => {}} />;
 
-  function isUnlocked(index) {
-    if (index === 0) return true;
-    const prevNum = lessons[index - 1]?.num;
-    return !!progress[prevNum]?.passed;
+  const days = (() => {
+    const map = {};
+    lessons.forEach((l) => {
+      const d = l.day_number || 0;
+      if (!map[d]) map[d] = [];
+      map[d].push(l);
+    });
+    return Object.keys(map).map(Number).sort((a, b) => a - b).map((d) => ({ day: d, lessons: map[d] }));
+  })();
+
+  function isDayFullyPassed(dayLessons) {
+    return dayLessons.every((l) => progress[l.num]?.passed);
+  }
+  function isDayUnlocked(dayIdx) {
+    if (dayIdx === 0) return true;
+    return isDayFullyPassed(days[dayIdx - 1].lessons);
   }
 
   async function startQuiz(lessonNum) {
-    if (dailyCount >= 3 && !progress[lessonNum]?.passed) return; // daily cap, unless retaking an already-passed lesson
     const rows = await sb(`lesson_questions?level=eq.${level}&lesson_num=eq.${lessonNum}&select=id,category,question,option_a,option_b,option_c,correct&limit=100`);
     const letterToIdx = { A: 0, B: 1, C: 2 };
     const pool = rows.map((r) => ({
@@ -997,16 +1009,24 @@ function LessonPathView({ session, profile }) {
       }).catch(() => {});
     });
 
+    const newProgress = { ...progress, [lessonNum]: { passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0) } };
+    setProgress(newProgress);
+
+    // Check if this pass just completed a whole day-block for the first time
     if (passed && !wasAlreadyPassed) {
-      const newCount = dailyCount + 1;
-      setDailyCount(newCount);
-      sbAuthInsert("user_daily_lessons", session.access_token, { user_id: session.user.id, lesson_date: today, lessons_completed: newCount })
-        .catch(() => {
-          sbAuthPatch(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}`, session.access_token, { lessons_completed: newCount }).catch(() => {});
-        });
+      const dayOfThisLesson = lessons.find((l) => l.num === lessonNum)?.day_number;
+      const dayLessons = lessons.filter((l) => l.day_number === dayOfThisLesson);
+      const dayNowComplete = dayLessons.every((l) => newProgress[l.num]?.passed);
+      if (dayNowComplete) {
+        const newCount = dailyAdvances + 1;
+        setDailyAdvances(newCount);
+        sbAuthInsert("user_daily_lessons", session.access_token, { user_id: session.user.id, lesson_date: today, lessons_completed: newCount })
+          .catch(() => {
+            sbAuthPatch(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}`, session.access_token, { lessons_completed: newCount }).catch(() => {});
+          });
+      }
     }
 
-    setProgress({ ...progress, [lessonNum]: { passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0) } });
     setQuizResult({ pct, passed, lessonNum });
   }
 
@@ -1020,27 +1040,36 @@ function LessonPathView({ session, profile }) {
     setShared(true);
   }
 
+  const wrapStyle = { background: T.bg, borderRadius: 14, padding: "18px 16px", border: `1px solid ${T.border}` };
+  const btnPrimary = { background: T.accent, color: "#fff", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer" };
+  const btnSecondary = { background: "#fff", color: T.accent, border: `1px solid ${T.accent}`, borderRadius: 8, padding: "10px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer" };
+
   // Quiz-taking screen
   if (quizQs && !quizResult) {
     const q = quizQs.questions[quizIdx];
     return (
-      <div style={portalStyles.premiumPerkBox}>
-        <p style={{ fontSize: 12.5, opacity: 0.6, marginBottom: 8 }}>Sual {quizIdx + 1}/{quizQs.questions.length}</p>
-        <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{q.q}</p>
+      <div style={wrapStyle}>
+        <p style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 8 }}>Sual {quizIdx + 1}/{quizQs.questions.length}</p>
+        <p style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 16 }}>{q.q}</p>
         <div style={{ display: "grid", gap: 8 }}>
           {q.options.map((opt, i) => (
             <button key={i} onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: i })}
-              style={{ ...portalStyles.pill, textAlign: "left", ...(quizAnswers[quizIdx] === i ? portalStyles.pillActive : {}) }}>
+              style={{
+                textAlign: "left", padding: "12px 14px", borderRadius: 8, cursor: "pointer", fontSize: 14,
+                background: quizAnswers[quizIdx] === i ? T.accent : "#fff",
+                color: quizAnswers[quizIdx] === i ? "#fff" : T.text,
+                border: `1px solid ${quizAnswers[quizIdx] === i ? T.accent : T.border}`,
+              }}>
               {opt}
             </button>
           ))}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-          <button onClick={() => setQuizIdx(Math.max(0, quizIdx - 1))} disabled={quizIdx === 0} style={portalStyles.secondaryBtnLight}>← Geri</button>
+          <button onClick={() => setQuizIdx(Math.max(0, quizIdx - 1))} disabled={quizIdx === 0} style={btnSecondary}>← Geri</button>
           {quizIdx < quizQs.questions.length - 1 ? (
-            <button onClick={() => setQuizIdx(quizIdx + 1)} style={portalStyles.primaryBtn}>İrəli →</button>
+            <button onClick={() => setQuizIdx(quizIdx + 1)} style={btnPrimary}>İrəli →</button>
           ) : (
-            <button onClick={finishQuiz} style={portalStyles.primaryBtn}>Bitir</button>
+            <button onClick={finishQuiz} style={btnPrimary}>Bitir</button>
           )}
         </div>
       </div>
@@ -1050,74 +1079,98 @@ function LessonPathView({ session, profile }) {
   // Quiz result screen
   if (quizResult) {
     return (
-      <div style={portalStyles.premiumPerkBox}>
-        <h3 style={portalStyles.premiumPerkTitle}>{quizResult.passed ? "✓ Keçdin!" : "Təkrar Lazımdır"}</h3>
-        <p style={{ fontSize: 28, fontWeight: 700, color: quizResult.passed ? "#00D9A3" : "#C97B6E" }}>{quizResult.pct}%</p>
-        <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 14 }}>
+      <div style={wrapStyle}>
+        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: T.text, marginTop: 0 }}>{quizResult.passed ? "✓ Keçdin!" : "Təkrar Lazımdır"}</h3>
+        <p style={{ fontSize: 30, fontWeight: 800, color: quizResult.passed ? T.accent : "#C97B6E" }}>{quizResult.pct}%</p>
+        <p style={{ fontSize: 13.5, color: T.textSoft, marginBottom: 14 }}>
           {quizResult.passed ? "Növbəti dərsə keçə bilərsən." : "75% və yuxarı lazımdır — dərsi bir daha nəzərdən keçirib yenidən sına."}
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => { setQuizQs(null); setQuizResult(null); }} style={portalStyles.primaryBtn}>Davam Et</button>
+          <button onClick={() => { setQuizQs(null); setQuizResult(null); }} style={btnPrimary}>Davam Et</button>
           {profile?.assigned_teacher_email && !shared && (
-            <button onClick={shareWithTeacher} style={portalStyles.secondaryBtnLight}>Müəlliminlə Paylaş</button>
+            <button onClick={shareWithTeacher} style={btnSecondary}>Müəlliminlə Paylaş</button>
           )}
-          {shared && <span style={{ fontSize: 12.5, color: "#00D9A3", alignSelf: "center" }}>✓ Paylaşıldı</span>}
+          {shared && <span style={{ fontSize: 12.5, color: T.accent, alignSelf: "center" }}>✓ Paylaşıldı</span>}
         </div>
       </div>
     );
   }
 
-  // Lesson list screen
+  // Day-grouped lesson list screen
   return (
-    <div>
+    <div style={wrapStyle}>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {LEVELS.map((lvl) => (
-          <button key={lvl} onClick={() => setLevel(lvl)} style={{ ...portalStyles.pill, ...(level === lvl ? portalStyles.pillActive : {}) }}>{lvl}</button>
+          <button key={lvl} onClick={() => setLevel(lvl)}
+            style={{
+              padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              background: level === lvl ? T.accent : "#fff", color: level === lvl ? "#fff" : T.text,
+              border: `1px solid ${level === lvl ? T.accent : T.border}`,
+            }}>{lvl}</button>
         ))}
       </div>
 
-      {dailyCount >= 3 && (
-        <div style={{ ...portalStyles.premiumPerkBox, marginBottom: 16, textAlign: "center", background: "rgba(232,199,102,0.06)" }}>
-          <p style={{ margin: 0, fontSize: 14 }}>🌙 Bu gün yaxşı çalışdın dostum, istirahət et 🙂</p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.6 }}>Sabah yeni dərslərə davam edə bilərsən.</p>
-        </div>
-      )}
-
-      <div style={{ display: "grid", gap: 10 }}>
-        {lessons.map((l, i) => {
-          const unlocked = isUnlocked(i);
-          const lessonProgress = progress[l.num];
-          const isOpen = openLesson === l.num;
-          const canQuiz = unlocked && (dailyCount < 3 || lessonProgress?.passed);
-          return (
-            <div key={l.num} style={{ ...portalStyles.lessonCard, opacity: unlocked ? 1 : 0.45 }}>
-              <button
-                onClick={() => unlocked && setOpenLesson(isOpen ? null : l.num)}
-                style={portalStyles.lessonHeader}
-                disabled={!unlocked}
-              >
-                <span>{unlocked ? (lessonProgress?.passed ? "✓ " : "") : "🔒 "}{l.num}. {l.title}</span>
-                {unlocked && <ChevronRight size={16} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }} />}
-              </button>
-              {isOpen && unlocked && (
-                <div style={portalStyles.lessonBodyWrap}>
-                  <pre style={portalStyles.lessonBody}>{l.content}</pre>
-                  {lessonProgress?.best_score != null && (
-                    <p style={{ fontSize: 12, opacity: 0.6, margin: "0 16px 10px" }}>Ən yaxşı nəticən: {lessonProgress.best_score}%</p>
-                  )}
-                  {canQuiz ? (
-                    <button onClick={() => startQuiz(l.num)} style={{ ...portalStyles.primaryBtn, margin: "0 16px 16px" }}>
-                      {lessonProgress?.passed ? "Yenidən Sına" : "Hazıram, Test Et"}
-                    </button>
-                  ) : (
-                    <p style={{ fontSize: 12.5, opacity: 0.55, margin: "0 16px 16px" }}>Bugünkü dərs limitin bitib — sabah davam et.</p>
-                  )}
-                </div>
-              )}
+      {days.map((dayGroup, dayIdx) => {
+        const unlocked = isDayUnlocked(dayIdx);
+        const fullyPassed = isDayFullyPassed(dayGroup.lessons);
+        const blockedByDailyCap = unlocked && !fullyPassed === false ? false : false;
+        return (
+          <div key={dayGroup.day} style={{ marginBottom: 18 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 10, marginBottom: 10, opacity: unlocked ? 1 : 0.4,
+            }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                background: fullyPassed ? T.accent : T.accentSoft, color: fullyPassed ? "#fff" : T.accent, fontSize: 13, fontWeight: 700,
+              }}>{fullyPassed ? "✓" : dayGroup.day}</div>
+              <h4 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, color: T.text }}>Gün {dayGroup.day}</h4>
+              {!unlocked && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 əvvəlki günü bitir</span>}
             </div>
-          );
-        })}
-      </div>
+
+            {unlocked && !fullyPassed && dayIdx > 0 && dailyAdvances >= 1 && !isDayFullyPassed(days[dayIdx - 1]?.lessons || []) === false && dailyAdvances >= 1 && dayGroup.lessons.every((l) => !progress[l.num]) && (
+              <div style={{ ...wrapStyle, background: T.accentSoft, marginBottom: 10, padding: "12px 16px" }}>
+                <p style={{ margin: 0, fontSize: 13.5, color: T.text }}>🌙 Bugünkü günlük məqsədin bitib, sabah davam et 🙂</p>
+              </div>
+            )}
+
+            <div style={{ display: "grid", gap: 8, marginLeft: 40 }}>
+              {dayGroup.lessons.map((l) => {
+                const lessonProgress = progress[l.num];
+                const isOpen = openLesson === l.num;
+                return (
+                  <div key={l.num} style={{
+                    background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, opacity: unlocked ? 1 : 0.4,
+                  }}>
+                    <button
+                      onClick={() => unlocked && setOpenLesson(isOpen ? null : l.num)}
+                      style={{
+                        width: "100%", textAlign: "left", background: "none", border: "none", padding: "12px 16px",
+                        display: "flex", justifyContent: "space-between", alignItems: "center", cursor: unlocked ? "pointer" : "default",
+                        color: T.text, fontSize: 13.5, fontWeight: 600,
+                      }}
+                      disabled={!unlocked}
+                    >
+                      <span>{lessonProgress?.passed ? "✓ " : ""}{l.title}</span>
+                      {unlocked && <ChevronRight size={15} color={T.accent} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }} />}
+                    </button>
+                    {isOpen && unlocked && (
+                      <div style={{ padding: "0 16px 16px" }}>
+                        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, color: T.textSoft, lineHeight: 1.6 }}>{l.content}</pre>
+                        {lessonProgress?.best_score != null && (
+                          <p style={{ fontSize: 12, color: T.textSoft, margin: "0 0 10px" }}>Ən yaxşı nəticən: {lessonProgress.best_score}%</p>
+                        )}
+                        <button onClick={() => startQuiz(l.num)} style={btnPrimary}>
+                          {lessonProgress?.passed ? "Yenidən Sına" : "Hazıram, Test Et"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
