@@ -1104,7 +1104,7 @@ function LessonPathView({ session, profile }) {
               style={{
                 textAlign: "left", padding: "12px 14px", borderRadius: 8, cursor: "pointer", fontSize: 14,
                 background: quizAnswers[quizIdx] === i ? T.accent : "#fff",
-                color: quizAnswers[quizIdx] === i ? "#fff" : T.text,
+                color: quizAnswers[quizIdx] === i ? "#fff" : T.warm,
                 border: `1px solid ${quizAnswers[quizIdx] === i ? T.accent : T.border}`,
               }}>
               {opt}
@@ -2758,7 +2758,7 @@ const portalStyles = {
   navLinkActive: { background: "rgba(255,159,28,0.14)", color: "#FF9F1C", fontWeight: 700 },
   pill: { padding: "8px 18px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "transparent", color: "#F7F1E6", cursor: "pointer", fontSize: 14 },
   pillActive: { background: "#FF9F1C", color: "#0A0A0C", fontWeight: 700, borderColor: "#FF9F1C" },
-  input: { width: "100%", padding: "12px 14px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "rgba(255,255,255,0.04)", color: "#F7F1E6", fontSize: 14.5, boxSizing: "border-box" },
+  input: { width: "100%", padding: "12px 14px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "#1A1611", color: "#F7F1E6", fontSize: 14.5, boxSizing: "border-box", caretColor: "#F7F1E6" },
   primaryBtn: { background: "#FF9F1C", color: "#0A0A0C", border: "none", borderRadius: 4, padding: "12px 22px", fontWeight: 700, fontSize: 14.5, cursor: "pointer" },
   modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 },
   modalBox: { background: "#141416", border: "1px solid rgba(255,159,28,0.25)", borderRadius: 12, padding: 28, width: "100%", maxWidth: 360, position: "relative" },
@@ -3037,7 +3037,7 @@ const styles = {
   label: { fontSize: 13, opacity: 0.75, marginBottom: 6, display: "block" },
   input: {
     width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)",
-    background: "rgba(255,255,255,0.04)", color: "#F5EFE0", fontSize: 15, outline: "none", boxSizing: "border-box",
+    background: "#1A1611", color: "#F5EFE0", fontSize: 15, outline: "none", boxSizing: "border-box", caretColor: "#F5EFE0",
   },
   card: {
     background: "rgba(255,255,255,0.035)", border: "1px solid rgba(245,239,224,0.12)", borderRadius: 10,
@@ -3067,7 +3067,7 @@ const styles = {
     background: "rgba(255,255,255,0.035)", border: "1px solid rgba(245,239,224,0.1)", borderRadius: 14,
     padding: "26px 22px", marginTop: 4,
   },
-  question: { fontSize: 19, marginBottom: 20, lineHeight: 1.55, fontWeight: 500 },
+  question: { fontSize: 19, marginBottom: 20, lineHeight: 1.55, fontWeight: 500, color: "#F5EFE0" },
   option: {
     padding: "14px 16px", borderRadius: 9, border: "1px solid rgba(245,239,224,0.14)", background: "rgba(255,255,255,0.02)",
     color: "#F5EFE0", textAlign: "left", cursor: "pointer", fontSize: 15, transition: "border-color .15s, background .15s, transform .1s",
@@ -3076,7 +3076,7 @@ const styles = {
   reportLink: { background: "none", border: "none", color: "rgba(245,239,224,0.35)", fontSize: 12, cursor: "pointer", padding: 0, marginTop: 18 },
   textarea: {
     width: "100%", minHeight: 90, padding: 12, borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)",
-    background: "rgba(255,255,255,0.04)", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit",
+    background: "#1A1611", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", caretColor: "#F5EFE0",
   },
   statRow: { display: "flex", alignItems: "center", gap: 10 },
   statTrack: { flex: 1, height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" },
@@ -3141,7 +3141,7 @@ function AdminPanel() {
   const styleA = {
     page: { minHeight: "100vh", background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)", color: "#F5EFE0", fontFamily: "'Inter', -apple-system, sans-serif", padding: "32px 16px" },
     box: { maxWidth: 900, margin: "0 auto" },
-    input: { width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)", background: "rgba(255,255,255,0.04)", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", marginBottom: 12 },
+    input: { width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)", background: "#1A1611", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", marginBottom: 12, caretColor: "#F5EFE0" },
     btn: { background: "#FF9F1C", color: "#0A0A0C", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 15, cursor: "pointer" },
     tabBtn: (active) => ({ padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(245,239,224,0.2)", background: active ? "#FF9F1C" : "transparent", color: active ? "#0A0A0C" : "#F5EFE0", fontWeight: active ? 700 : 400, cursor: "pointer", marginRight: 8 }),
     table: { width: "100%", borderCollapse: "collapse", fontSize: 13.5 },
