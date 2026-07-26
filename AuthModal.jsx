@@ -146,11 +146,4 @@ function AuthModal({ portalStyles,  mode, onClose, onSwitch, saveSession, refres
   );
 }
 
-const GUMROAD_PREMIUM_PRODUCT_ID = "fz5uY92otxwP0OwN0g04bQ==";
-
-const TALK_TOPICS = [
-  "Gündəlik həyat", "Səyahət və turizm", "İş və karyera", "Ailə və dostlar",
-  "Hobbilər və maraqlar", "Almaniyada yaşam", "Sərbəst mövzu",
-];
-
 export default AuthModal;

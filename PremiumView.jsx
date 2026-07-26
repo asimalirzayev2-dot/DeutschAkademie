@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { sbAuthPatch, verifyGumroadLicense } from "./supabase";
+import { GUMROAD_PREMIUM_PRODUCT_ID, TALK_TOPICS } from "./constants";
 
 function PremiumPerks({ portalStyles,  session, profile, onStart }) {
   const [topic, setTopic] = useState(null);
