@@ -13,6 +13,7 @@ import PremiumView from "./PremiumView";
 import ProfileView from "./ProfileView";
 import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
+import QartalGozu from "./QartalGozu";
 
 
 
@@ -1230,6 +1231,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "home", label: "Ana səhifə" },
     { key: "lessons", label: "Dərslər" },
     { key: "dictionary", label: "Lüğət" },
+    { key: "qartal", label: "🦅 Qartal Gözü" },
     { key: "books", label: "Kitablar" },
     { key: "courses", label: "Kurslar" },
     { key: "contact", label: "Əlaqə" },
@@ -1502,6 +1504,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "qartal" && <Reveal><QartalGozu /></Reveal>}
 
         {view === "books" && (session ? (
           <Reveal>
