@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { sb } from "./supabase";
 import { speakGerman, exportAnki } from "./utils";
 
-function DictionaryView({ portalStyles }) {
+function DictionaryView({ portalStyles, SectionHeader }) {
   const [query, setQuery] = useState("");
   const [direction, setDirection] = useState("de-az"); // de-az | az-de
   const [results, setResults] = useState([]);
@@ -57,22 +57,5 @@ function DictionaryView({ portalStyles }) {
     </section>
   );
 }
-
-function useReveal() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); io.disconnect(); } },
-      { threshold: 0.15 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return [ref, visible];
-}
-
 
 export default DictionaryView;
