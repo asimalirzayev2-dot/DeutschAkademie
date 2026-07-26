@@ -4,12 +4,15 @@ import emailjs from "@emailjs/browser";
 import { sb, sbInsert, adminLogin, sbAuth, sbAuthPatch, sbAuthInsert, signUp, verifyGumroadLicense, pdfUrl, resetPasswordRequest, updatePasswordWithToken, fetchOAuthUser, getGoogleLoginUrl } from "./supabase";
 import AdminPanel from "./AdminPanel";
 import DictionaryView from "./DictionaryView";
-import { speakGerman, exportAnki } from "./utils";
+import { speakGerman, exportAnki, shuffle, shuffleOptions, notifyTeacher } from "./utils";
 import { useReveal } from "./hooks";
 import { LOGO_URL, BOOK_COVERS } from "./assets";
+import { LEVELS, EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY } from "./constants";
 import AuthModal from "./AuthModal";
 import PremiumView from "./PremiumView";
 import ProfileView from "./ProfileView";
+import LessonPathView from "./LessonPathView";
+import CoursesView from "./CoursesView";
 
 
 
@@ -22,7 +25,6 @@ const OPEN_QUESTIONS = [
   { id: "o-b2", level: "B2", topic: "Konjunktiv II", q: "Was würdest du tun, wenn du reich wärst? (ein Satz)", keywords: ["würde", "wäre"] },
 ];
 
-const LEVELS = ["A1", "A2", "B1", "B2"];
 
 const FAQ_ITEMS = [
   { q: "Necə qeydiyyatdan keçim?", a: "Yuxarı sağ küncdəki \"Daxil ol\" düyməsinə bas → açılan pəncərədə \"Qeydiyyatdan keç\"ə keç. Adını, email-ini və şifrəni yaz, \"Qeydiyyatdan keç\" düyməsinə bas. Email ünvanına bir təsdiq linki gələcək — ora bax (spam qovluğunu da yoxla), linkə bas. Sonra eyni email+şifrə ilə \"Daxil ol\" edə bilərsən." },
@@ -35,39 +37,13 @@ const FAQ_ITEMS = [
   { q: "Lüğətdən necə istifadə edirəm?", a: "Lüğət bölməsində yuxarıdakı axtarış qutusuna alman və ya Azərbaycan sözünü yaz — nəticələr yazdıqca avtomatik görünür, hər iki istiqamətdə (alman→azərbaycan və əksi) axtarış edə bilərsən." },
 ];
 
-const EMAILJS_SERVICE_ID = "service_of1yxem";
-const EMAILJS_TEMPLATE_ID = "template_v9dlqkr";
-const EMAILJS_PUBLIC_KEY = "b6SjySURlpnS4qK7g";
 
-function notifyTeacher({ teacherEmail, teacherName, studentName, studentPhone, studentLevel }) {
-  if (!teacherEmail) return;
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-    to_email: teacherEmail,
-    to_name: teacherName,
-    student_name: studentName,
-    student_phone: studentPhone,
-    student_level: studentLevel,
-  }, { publicKey: EMAILJS_PUBLIC_KEY }).catch(() => {});
-}
+
 const PASS_THRESHOLD = 60; // % — TELC-tərzi keçid həddi
 
 /* ---------- helpers ---------- */
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-function shuffleOptions(mc) {
-  const idx = shuffle(mc.options.map((_, i) => i));
-  return {
-    ...mc,
-    options: idx.map((i) => mc.options[i]),
-    correct: idx.indexOf(mc.correct),
-  };
-}
+
+
 const LEVEL_ACCENT = {
   A1: { accent: "#FF9F1C", soft: "rgba(255,159,28,0.14)", tier: 1 },
   A2: { accent: "#F4B84D", soft: "rgba(244,184,77,0.16)", tier: 2 },
@@ -924,309 +900,9 @@ function AdlerChat({ chatInput, setChatInput, chatMessages, setChatMessages, cha
   );
 }
 
-function GrowingTree({ progress, completedDays, totalDays, T }) {
-  const trunkH = 40 + progress * 90;
-  const branches = Math.max(2, Math.round(progress * 9) + 2);
-  const baseX = 140, baseY = 190;
-  const leaves = [];
-  for (let i = 0; i < branches; i++) {
-    const t = i / Math.max(1, branches - 1);
-    const branchY = baseY - trunkH * (0.25 + 0.7 * t);
-    const side = i % 2 === 0 ? 1 : -1;
-    const length = 28 + t * 34;
-    const endX = baseX + side * length;
-    const endY = branchY - length * 0.4;
-    const color = i % 3 === 0 ? "#FF9F1C" : "#2FBFA0";
-    const r = 9 + t * 7;
-    leaves.push({ branchY, endX, endY, color, r });
-  }
-  return (
-    <div style={{ textAlign: "center", marginBottom: 18 }}>
-      <svg viewBox="0 0 280 210" width="100%" height="150" style={{ maxWidth: 260 }}>
-        <line x1="20" y1={baseY} x2="260" y2={baseY} stroke="rgba(247,241,230,0.15)" strokeWidth="2" />
-        <line x1={baseX} y1={baseY} x2={baseX} y2={baseY - trunkH} stroke="#8A6A4A" strokeWidth="8" strokeLinecap="round" />
-        {leaves.map((l, i) => (
-          <g key={i}>
-            <line x1={baseX} y1={l.branchY} x2={l.endX} y2={l.endY} stroke="#8A6A4A" strokeWidth="4" strokeLinecap="round" />
-            <circle cx={l.endX} cy={l.endY} r={l.r} fill={l.color} />
-          </g>
-        ))}
-      </svg>
-      <p style={{ fontSize: 12.5, color: T.textSoft, margin: "4px 0 0" }}>{completedDays} / {totalDays} gün tamamlandı</p>
-    </div>
-  );
-}
 
-function LessonPathView({ session, profile }) {
-  const [level, setLevel] = useState("A1");
-  const [lessons, setLessons] = useState([]);
-  const [progress, setProgress] = useState({});
-  const [dailyAdvances, setDailyAdvances] = useState(0);
-  const [openLesson, setOpenLesson] = useState(null);
-  const [quizQs, setQuizQs] = useState(null);
-  const [quizAnswers, setQuizAnswers] = useState({});
-  const [quizIdx, setQuizIdx] = useState(0);
-  const [quizResult, setQuizResult] = useState(null);
-  const [shared, setShared] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const T = {
-    bg: "#191510", card: "rgba(255,255,255,0.035)", border: "rgba(47,191,160,0.28)",
-    accent: "#2FBFA0", accentSoft: "rgba(47,191,160,0.14)",
-    warm: "#FF9F1C", warmSoft: "rgba(255,159,28,0.14)",
-    text: "#F7F1E6", textSoft: "rgba(247,241,230,0.65)",
-  };
 
-  useEffect(() => {
-    if (!session) return;
-    sb(`lessons?level=eq.${level}&select=level,num,title,content,day_number`)
-      .then((rows) => setLessons(rows.sort((a, b) => parseInt(a.num) - parseInt(b.num))))
-      .catch(() => setLessons([]));
-    sbAuth(`user_lesson_progress?user_id=eq.${session.user.id}&level=eq.${level}&select=lesson_num,passed,best_score`, session.access_token)
-      .then((rows) => {
-        const map = {};
-        rows.forEach((r) => { map[r.lesson_num] = r; });
-        setProgress(map);
-      }).catch(() => setProgress({}));
-    sbAuth(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}&select=lessons_completed`, session.access_token)
-      .then((rows) => setDailyAdvances(rows[0]?.lessons_completed || 0))
-      .catch(() => setDailyAdvances(0));
-  }, [level, session]);
-
-  if (!session) return <AuthRequired setAuthModal={() => {}} />;
-
-  const days = (() => {
-    const map = {};
-    lessons.forEach((l) => {
-      const d = l.day_number || 0;
-      if (!map[d]) map[d] = [];
-      map[d].push(l);
-    });
-    return Object.keys(map).map(Number).sort((a, b) => a - b).map((d) => ({ day: d, lessons: map[d] }));
-  })();
-
-  function isDayFullyPassed(dayLessons) {
-    return dayLessons.every((l) => progress[l.num]?.passed);
-  }
-  function isDayUnlocked(dayIdx) {
-    if (dayIdx === 0) return true;
-    return isDayFullyPassed(days[dayIdx - 1].lessons);
-  }
-
-  async function startQuiz(lessonNum) {
-    const rows = await sb(`lesson_questions?level=eq.${level}&lesson_num=eq.${lessonNum}&select=id,category,question,option_a,option_b,option_c,correct&limit=100`);
-    const letterToIdx = { A: 0, B: 1, C: 2 };
-    const pool = rows.map((r) => ({
-      id: r.id, q: r.question, options: [r.option_a, r.option_b, r.option_c],
-      correct: letterToIdx[r.correct] ?? 0,
-    }));
-    const picked = shuffle(pool).slice(0, 20).map((q) => shuffleOptions(q));
-    setQuizQs({ lessonNum, questions: picked });
-    setQuizAnswers({});
-    setQuizIdx(0);
-    setQuizResult(null);
-    setShared(false);
-  }
-
-  async function finishQuiz() {
-    const { lessonNum, questions } = quizQs;
-    let correctCount = 0;
-    questions.forEach((q, i) => { if (quizAnswers[i] === q.correct) correctCount++; });
-    const pct = Math.round((correctCount / questions.length) * 100);
-    const passed = pct >= 75;
-    const wasAlreadyPassed = !!progress[lessonNum]?.passed;
-
-    await sbAuthInsert("user_lesson_progress", session.access_token, {
-      user_id: session.user.id, level, lesson_num: lessonNum,
-      passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0),
-      attempts: (progress[lessonNum]?.attempts || 0) + 1,
-    }).catch(() => {
-      sbAuthPatch(`user_lesson_progress?user_id=eq.${session.user.id}&level=eq.${level}&lesson_num=eq.${lessonNum}`, session.access_token, {
-        passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0),
-        attempts: (progress[lessonNum]?.attempts || 0) + 1,
-      }).catch(() => {});
-    });
-
-    const newProgress = { ...progress, [lessonNum]: { passed: passed || wasAlreadyPassed, best_score: Math.max(pct, progress[lessonNum]?.best_score || 0) } };
-    setProgress(newProgress);
-
-    // Check if this pass just completed a whole day-block for the first time
-    if (passed && !wasAlreadyPassed) {
-      const dayOfThisLesson = lessons.find((l) => l.num === lessonNum)?.day_number;
-      const dayLessons = lessons.filter((l) => l.day_number === dayOfThisLesson);
-      const dayNowComplete = dayLessons.every((l) => newProgress[l.num]?.passed);
-      if (dayNowComplete) {
-        const newCount = dailyAdvances + 1;
-        setDailyAdvances(newCount);
-        sbAuthInsert("user_daily_lessons", session.access_token, { user_id: session.user.id, lesson_date: today, lessons_completed: newCount })
-          .catch(() => {
-            sbAuthPatch(`user_daily_lessons?user_id=eq.${session.user.id}&lesson_date=eq.${today}`, session.access_token, { lessons_completed: newCount }).catch(() => {});
-          });
-      }
-    }
-
-    setQuizResult({ pct, passed, lessonNum });
-  }
-
-  function shareWithTeacher() {
-    if (!profile?.assigned_teacher_email || !quizResult) return;
-    notifyTeacher({
-      teacherEmail: profile.assigned_teacher_email, teacherName: profile.assigned_teacher_name || "Müəllim",
-      studentName: profile?.name || "Tələbə", studentPhone: "—",
-      studentLevel: `Dərs ${quizResult.lessonNum} nəticəsi: ${quizResult.pct}%`,
-    });
-    setShared(true);
-  }
-
-  const wrapStyle = {
-    background: `
-      radial-gradient(ellipse 220px 100px at 15% 10%, rgba(47,191,160,0.16), transparent 70%),
-      radial-gradient(ellipse 200px 90px at 85% 25%, rgba(255,159,28,0.14), transparent 70%),
-      radial-gradient(ellipse 180px 80px at 20% 70%, rgba(255,159,28,0.10), transparent 70%),
-      radial-gradient(ellipse 240px 110px at 80% 85%, rgba(47,191,160,0.13), transparent 70%),
-      ${T.bg}
-    `,
-    borderRadius: 14, padding: "18px 16px", border: `1px solid ${T.border}`,
-  };
-  const btnPrimary = { background: T.accent, color: "#fff", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer" };
-  const btnSecondary = { background: "#fff", color: T.accent, border: `1px solid ${T.accent}`, borderRadius: 8, padding: "10px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer" };
-
-  // Quiz-taking screen
-  if (quizQs && !quizResult) {
-    const q = quizQs.questions[quizIdx];
-    return (
-      <div style={wrapStyle}>
-        <p style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 8 }}>Sual {quizIdx + 1}/{quizQs.questions.length}</p>
-        <p style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 16 }}>{q.q}</p>
-        <div style={{ display: "grid", gap: 8 }}>
-          {q.options.map((opt, i) => (
-            <button key={i} onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: i })}
-              style={{
-                textAlign: "left", padding: "12px 14px", borderRadius: 8, cursor: "pointer", fontSize: 14,
-                background: quizAnswers[quizIdx] === i ? T.accent : "#fff",
-                color: quizAnswers[quizIdx] === i ? "#fff" : T.warm,
-                border: `1px solid ${quizAnswers[quizIdx] === i ? T.accent : T.border}`,
-              }}>
-              {opt}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-          <button onClick={() => setQuizIdx(Math.max(0, quizIdx - 1))} disabled={quizIdx === 0} style={btnSecondary}>← Geri</button>
-          {quizIdx < quizQs.questions.length - 1 ? (
-            <button onClick={() => setQuizIdx(quizIdx + 1)} style={btnPrimary}>İrəli →</button>
-          ) : (
-            <button onClick={finishQuiz} style={btnPrimary}>Bitir</button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Quiz result screen
-  if (quizResult) {
-    return (
-      <div style={wrapStyle}>
-        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: T.text, marginTop: 0 }}>{quizResult.passed ? "✓ Keçdin!" : "Təkrar Lazımdır"}</h3>
-        <p style={{ fontSize: 30, fontWeight: 800, color: quizResult.passed ? T.accent : "#C97B6E" }}>{quizResult.pct}%</p>
-        <p style={{ fontSize: 13.5, color: T.textSoft, marginBottom: 14 }}>
-          {quizResult.passed ? "Növbəti dərsə keçə bilərsən." : "75% və yuxarı lazımdır — dərsi bir daha nəzərdən keçirib yenidən sına."}
-        </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => { setQuizQs(null); setQuizResult(null); }} style={btnPrimary}>Davam Et</button>
-          {profile?.assigned_teacher_email && !shared && (
-            <button onClick={shareWithTeacher} style={btnSecondary}>Müəlliminlə Paylaş</button>
-          )}
-          {shared && <span style={{ fontSize: 12.5, color: T.accent, alignSelf: "center" }}>✓ Paylaşıldı</span>}
-        </div>
-      </div>
-    );
-  }
-
-  // Day-grouped lesson list screen
-  const completedDays = days.filter((d) => isDayFullyPassed(d.lessons)).length;
-  const totalDays = days.length || 1;
-  const treeProgress = Math.min(1, completedDays / totalDays);
-
-  return (
-    <div style={wrapStyle}>
-      <GrowingTree progress={treeProgress} completedDays={completedDays} totalDays={totalDays} T={T} />
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        {LEVELS.map((lvl) => (
-          <button key={lvl} onClick={() => setLevel(lvl)}
-            style={{
-              padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              background: level === lvl ? T.accent : "#fff", color: level === lvl ? "#fff" : T.text,
-              border: `1px solid ${level === lvl ? T.accent : T.border}`,
-            }}>{lvl}</button>
-        ))}
-      </div>
-
-      {days.map((dayGroup, dayIdx) => {
-        const unlocked = isDayUnlocked(dayIdx);
-        const fullyPassed = isDayFullyPassed(dayGroup.lessons);
-        const blockedByDailyCap = unlocked && !fullyPassed === false ? false : false;
-        return (
-          <div key={dayGroup.day} style={{ marginBottom: 18 }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 10, marginBottom: 10, opacity: unlocked ? 1 : 0.4,
-            }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                background: fullyPassed ? T.accent : T.warmSoft, color: fullyPassed ? "#fff" : T.warm, fontSize: 13, fontWeight: 700,
-              }}>{fullyPassed ? "✓" : dayGroup.day}</div>
-              <h4 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, color: T.text }}>Gün {dayGroup.day}</h4>
-              {!unlocked && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 əvvəlki günü bitir</span>}
-            </div>
-
-            {unlocked && !fullyPassed && dayIdx > 0 && dailyAdvances >= 1 && !isDayFullyPassed(days[dayIdx - 1]?.lessons || []) === false && dailyAdvances >= 1 && dayGroup.lessons.every((l) => !progress[l.num]) && (
-              <div style={{ ...wrapStyle, background: T.warmSoft, marginBottom: 10, padding: "12px 16px" }}>
-                <p style={{ margin: 0, fontSize: 13.5, color: T.text }}>🌙 Bugünkü günlük məqsədin bitib, sabah davam et 🙂</p>
-              </div>
-            )}
-
-            <div style={{ display: "grid", gap: 8, marginLeft: 40 }}>
-              {dayGroup.lessons.map((l) => {
-                const lessonProgress = progress[l.num];
-                const isOpen = openLesson === l.num;
-                return (
-                  <div key={l.num} style={{
-                    background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, opacity: unlocked ? 1 : 0.4,
-                  }}>
-                    <button
-                      onClick={() => unlocked && setOpenLesson(isOpen ? null : l.num)}
-                      style={{
-                        width: "100%", textAlign: "left", background: "none", border: "none", padding: "12px 16px",
-                        display: "flex", justifyContent: "space-between", alignItems: "center", cursor: unlocked ? "pointer" : "default",
-                        color: T.text, fontSize: 13.5, fontWeight: 600,
-                      }}
-                      disabled={!unlocked}
-                    >
-                      <span>{lessonProgress?.passed ? "✓ " : ""}{l.title}</span>
-                      {unlocked && <ChevronRight size={15} color={T.accent} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }} />}
-                    </button>
-                    {isOpen && unlocked && (
-                      <div style={{ padding: "0 16px 16px" }}>
-                        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, color: T.textSoft, lineHeight: 1.6 }}>{l.content}</pre>
-                        {lessonProgress?.best_score != null && (
-                          <p style={{ fontSize: 12, color: T.textSoft, margin: "0 0 10px" }}>Ən yaxşı nəticən: {lessonProgress.best_score}%</p>
-                        )}
-                        <button onClick={() => startQuiz(l.num)} style={btnPrimary}>
-                          {lessonProgress?.passed ? "Yenidən Sına" : "Hazıram, Test Et"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function LessonVocab({ level, num }) {
   const [vocab, setVocab] = useState(null);
@@ -1275,7 +951,7 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView,
         <button onClick={() => setSubTab("browse")} style={{ ...portalStyles.pill, ...(subTab === "browse" ? portalStyles.pillActive : {}) }}>📖 Sərbəst Baxış</button>
       </div>
 
-      {subTab === "path" && <LessonPathView session={session} profile={profile} />}
+      {subTab === "path" && <LessonPathView portalStyles={portalStyles} AuthRequired={AuthRequired} session={session} profile={profile} />}
 
       {subTab === "browse" && (
       <>
@@ -1415,155 +1091,7 @@ function ContactForm() {
   );
 }
 
-function CoursesView({ regForm, setRegForm, regSent, setRegSent, onStartPlacementTest, session, refreshProfile }) {
-  const [teachers, setTeachers] = useState(null);
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
 
-  useEffect(() => {
-    sb("teachers?select=*&order=name").then(setTeachers).catch(() => setTeachers([]));
-  }, []);
-
-  return (
-    <section style={portalStyles.section}>
-      <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
-
-      <div style={portalStyles.teacherGrid}>
-        {(teachers || []).map((t) => (
-          <button key={t.id} onClick={() => setSelectedTeacher(t)} style={portalStyles.teacherTile}>
-            <div style={{ ...portalStyles.teacherAvatarWrap, margin: "0 auto 14px" }}>
-              <div style={portalStyles.teacherAvatarDiamond} />
-              <div style={portalStyles.teacherAvatar}>{t.name?.[0] || "👤"}</div>
-            </div>
-            <div style={portalStyles.teacherEliteName}>{t.name}</div>
-            <div style={portalStyles.teacherHint}>Profilə bax</div>
-          </button>
-        ))}
-        {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>Hələ müəllim əlavə olunmayıb.</p>}
-      </div>
-
-      {selectedTeacher && (
-        <div style={portalStyles.modalOverlay} onClick={() => setSelectedTeacher(null)}>
-          <div style={{ ...portalStyles.modalBox, maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setSelectedTeacher(null)} style={portalStyles.modalClose}>✕</button>
-
-            <div style={{ textAlign: "center", marginBottom: 18 }}>
-              <div style={{ ...portalStyles.teacherAvatarWrap, width: 66, height: 66, margin: "0 auto 14px" }}>
-                <div style={{ ...portalStyles.teacherAvatarDiamond, inset: 8 }} />
-                <div style={{ ...portalStyles.teacherAvatar, fontSize: 22 }}>{selectedTeacher.name?.[0] || "👤"}</div>
-              </div>
-              <h2 style={{ ...portalStyles.h2, marginBottom: 2 }}>{selectedTeacher.name}</h2>
-              {selectedTeacher.address && <p style={{ fontSize: 12.5, opacity: 0.55, margin: 0 }}>📍 {selectedTeacher.address}</p>}
-            </div>
-
-            <div style={{ display: "grid", gap: 10, marginBottom: 22 }}>
-              {selectedTeacher.email && (
-                <a href={`mailto:${selectedTeacher.email}`} style={portalStyles.contactLine}>📧 {selectedTeacher.email}</a>
-              )}
-              {selectedTeacher.phone && (
-                <a href={`tel:${selectedTeacher.phone}`} style={portalStyles.contactLine}>📱 {selectedTeacher.phone}</a>
-              )}
-              {selectedTeacher.instagram && (
-                <a href={`https://instagram.com/${String(selectedTeacher.instagram).replace("@", "")}`} target="_blank" rel="noopener noreferrer" style={portalStyles.contactLine}>
-                  📷 {selectedTeacher.instagram}
-                </a>
-              )}
-            </div>
-
-            {selectedTeacher.bio && (
-              <div style={portalStyles.teacherAboutBox}>
-                <div style={portalStyles.teacherAboutLabel}>Haqqında</div>
-                <p style={portalStyles.teacherAboutText}>{selectedTeacher.bio}</p>
-              </div>
-            )}
-
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, marginBottom: 6 }}>
-              <tbody>
-                <tr>
-                  <td style={portalStyles.teacherTableLabel}>Səviyyələr</td>
-                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.levels || "—"}</td>
-                </tr>
-                <tr>
-                  <td style={portalStyles.teacherTableLabel}>Dərs Forması</td>
-                  <td style={portalStyles.teacherTableVal}>{selectedTeacher.format || "—"}</td>
-                </tr>
-                {selectedTeacher.schedule && (
-                  <tr>
-                    <td style={portalStyles.teacherTableLabel}>Cədvəl</td>
-                    <td style={portalStyles.teacherTableVal}>{selectedTeacher.schedule}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            <button
-              onClick={() => { setSelectedTeacher(null); setRegForm({ ...regForm, teacher: selectedTeacher.name, teacherEmail: selectedTeacher.email }); }}
-              style={{ ...portalStyles.primaryBtn, width: "100%", marginTop: 20 }}
-            >
-              Bu müəllimlə qeydiyyatdan keç
-            </button>
-          </div>
-        </div>
-      )}
-
-      <h2 style={{ ...portalStyles.h2, marginTop: 32 }}>Qeydiyyat</h2>
-      {regSent ? (
-        <p style={{ ...portalStyles.body, color: "#00D9A3" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlanılacaq.</p>
-      ) : (
-        <div style={{ display: "grid", gap: 12, maxWidth: 400 }}>
-          <input placeholder="Adın" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
-          <input placeholder="Telefon" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} style={portalStyles.input} />
-          <select value={regForm.teacher || ""} onChange={(e) => {
-            const t = (teachers || []).find((x) => x.name === e.target.value);
-            setRegForm({ ...regForm, teacher: e.target.value, teacherEmail: t?.email || "" });
-          }} style={portalStyles.input}>
-            <option value="">Müəllim seç...</option>
-            {(teachers || []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
-          </select>
-          <div>
-            <p style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>Səviyyə</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {LEVELS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setRegForm({ ...regForm, course: l })}
-                  style={{ ...portalStyles.levelPill, ...(regForm.course === l ? portalStyles.levelPillActive : {}) }}
-                >
-                  <LevelIcon level={l} color={regForm.course === l ? "#0A0A0C" : "#FF9F1C"} /> {l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button onClick={() => {
-            if (!regForm.name || !regForm.teacher) return;
-            sbInsert("course_registrations", {
-              name: regForm.name, phone: regForm.phone, course: regForm.course,
-            }).catch(() => {});
-            notifyTeacher({
-              teacherEmail: regForm.teacherEmail, teacherName: regForm.teacher,
-              studentName: regForm.name, studentPhone: regForm.phone, studentLevel: regForm.course,
-            });
-            if (session) {
-              sbAuthPatch(`profiles?id=eq.${session.user.id}`, session.access_token, {
-                assigned_teacher_email: regForm.teacherEmail, assigned_teacher_name: regForm.teacher,
-              }).then(() => refreshProfile && refreshProfile(session)).catch(() => {});
-            }
-            if (regForm.course !== "A1" && onStartPlacementTest) {
-              onStartPlacementTest(regForm.teacherEmail, regForm.teacher);
-            } else {
-              setRegSent(true);
-            }
-          }} style={portalStyles.primaryBtn}>Qeydiyyatdan keç</button>
-        </div>
-      )}
-      {regForm.course !== "A1" && !regSent && (
-        <p style={{ fontSize: 12.5, opacity: 0.6, marginTop: 10, maxWidth: 400 }}>
-          Qeyd: A1-dən yuxarı səviyyələr üçün qeydiyyatdan sonra hansı mövzuları bildiyini yoxlamaq üçün qısa bir testə yönləndiriləcəksən — nəticə birbaşa müəllimə göndəriləcək.
-        </p>
-      )}
-    </section>
-  );
-}
 
 
 function Reveal({ children, delay = 0 }) {
@@ -1986,7 +1514,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "courses" && (session ? (
           <Reveal>
-          <CoursesView regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} onStartPlacementTest={onStartPlacementTest} session={session} refreshProfile={refreshProfile} />
+          <CoursesView portalStyles={portalStyles} SectionHeader={SectionHeader} LevelIcon={LevelIcon} regForm={regForm} setRegForm={setRegForm} regSent={regSent} setRegSent={setRegSent} onStartPlacementTest={onStartPlacementTest} session={session} refreshProfile={refreshProfile} />
           </Reveal>
         ) : <AuthRequired setAuthModal={setAuthModal} />)}
 

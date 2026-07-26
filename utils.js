@@ -1,3 +1,6 @@
+import emailjs from "@emailjs/browser";
+import { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY } from "./constants";
+
 export function speakGerman(text) {
   try {
     const utter = new SpeechSynthesisUtterance(text);
@@ -19,4 +22,48 @@ export function exportAnki(rows, direction) {
   a.download = "deutsch-akademie-lugat.txt";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+const EMAILJS_SERVICE_ID = "service_of1yxem";
+const EMAILJS_TEMPLATE_ID = "template_v9dlqkr";
+const EMAILJS_PUBLIC_KEY = "b6SjySURlpnS4qK7g";
+
+export function notifyTeacher({ teacherEmail, teacherName, studentName, studentPhone, studentLevel }) {
+  if (!teacherEmail) return;
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: teacherEmail,
+    to_name: teacherName,
+    student_name: studentName,
+    student_phone: studentPhone,
+    student_level: studentLevel,
+  }, { publicKey: EMAILJS_PUBLIC_KEY }).catch(() => {});
+}
+
+export function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export function shuffleOptions(mc) {
+  const idx = shuffle(mc.options.map((_, i) => i));
+  return {
+    ...mc,
+    options: idx.map((i) => mc.options[i]),
+    correct: idx.indexOf(mc.correct),
+  };
+}
+
+export function notifyTeacher({ teacherEmail, teacherName, studentName, studentPhone, studentLevel }) {
+  if (!teacherEmail) return;
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: teacherEmail,
+    to_name: teacherName,
+    student_name: studentName,
+    student_phone: studentPhone,
+    student_level: studentLevel,
+  }, { publicKey: EMAILJS_PUBLIC_KEY }).catch(() => {});
 }
