@@ -2047,4 +2047,47 @@ const styles = {
   },
   question: { fontSize: 19, marginBottom: 20, lineHeight: 1.55, fontWeight: 500, color: "#F5EFE0" },
   option: {
-    padding: "14px 1
+    padding: "14px 16px", borderRadius: 9, border: "1px solid rgba(245,239,224,0.14)", background: "rgba(255,255,255,0.02)",
+    color: "#F5EFE0", textAlign: "left", cursor: "pointer", fontSize: 15, transition: "border-color .15s, background .15s, transform .1s",
+  },
+  optionActive: { borderColor: "#FF9F1C", background: "rgba(255,159,28,0.12)" },
+  reportLink: { background: "none", border: "none", color: "rgba(245,239,224,0.35)", fontSize: 12, cursor: "pointer", padding: 0, marginTop: 18 },
+  textarea: {
+    width: "100%", minHeight: 90, padding: 12, borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)",
+    background: "#1A1611", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", caretColor: "#F5EFE0",
+  },
+  statRow: { display: "flex", alignItems: "center", gap: 10 },
+  statTrack: { flex: 1, height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" },
+  statFill: { height: 8, borderRadius: 8, transition: "width 1s cubic-bezier(.2,.7,.3,1)" },
+  reviewRow: { background: "rgba(255,255,255,0.03)", borderRadius: 6, padding: "8px 12px" },
+  adBox: { background: "rgba(255,159,28,0.06)", border: "1px solid rgba(255,159,28,0.2)", borderRadius: 12, padding: 18 },
+};
+
+/* ========================= ADMIN PANEL ========================= */
+
+function NotFoundPage() {
+  return (
+    <div style={{
+      minHeight: "100vh", background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)",
+      color: "#F7F1E6", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", padding: 20, textAlign: "center",
+    }}>
+      <img src={LOGO_URL} alt="Deutsch Akademie" style={{ width: 64, height: 64, borderRadius: "50%", marginBottom: 20 }} />
+      <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, margin: "0 0 8px", color: "#FF9F1C" }}>404</h1>
+      <p style={{ fontSize: 16, opacity: 0.75, marginBottom: 24 }}>Bu səhifə tapılmadı.</p>
+      <a href="/" style={{
+        background: "#FF9F1C", color: "#0A0A0C", textDecoration: "none", fontWeight: 700,
+        padding: "12px 28px", borderRadius: 8, fontSize: 14.5,
+      }}>Ana səhifəyə qayıt</a>
+    </div>
+  );
+}
+
+export default function App() {
+  const path = typeof window !== "undefined" ? window.location.pathname : "/";
+  const isAdmin = path.startsWith("/admin");
+  const isKnownPath = path === "/" || path === "" || isAdmin;
+  if (isAdmin) return <AdminPanel />;
+  if (!isKnownPath) return <NotFoundPage />;
+  return <InnerApp />;
+}
