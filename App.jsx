@@ -13,7 +13,7 @@ import PremiumView from "./PremiumView";
 import ProfileView from "./ProfileView";
 import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
-import QartalGozu from "./QartalGozu";
+import BilirdinizMi from "./BilirdinizMi";
 
 
 
@@ -48,8 +48,8 @@ const PASS_THRESHOLD = 60; // % — TELC-tərzi keçid həddi
 const LEVEL_ACCENT = {
   A1: { accent: "#FF8C00", soft: "rgba(255,140,0,0.14)", tier: 1 },
   A2: { accent: "#F4B84D", soft: "rgba(244,184,77,0.16)", tier: 2 },
-  B1: { accent: "#EFCE86", soft: "rgba(239,206,134,0.18)", tier: 3 },
-  B2: { accent: "#F3E4B8", soft: "rgba(243,228,184,0.22)", tier: 4 },
+  B1: { accent: "#B36B00", soft: "rgba(179,107,0,0.14)", tier: 3 },
+  B2: { accent: "#8A4B00", soft: "rgba(138,75,0,0.14)", tier: 4 },
 };
 function accentFor(level) {
   return LEVEL_ACCENT[level] || LEVEL_ACCENT.A1;
@@ -1231,7 +1231,6 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "home", label: "Ana səhifə" },
     { key: "lessons", label: "Dərslər" },
     { key: "dictionary", label: "Lüğət" },
-    { key: "qartal", label: "🦅 Qartal Gözü" },
     { key: "books", label: "Kitablar" },
     { key: "courses", label: "Kurslar" },
     { key: "contact", label: "Əlaqə" },
@@ -1390,7 +1389,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       <div style={portalStyles.botFabWrap}>
         {(isPremium || isAdmin) && (
           <div style={portalStyles.crownBadge}>
-            <Crown size={22} color="#003366" fill="#003366" style={{ filter: "drop-shadow(0 0 4px rgba(0,51,102,0.8))" }} />
+            <Crown size={22} color="#D4AF37" fill="#D4AF37" style={{ filter: "drop-shadow(0 0 4px rgba(212,175,55,0.85))" }} />
           </div>
         )}
         <button onClick={() => setBotOpen((v) => !v)} style={portalStyles.botFab}>
@@ -1446,6 +1445,10 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                 {streak > 0 && <div style={portalStyles.streakBadge}>🔥 {streak} gündür ardıcıl buradasan</div>}
                 <div style={{ marginTop: 22 }}><WordOfDay /></div>
               </div>
+            </Reveal>
+
+            <Reveal delay={0.04}>
+              <BilirdinizMi />
             </Reveal>
 
             <Reveal delay={0.05}>
@@ -1504,7 +1507,6 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
-        {view === "qartal" && <Reveal><QartalGozu /></Reveal>}
 
         {view === "books" && (session ? (
           <Reveal>
@@ -1633,7 +1635,7 @@ const portalStyles = {
     background: "radial-gradient(circle, rgba(0,51,102,0.18), transparent 70%)",
     border: "1.5px solid rgba(0,51,102,0.4)",
   },
-  premiumTitle: { fontFamily: "'Fraunces', serif", fontSize: 30, fontWeight: 700, margin: 0, color: "#F3E8CE" },
+  premiumTitle: { fontFamily: "'Fraunces', serif", fontSize: 30, fontWeight: 700, margin: 0, color: "#003366" },
   premiumTagline: { opacity: 0.65, fontSize: 14.5, marginTop: 10 },
   premiumCard: {
     position: "relative", overflow: "hidden", borderRadius: 4, padding: 24,
@@ -1696,7 +1698,7 @@ const portalStyles = {
     background: "linear-gradient(160deg, rgba(0,51,102,0.08), rgba(0,51,102,0.02))",
     border: "1px solid rgba(0,51,102,0.3)", fontFamily: "inherit",
   },
-  teacherEliteName: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: "#F3E8CE", letterSpacing: 0.2 },
+  teacherEliteName: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: "#003366", letterSpacing: 0.2 },
   teacherHint: { fontSize: 11.5, color: "#003366", opacity: 0.65, marginTop: 6, letterSpacing: 0.3 },
   teacherEliteBio: {
     fontSize: 12.5, opacity: 0.7, marginTop: 6, fontStyle: "normal", lineHeight: 1.4,
@@ -1771,7 +1773,7 @@ const portalStyles = {
     display: "flex", alignItems: "center", textAlign: "center", margin: "14px 0",
     color: "rgba(42,61,60,0.4)", fontSize: 12,
   },
-  premiumDot: { color: "#003366", marginLeft: 4 },
+  premiumDot: { color: "#D4AF37", marginLeft: 4 },
   gatePrompt: { textAlign: "center", padding: "60px 20px", opacity: 0.9 },
   botFab: {
     position: "relative", width: 54, height: 54, borderRadius: "50%",
@@ -1884,7 +1886,7 @@ const SECTION_THEME = {
   books: { color: "#B98CE8", soft: "rgba(185,140,232,0.14)", label: "Kitablar" },
   courses: { color: "#6FD19A", soft: "rgba(111,209,154,0.14)", label: "Kurslar" },
   contact: { color: "#E86C8C", soft: "rgba(232,108,140,0.14)", label: "Əlaqə" },
-  quiz: { color: "#FFD580", soft: "rgba(255,213,128,0.14)", label: "Özünü Yoxla" },
+  quiz: { color: "#FF8C00", soft: "rgba(255,140,0,0.14)", label: "Özünü Yoxla" },
   premium: { color: "#003366", soft: "rgba(0,51,102,0.14)", label: "Profilim" },
 };
 
