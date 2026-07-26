@@ -21,7 +21,7 @@ function PremiumPerks({ portalStyles,  session, profile, onStart }) {
 
   return (
     <>
-      <p style={{ ...portalStyles.body, textAlign: "center", color: "#00D9A3", marginBottom: 28 }}>
+      <p style={{ ...portalStyles.body, textAlign: "center", color: "#00A896", marginBottom: 28 }}>
         ✓ Premium aktivdir — istədiyin qədər test və "Səviyyəni Yoxla" istifadə edə bilərsən.
       </p>
 
@@ -31,7 +31,7 @@ function PremiumPerks({ portalStyles,  session, profile, onStart }) {
           Tədrisdən kənar mövzularda əlavə danışıq təcrübəsi — mövzu seç, sorğun akademiyanın rəhbərliyinə göndərilsin, əlaqə saxlanılsın.
         </p>
         {sent ? (
-          <p style={{ color: "#00D9A3", fontSize: 13.5 }}>✓ Sorğun göndərildi, tezliklə əlaqə saxlanılacaq!</p>
+          <p style={{ color: "#00A896", fontSize: 13.5 }}>✓ Sorğun göndərildi, tezliklə əlaqə saxlanılacaq!</p>
         ) : (
           <>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
@@ -106,7 +106,7 @@ function PremiumView({ portalStyles,  session, profile, isAdmin, isPremium, refr
               <tr>
                 <th style={portalStyles.premiumTableHeadEmpty}></th>
                 <th style={portalStyles.premiumTableHead}>Pulsuz</th>
-                <th style={{ ...portalStyles.premiumTableHead, color: "#E8C766" }}>✦ Premium</th>
+                <th style={{ ...portalStyles.premiumTableHead, color: "#003366" }}>✦ Premium</th>
               </tr>
             </thead>
             <tbody>
@@ -121,7 +121,7 @@ function PremiumView({ portalStyles,  session, profile, isAdmin, isPremium, refr
                 <tr key={i}>
                   <td style={portalStyles.premiumTableLabel}>{row[0]}</td>
                   <td style={portalStyles.premiumTableVal}>{row[1]}</td>
-                  <td style={{ ...portalStyles.premiumTableVal, color: "#E8C766", fontWeight: 700 }}>{row[2]}</td>
+                  <td style={{ ...portalStyles.premiumTableVal, color: "#003366", fontWeight: 700 }}>{row[2]}</td>
                 </tr>
               ))}
             </tbody>
@@ -131,7 +131,7 @@ function PremiumView({ portalStyles,  session, profile, isAdmin, isPremium, refr
           </p>
 
           <div style={portalStyles.premiumSteps}>
-            <h3 style={{ ...portalStyles.h2, fontSize: 18, color: "#E8C766", marginBottom: 16 }}>Necə Premium əldə edim?</h3>
+            <h3 style={{ ...portalStyles.h2, fontSize: 18, color: "#003366", marginBottom: 16 }}>Necə Premium əldə edim?</h3>
             <div style={portalStyles.stepRow}>
               <div style={{ ...portalStyles.stepNum, opacity: session ? 0.4 : 1 }}>1</div>
               <div>
@@ -169,8 +169,8 @@ function PremiumView({ portalStyles,  session, profile, isAdmin, isPremium, refr
               <button onClick={handleVerify} style={{ ...portalStyles.primaryBtn, marginTop: 10, width: "100%" }} disabled={status === "checking"}>
                 {status === "checking" ? "Yoxlanılır..." : "Kodu təsdiqlə"}
               </button>
-              {status === "fail" && <p style={{ color: "#C97B6E", fontSize: 13, marginTop: 8 }}>Kod tapılmadı, yenidən yoxla.</p>}
-              {status === "ok" && <p style={{ color: "#00D9A3", fontSize: 13, marginTop: 8 }}>✓ Premium aktiv edildi!</p>}
+              {status === "fail" && <p style={{ color: "#C0392B", fontSize: 13, marginTop: 8 }}>Kod tapılmadı, yenidən yoxla.</p>}
+              {status === "ok" && <p style={{ color: "#00A896", fontSize: 13, marginTop: 8 }}>✓ Premium aktiv edildi!</p>}
             </div>
           )}
         </>

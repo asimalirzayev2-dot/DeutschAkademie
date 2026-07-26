@@ -46,7 +46,7 @@ const PASS_THRESHOLD = 60; // % — TELC-tərzi keçid həddi
 
 
 const LEVEL_ACCENT = {
-  A1: { accent: "#FF9F1C", soft: "rgba(255,159,28,0.14)", tier: 1 },
+  A1: { accent: "#FF8C00", soft: "rgba(255,140,0,0.14)", tier: 1 },
   A2: { accent: "#F4B84D", soft: "rgba(244,184,77,0.16)", tier: 2 },
   B1: { accent: "#EFCE86", soft: "rgba(239,206,134,0.18)", tier: 3 },
   B2: { accent: "#F3E4B8", soft: "rgba(243,228,184,0.22)", tier: 4 },
@@ -67,9 +67,9 @@ function scoreTier(pct) {
 function gradeFor(pct) {
   if (pct >= 90) return { de: "Sehr gut", color: "#6FA787" };
   if (pct >= 75) return { de: "Gut", color: "#8FBF9F" };
-  if (pct >= 60) return { de: "Befriedigend", color: "#C9A15A" };
+  if (pct >= 60) return { de: "Befriedigend", color: "#003366" };
   if (pct >= 50) return { de: "Ausreichend", color: "#D9A75A" };
-  return { de: "Nicht bestanden", color: "#C97B6E" };
+  return { de: "Nicht bestanden", color: "#C0392B" };
 }
 function fmtTime(s) {
   const m = Math.floor(s / 60).toString().padStart(2, "0");
@@ -553,7 +553,7 @@ function InnerApp() {
                 if (isPremium) { setMode("bonus"); setScreen("setup"); }
                 else { setScreen("portal"); }
               }}
-              style={{ ...styles.card, ...styles.cardGold, gridColumn: "span 2", border: "1px solid rgba(232,199,102,0.6)", background: "linear-gradient(135deg, rgba(232,199,102,0.12), rgba(232,199,102,0.04))" }}
+              style={{ ...styles.card, ...styles.cardGold, gridColumn: "span 2", border: "1px solid rgba(0,51,102,0.6)", background: "linear-gradient(135deg, rgba(0,51,102,0.12), rgba(0,51,102,0.04))" }}
             >
               <div style={{ fontSize: 20, fontWeight: 700 }}>✦ Premium Bonus Test</div>
               <div style={{ fontSize: 12, opacity: 0.85 }}>
@@ -588,11 +588,11 @@ function InnerApp() {
           <p style={styles.sub}>45 sual (A1→B2 qarışıq + açıq suallar), 45 dəqiqə. Nəticədə hansı səviyyəyə çatdığın müəyyənləşəcək.</p>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0", color: "#C9A15A" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0", color: "#003366" }}>
           <Clock size={18} /> <span>Vaxt həddi: 45 dəqiqə</span>
         </div>
 
-        {limitMsg && <p style={{ color: "#E8C766", fontSize: 13.5, marginBottom: 14 }}>{limitMsg}</p>}
+        {limitMsg && <p style={{ color: "#003366", fontSize: 13.5, marginBottom: 14 }}>{limitMsg}</p>}
         <button onClick={startTest} style={styles.primaryBtn}>Başla</button>
       </Shell>
     );
@@ -602,7 +602,7 @@ function InnerApp() {
     const q = questions[current];
     if (!q) return <Shell><p>Sual tapılmadı.</p></Shell>;
     const theme = mode === "bonus"
-      ? { accent: "#E8C766", soft: "rgba(232,199,102,0.16)", tier: 4 }
+      ? { accent: "#003366", soft: "rgba(0,51,102,0.16)", tier: 4 }
       : accentFor(q.level);
     const CATEGORY_LABEL = { reading: "📖 Oxu Anlama", listening: "🎧 Dinləmə", grammar: "📐 Qrammatika", vocab: "📚 Lüğət" };
     return (
@@ -614,12 +614,12 @@ function InnerApp() {
         <div style={styles.testHeader}>
           <button onClick={() => setScreen("home")} style={styles.exitBtn}><ChevronLeft size={15} /> Çıx</button>
           <span style={{ opacity: 0.8 }}>Sual {current + 1}/{questions.length}</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6, color: timeLeft < 300 ? "#C97B6E" : theme.accent, transition: "color .4s" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: timeLeft < 300 ? "#C0392B" : theme.accent, transition: "color .4s" }}>
             <Clock size={16} /> {fmtTime(timeLeft)}
           </span>
         </div>
         <div style={styles.progressTrack}>
-          <div style={{ ...styles.progressFill, width: `${((current + 1) / questions.length) * 100}%`, background: `linear-gradient(90deg, ${theme.accent}, #FFF6E0)` }} />
+          <div style={{ ...styles.progressFill, width: `${((current + 1) / questions.length) * 100}%`, background: `linear-gradient(90deg, ${theme.accent}, #2A3D3C)` }} />
         </div>
 
         <div key={q.id} className="q-card" style={{ ...styles.questionCard, margin: "20px 0", borderColor: theme.soft, position: "relative", overflow: "hidden" }}>
@@ -629,7 +629,7 @@ function InnerApp() {
           </div>
           {q.passage && (
             <div style={{
-              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)", borderRadius: 8,
+              background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.1)", borderRadius: 8,
               padding: "14px 16px", marginBottom: 16, fontSize: 14, lineHeight: 1.7, opacity: 0.9,
             }}>
               {q.topic === "listening" && (
@@ -637,8 +637,8 @@ function InnerApp() {
                   onClick={() => speakGerman(q.passage)}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "6px 14px",
-                    borderRadius: 20, background: "rgba(232,199,102,0.15)", border: "1px solid rgba(232,199,102,0.4)",
-                    color: "#E8C766", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    borderRadius: 20, background: "rgba(0,51,102,0.15)", border: "1px solid rgba(0,51,102,0.4)",
+                    color: "#003366", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
                   ▶️ Dinlə
@@ -694,7 +694,7 @@ function InnerApp() {
         {revealPhase === "spin" ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 320 }}>
             <div style={{ fontSize: 64, animation: "spin 1.2s linear infinite" }}>🥨</div>
-            <p style={{ marginTop: 16, color: "#C9A15A" }}>Nəticə hesablanır...</p>
+            <p style={{ marginTop: 16, color: "#003366" }}>Nəticə hesablanır...</p>
             <style>{`@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }`}</style>
           </div>
         ) : (
@@ -756,7 +756,7 @@ function InnerApp() {
               <h3 style={styles.h3}>Sualların təhlili</h3>
               <div style={{ display: "grid", gap: 8, marginBottom: 28, maxHeight: 300, overflowY: "auto" }}>
                 {results.reviewList.map((r) => (
-                  <div key={r.i} style={{ ...styles.reviewRow, borderLeft: `3px solid ${r.ok ? "#6FA787" : "#C97B6E"}` }}>
+                  <div key={r.i} style={{ ...styles.reviewRow, borderLeft: `3px solid ${r.ok ? "#6FA787" : "#C0392B"}` }}>
                     <div style={{ fontSize: 13, opacity: 0.9 }}>{r.i + 1}. {r.q}</div>
                     <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
                       Sənin cavabın: {r.userAnswer} {!r.ok && r.correctAnswer !== "—" && <>· Düzgün: {r.correctAnswer}</>}
@@ -773,7 +773,7 @@ function InnerApp() {
                       <li key={topic} style={{ marginBottom: 4 }}>{topic} <span style={{ opacity: 0.6 }}>({count} səhv)</span></li>
                     ))}
                   </ul>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, color: "#C9A15A" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, color: "#003366" }}>
                     <BookOpen size={18} />
                     <span style={{ fontSize: 13 }}>Bu mövzuları Deutsch Akademie kitablarımızda daha ətraflı tapa bilərsən.</span>
                   </div>
@@ -835,7 +835,7 @@ function WordOfDay() {
   return (
     <div style={portalStyles.wordOfDayCard}>
       <svg viewBox="0 0 100 100" style={portalStyles.cloverBg}>
-        <g fill="#2FBFA0">
+        <g fill="#00A896">
           <circle cx="50" cy="30" r="18" />
           <circle cx="50" cy="70" r="18" />
           <circle cx="30" cy="50" r="18" />
@@ -895,7 +895,7 @@ function AdlerChat({ chatInput, setChatInput, chatMessages, setChatMessages, cha
         {chatMessages.map((m, i) => (
           <div key={i} style={{
             marginBottom: 10, padding: "8px 12px", borderRadius: 8, fontSize: 13, lineHeight: 1.5,
-            background: m.role === "user" ? "rgba(255,159,28,0.1)" : "rgba(232,199,102,0.08)",
+            background: m.role === "user" ? "rgba(255,140,0,0.1)" : "rgba(0,51,102,0.08)",
             marginLeft: m.role === "user" ? 20 : 0, marginRight: m.role === "user" ? 0 : 20,
           }}>
             {m.text}
@@ -937,7 +937,7 @@ function LessonVocab({ level, num }) {
       <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
         {vocab.map((v, i) => (
           <div key={i} style={{ display: "flex", gap: 8, fontSize: 13.5 }}>
-            <span style={{ color: "#FF9F1C", fontWeight: 700, minWidth: 110 }}>{v.term}</span>
+            <span style={{ color: "#FF8C00", fontWeight: 700, minWidth: 110 }}>{v.term}</span>
             <span style={{ opacity: 0.75 }}>{v.translation}</span>
           </div>
         ))}
@@ -1085,7 +1085,7 @@ function ContactForm() {
     <div style={portalStyles.premiumPerkBox}>
       <h3 style={portalStyles.premiumPerkTitle}>✉️ Bizə Yazın</h3>
       {sent ? (
-        <p style={{ color: "#00D9A3", fontSize: 13.5 }}>✓ Mesajın göndərildi, tezliklə cavab veriləcək!</p>
+        <p style={{ color: "#00A896", fontSize: 13.5 }}>✓ Mesajın göndərildi, tezliklə cavab veriləcək!</p>
       ) : (
         <>
           <p style={{ ...portalStyles.body, fontSize: 13.5, marginBottom: 12 }}>
@@ -1206,7 +1206,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   useEffect(() => {
     function onMove(e) {
       if (glowRef.current) {
-        glowRef.current.style.background = `radial-gradient(600px circle at ${e.clientX}px ${e.clientY}px, rgba(255,159,28,0.10), transparent 60%)`;
+        glowRef.current.style.background = `radial-gradient(600px circle at ${e.clientX}px ${e.clientY}px, rgba(255,140,0,0.10), transparent 60%)`;
       }
     }
     window.addEventListener("mousemove", onMove);
@@ -1257,13 +1257,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       <div ref={glowRef} style={portalStyles.cursorGlow} />
       {(() => {
         const PAGE_THEME = {
-          home: { primary: "#FF9F1C", secondary: "#2FBFA0" },
-          lessons: { primary: "#FF9F1C", secondary: "#2FBFA0" },
-          dictionary: { primary: "#2FBFA0", secondary: "#4FC3E8" },
-          books: { primary: "#B98CE8", secondary: "#2FBFA0" },
-          courses: { primary: "#6FD19A", secondary: "#2FBFA0" },
-          premium: { primary: "#E8C766", secondary: "#2FBFA0" },
-          contact: { primary: "#E86C8C", secondary: "#2FBFA0" },
+          home: { primary: "#FF8C00", secondary: "#00A896" },
+          lessons: { primary: "#FF8C00", secondary: "#00A896" },
+          dictionary: { primary: "#00A896", secondary: "#4FC3E8" },
+          books: { primary: "#B98CE8", secondary: "#00A896" },
+          courses: { primary: "#6FD19A", secondary: "#00A896" },
+          premium: { primary: "#003366", secondary: "#00A896" },
+          contact: { primary: "#E86C8C", secondary: "#00A896" },
         };
         const t = PAGE_THEME[view] || PAGE_THEME.home;
         return (
@@ -1319,7 +1319,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                 <button onClick={() => setShowLogoutConfirm(true)} style={portalStyles.navLink}>Çıxış</button>
               </>
             ) : (
-              <button onClick={() => setAuthModal("login")} style={{ ...portalStyles.navLink, color: "#FF9F1C", fontWeight: 700 }}>
+              <button onClick={() => setAuthModal("login")} style={{ ...portalStyles.navLink, color: "#FF8C00", fontWeight: 700 }}>
                 Daxil ol
               </button>
             )}
@@ -1354,7 +1354,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               </button>
             </>
           ) : (
-            <button onClick={() => { setMobileMenuOpen(false); setAuthModal("login"); }} style={{ ...portalStyles.mobileMenuItem, color: "#FF9F1C", fontWeight: 700 }}>
+            <button onClick={() => { setMobileMenuOpen(false); setAuthModal("login"); }} style={{ ...portalStyles.mobileMenuItem, color: "#FF8C00", fontWeight: 700 }}>
               Daxil ol
             </button>
           )}
@@ -1390,7 +1390,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       <div style={portalStyles.botFabWrap}>
         {(isPremium || isAdmin) && (
           <div style={portalStyles.crownBadge}>
-            <Crown size={22} color="#E8C766" fill="#E8C766" style={{ filter: "drop-shadow(0 0 4px rgba(232,199,102,0.8))" }} />
+            <Crown size={22} color="#003366" fill="#003366" style={{ filter: "drop-shadow(0 0 4px rgba(0,51,102,0.8))" }} />
           </div>
         )}
         <button onClick={() => setBotOpen((v) => !v)} style={portalStyles.botFab}>
@@ -1401,7 +1401,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         <div style={portalStyles.botPanel}>
           <div style={portalStyles.botHeader}>
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Bird size={18} color="#FF9F1C" /> {(isPremium || isAdmin) ? "Adler" : "Dəstək"}
+              <Bird size={18} color="#FF8C00" /> {(isPremium || isAdmin) ? "Adler" : "Dəstək"}
             </span>
             <button onClick={() => { setBotOpen(false); setBotQuestion(null); }} style={portalStyles.botClose}>✕</button>
           </div>
@@ -1439,7 +1439,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                   <img src={LOGO_URL} alt="Deutsch Akademie" style={portalStyles.emblemRing} />
                 </div>
                 <h1 style={portalStyles.title}>
-                  Deutsch <span style={{ color: "#FF9F1C" }}>Akademie</span>
+                  Deutsch <span style={{ color: "#FF8C00" }}>Akademie</span>
                 </h1>
                 <div style={portalStyles.titleRule} />
                 <p style={portalStyles.tagline}>Alman dilini Azərbaycan dilində öyrənənlər üçün</p>
@@ -1574,8 +1574,8 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 const portalStyles = {
   page: {
     minHeight: "100vh", position: "relative", overflow: "hidden",
-    background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)",
-    fontFamily: "'Inter', -apple-system, sans-serif", color: "#F7F1E6",
+    background: "linear-gradient(160deg, #F5F5DC 0%, #EDEDD4 100%)",
+    fontFamily: "'Inter', -apple-system, sans-serif", color: "#2A3D3C",
   },
   cursorGlow: { position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" },
   watermark: { position: "absolute", top: 0, left: 0, width: "100%", height: 240, opacity: 0.06, pointerEvents: "none" },
@@ -1583,121 +1583,121 @@ const portalStyles = {
   cornerShapeSmall: { position: "absolute", top: 0, right: 0, width: "40%", height: "38%", opacity: 0.14, pointerEvents: "none" },
   thinDiamond: {
     position: "absolute", top: "22%", right: "8%", width: 70, height: 70,
-    border: "1.5px solid rgba(255,159,28,0.35)", transform: "rotate(45deg)", pointerEvents: "none",
+    border: "1.5px solid rgba(255,140,0,0.35)", transform: "rotate(45deg)", pointerEvents: "none",
   },
   thinSquare: {
     position: "absolute", bottom: "12%", right: "20%", width: 46, height: 46,
-    border: "1.5px solid rgba(47,191,160,0.4)", transform: "rotate(12deg)", pointerEvents: "none",
+    border: "1.5px solid rgba(0,168,150,0.4)", transform: "rotate(12deg)", pointerEvents: "none",
   },
   blob: { position: "absolute", width: 380, height: 380, borderRadius: "50%", filter: "blur(85px)", opacity: 0.45, pointerEvents: "none" },
   angular: { position: "absolute", width: 130, height: 130, opacity: 0.28, filter: "blur(1px)", pointerEvents: "none", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" },
-  angularOutline: { position: "absolute", width: 80, height: 80, border: "2px solid rgba(0,217,163,0.4)", opacity: 0.6, pointerEvents: "none" },
+  angularOutline: { position: "absolute", width: 80, height: 80, border: "2px solid rgba(0,168,150,0.4)", opacity: 0.6, pointerEvents: "none" },
   content: { position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "8px 20px 40px" },
   hero: { textAlign: "center", padding: "48px 0 44px" },
   emblem: { display: "flex", justifyContent: "center", marginBottom: 18 },
   emblemRing: {
     width: 72, height: 72, borderRadius: "50%", objectFit: "cover",
-    boxShadow: "0 0 0 4px rgba(255,159,28,0.2)",
+    boxShadow: "0 0 0 4px rgba(255,140,0,0.2)",
   },
   title: { fontFamily: "'Fraunces', serif", fontSize: 52, margin: 0, fontWeight: 700, letterSpacing: -1.5, lineHeight: 1.05 },
-  titleRule: { width: 64, height: 3, background: "#FF9F1C", margin: "20px auto 0" },
+  titleRule: { width: 64, height: 3, background: "#FF8C00", margin: "20px auto 0" },
   tagline: { opacity: 0.65, fontSize: 15, marginTop: 18, letterSpacing: 0.3 },
-  streakBadge: { display: "inline-block", marginTop: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(255,159,28,0.12)", border: "1px solid rgba(255,159,28,0.3)", fontSize: 12.5 },
+  streakBadge: { display: "inline-block", marginTop: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(255,140,0,0.12)", border: "1px solid rgba(255,140,0,0.3)", fontSize: 12.5 },
   wordOfDayCard: {
     position: "relative", overflow: "hidden", display: "inline-block", marginTop: 18, padding: "18px 28px",
-    borderRadius: 12, background: "rgba(47,191,160,0.06)", border: "1px solid rgba(47,191,160,0.3)", textAlign: "left",
+    borderRadius: 12, background: "rgba(0,168,150,0.06)", border: "1px solid rgba(0,168,150,0.3)", textAlign: "left",
     minWidth: 260,
   },
   cloverBg: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 140, height: 140, opacity: 0.08, pointerEvents: "none" },
   wordOfDayLabel: { fontSize: 11, opacity: 0.6, letterSpacing: 0.5 },
-  wordOfDayTerm: { fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: "#2FBFA0" },
+  wordOfDayTerm: { fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: "#00A896" },
   wordOfDayTrans: { display: "block", fontSize: 13, opacity: 0.75, marginTop: 2 },
   section: { marginBottom: 40 },
-  h2: { fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 700, color: "#F7F1E6", marginBottom: 14, letterSpacing: -0.5 },
+  h2: { fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 700, color: "#003366", marginBottom: 14, letterSpacing: -0.5 },
   body: { lineHeight: 1.7, fontSize: 15.5, opacity: 0.75 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 },
   card: {
-    position: "relative", overflow: "hidden", background: "rgba(255,255,255,0.035)", border: "1px solid rgba(247,241,230,0.12)",
+    position: "relative", overflow: "hidden", background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.12)",
     borderRadius: 4, padding: 24,
   },
   tiltGlow: {
     position: "absolute", inset: 0, opacity: 0, pointerEvents: "none",
-    background: "radial-gradient(180px circle at var(--gx,50%) var(--gy,50%), rgba(255,159,28,0.15), transparent 70%)",
+    background: "radial-gradient(180px circle at var(--gx,50%) var(--gy,50%), rgba(255,140,0,0.15), transparent 70%)",
     transition: "opacity .2s",
   },
-  cardCta: { border: "1px solid rgba(255,159,28,0.6)", background: "rgba(255,159,28,0.07)" },
+  cardCta: { border: "1px solid rgba(255,140,0,0.6)", background: "rgba(255,140,0,0.07)" },
   premiumHero: { textAlign: "center", padding: "10px 0 36px" },
   premiumCrown: {
-    fontSize: 30, color: "#E8C766", width: 64, height: 64, borderRadius: "50%", margin: "0 auto 16px",
+    fontSize: 30, color: "#003366", width: 64, height: 64, borderRadius: "50%", margin: "0 auto 16px",
     display: "flex", alignItems: "center", justifyContent: "center",
-    background: "radial-gradient(circle, rgba(232,199,102,0.18), transparent 70%)",
-    border: "1.5px solid rgba(232,199,102,0.4)",
+    background: "radial-gradient(circle, rgba(0,51,102,0.18), transparent 70%)",
+    border: "1.5px solid rgba(0,51,102,0.4)",
   },
   premiumTitle: { fontFamily: "'Fraunces', serif", fontSize: 30, fontWeight: 700, margin: 0, color: "#F3E8CE" },
   premiumTagline: { opacity: 0.65, fontSize: 14.5, marginTop: 10 },
   premiumCard: {
     position: "relative", overflow: "hidden", borderRadius: 4, padding: 24,
-    background: "linear-gradient(160deg, rgba(232,199,102,0.12), rgba(232,199,102,0.03))",
-    border: "1px solid rgba(232,199,102,0.5)",
+    background: "linear-gradient(160deg, rgba(0,51,102,0.12), rgba(0,51,102,0.03))",
+    border: "1px solid rgba(0,51,102,0.5)",
   },
   premiumSteps: { marginTop: 32, display: "grid", gap: 18 },
   premiumTable: { width: "100%", borderCollapse: "collapse", maxWidth: 460 },
   premiumTableHeadEmpty: { width: "45%" },
-  premiumTableHead: { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "10px 6px", borderBottom: "1px solid rgba(247,241,230,0.15)" },
-  premiumTableLabel: { padding: "10px 6px", fontSize: 12.5, opacity: 0.75, borderBottom: "1px solid rgba(247,241,230,0.08)" },
-  premiumTableVal: { padding: "10px 6px", fontSize: 12.5, textAlign: "center", borderBottom: "1px solid rgba(247,241,230,0.08)" },
+  premiumTableHead: { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "10px 6px", borderBottom: "1px solid rgba(42,61,60,0.15)" },
+  premiumTableLabel: { padding: "10px 6px", fontSize: 12.5, opacity: 0.75, borderBottom: "1px solid rgba(42,61,60,0.08)" },
+  premiumTableVal: { padding: "10px 6px", fontSize: 12.5, textAlign: "center", borderBottom: "1px solid rgba(42,61,60,0.08)" },
   stepRow: { display: "flex", gap: 14, alignItems: "flex-start" },
   stepNum: {
     width: 28, height: 28, borderRadius: "50%", flexShrink: 0, fontSize: 13, fontWeight: 700,
     display: "flex", alignItems: "center", justifyContent: "center",
-    background: "rgba(232,199,102,0.15)", color: "#E8C766", border: "1px solid rgba(232,199,102,0.4)",
+    background: "rgba(0,51,102,0.15)", color: "#003366", border: "1px solid rgba(0,51,102,0.4)",
   },
   premiumCta: {
     display: "inline-block", textDecoration: "none", padding: "16px 40px", borderRadius: 8,
-    background: "linear-gradient(135deg, #E8C766, #C9A15A)", color: "#0A0A0C", fontWeight: 700, fontSize: 16,
-    boxShadow: "0 0 24px rgba(232,199,102,0.3)", letterSpacing: 0.3,
+    background: "linear-gradient(135deg, #003366, #003366)", color: "#F5F5DC", fontWeight: 700, fontSize: 16,
+    boxShadow: "0 0 24px rgba(0,51,102,0.3)", letterSpacing: 0.3,
   },
   premiumPerkBox: {
     borderRadius: 4, padding: "20px 22px",
-    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)",
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.1)",
   },
   premiumPerkTitle: { fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, marginBottom: 8, marginTop: 0 },
   badgeCard: {
     width: 90, textAlign: "center", padding: "12px 8px", borderRadius: 8,
-    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.1)",
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.1)",
   },
   badgeLabel: { fontSize: 10.5, marginTop: 6, opacity: 0.85 },
   cardIcon: { fontSize: 24, marginBottom: 12 },
   bookCover: { width: "100%", display: "block", aspectRatio: "2/3", objectFit: "cover" },
   cardTitle: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, margin: "0 0 8px", position: "relative" },
   cardText: { fontSize: 13.5, opacity: 0.7, lineHeight: 1.5, margin: 0, position: "relative" },
-  ctaLink: { display: "flex", alignItems: "center", gap: 4, marginTop: 12, color: "#FF9F1C", fontSize: 13.5, fontWeight: 700, position: "relative" },
-  teacherTableLabel: { padding: "8px 0", opacity: 0.6, width: "35%", borderBottom: "1px solid rgba(247,241,230,0.1)" },
-  teacherTableVal: { padding: "8px 0", fontWeight: 600, borderBottom: "1px solid rgba(247,241,230,0.1)" },
+  ctaLink: { display: "flex", alignItems: "center", gap: 4, marginTop: 12, color: "#FF8C00", fontSize: 13.5, fontWeight: 700, position: "relative" },
+  teacherTableLabel: { padding: "8px 0", opacity: 0.6, width: "35%", borderBottom: "1px solid rgba(42,61,60,0.1)" },
+  teacherTableVal: { padding: "8px 0", fontWeight: 600, borderBottom: "1px solid rgba(42,61,60,0.1)" },
   teacherAboutBox: {
-    borderTop: "1px solid rgba(232,199,102,0.25)", borderBottom: "1px solid rgba(232,199,102,0.25)",
+    borderTop: "1px solid rgba(0,51,102,0.25)", borderBottom: "1px solid rgba(0,51,102,0.25)",
     padding: "16px 2px", marginBottom: 18,
   },
-  teacherAboutLabel: { fontFamily: "'Fraunces', serif", fontSize: 13, color: "#E8C766", letterSpacing: 0.5, marginBottom: 8, fontWeight: 700 },
+  teacherAboutLabel: { fontFamily: "'Fraunces', serif", fontSize: 13, color: "#003366", letterSpacing: 0.5, marginBottom: 8, fontWeight: 700 },
   teacherAboutText: { fontSize: 14, lineHeight: 1.7, opacity: 0.85, fontStyle: "italic", margin: 0 },
   contactLine: {
     display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8,
-    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(247,241,230,0.1)",
-    color: "#F7F1E6", textDecoration: "none", fontSize: 13.5,
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.1)",
+    color: "#2A3D3C", textDecoration: "none", fontSize: 13.5,
   },
   teacherRow: {
     display: "flex", alignItems: "center", gap: 16, width: "100%", textAlign: "left",
-    padding: "12px 16px", borderRadius: 8, background: "rgba(255,255,255,0.035)",
-    border: "1px solid rgba(247,241,230,0.1)", cursor: "pointer", fontFamily: "inherit",
+    padding: "12px 16px", borderRadius: 8, background: "rgba(255,255,255,0.85)",
+    border: "1px solid rgba(42,61,60,0.1)", cursor: "pointer", fontFamily: "inherit",
   },
   teacherGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 16, maxWidth: 520 },
   teacherTile: {
     display: "block", textAlign: "center", padding: "26px 16px", borderRadius: 4, cursor: "pointer",
-    background: "linear-gradient(160deg, rgba(232,199,102,0.08), rgba(232,199,102,0.02))",
-    border: "1px solid rgba(232,199,102,0.3)", fontFamily: "inherit",
+    background: "linear-gradient(160deg, rgba(0,51,102,0.08), rgba(0,51,102,0.02))",
+    border: "1px solid rgba(0,51,102,0.3)", fontFamily: "inherit",
   },
   teacherEliteName: { fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: "#F3E8CE", letterSpacing: 0.2 },
-  teacherHint: { fontSize: 11.5, color: "#E8C766", opacity: 0.65, marginTop: 6, letterSpacing: 0.3 },
+  teacherHint: { fontSize: 11.5, color: "#003366", opacity: 0.65, marginTop: 6, letterSpacing: 0.3 },
   teacherEliteBio: {
     fontSize: 12.5, opacity: 0.7, marginTop: 6, fontStyle: "normal", lineHeight: 1.4,
     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
@@ -1705,24 +1705,24 @@ const portalStyles = {
   teacherAvatarWrap: { width: 46, height: 46, position: "relative", flexShrink: 0 },
   teacherAvatarDiamond: {
     position: "absolute", inset: 6, transform: "rotate(45deg)",
-    background: "linear-gradient(135deg,#FF9F1C,#E8C766)",
+    background: "linear-gradient(135deg,#FF8C00,#003366)",
   },
   teacherAvatar: {
     position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-    color: "#0A0A0C", fontWeight: 700, fontSize: 15,
+    color: "#F5F5DC", fontWeight: 700, fontSize: 15,
   },
   teacherName: { fontWeight: 700, fontSize: 15, fontFamily: "'Fraunces', serif" },
   teacherBioLine: { fontSize: 12.5, opacity: 0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   levelPill: {
     display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999,
-    border: "1px solid rgba(247,241,230,0.2)", background: "transparent", color: "#F7F1E6", cursor: "pointer",
+    border: "1px solid rgba(42,61,60,0.2)", background: "transparent", color: "#2A3D3C", cursor: "pointer",
     fontSize: 13.5, fontFamily: "inherit",
   },
-  levelPillActive: { background: "#FF9F1C", color: "#0A0A0C", fontWeight: 700, borderColor: "#FF9F1C" },
+  levelPillActive: { background: "#FF8C00", color: "#F5F5DC", fontWeight: 700, borderColor: "#FF8C00" },
   footer: { textAlign: "center", opacity: 0.4, fontSize: 12.5, marginTop: 20 },
   nav: {
     position: "relative", zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "18px 24px", flexWrap: "wrap", gap: 12, borderBottom: "1px solid rgba(247,241,230,0.08)",
+    padding: "18px 24px", flexWrap: "wrap", gap: 12, borderBottom: "1px solid rgba(42,61,60,0.08)",
   },
   navBrand: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer" },
   navEmblem: { width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 },
@@ -1731,36 +1731,36 @@ const portalStyles = {
   navGroupsWrap: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 },
   navGroup: {
     display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap",
-    padding: "4px 10px 4px 6px", borderRadius: 999, background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(247,241,230,0.08)",
+    padding: "4px 10px 4px 6px", borderRadius: 999, background: "rgba(255,255,255,0.85)",
+    border: "1px solid rgba(42,61,60,0.08)",
   },
   navGroupIcon: { fontSize: 13, opacity: 0.55, marginRight: 4 },
   hamburgerBtn: {
-    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(247,241,230,0.15)", borderRadius: 8,
-    color: "#F7F1E6", width: 42, height: 38, fontSize: 18, cursor: "pointer", alignItems: "center", justifyContent: "center",
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.15)", borderRadius: 8,
+    color: "#2A3D3C", width: 42, height: 38, fontSize: 18, cursor: "pointer", alignItems: "center", justifyContent: "center",
   },
   mobileMenuPanel: {
     position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: 4,
-    padding: "10px 20px 18px", borderBottom: "1px solid rgba(247,241,230,0.1)",
+    padding: "10px 20px 18px", borderBottom: "1px solid rgba(42,61,60,0.1)",
     background: "rgba(10,10,12,0.6)",
   },
   mobileMenuItem: {
     display: "block", width: "100%", textAlign: "left", padding: "12px 14px", borderRadius: 8,
-    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(247,241,230,0.08)", color: "#F7F1E6",
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.08)", color: "#2A3D3C",
     fontSize: 14.5, cursor: "pointer", fontFamily: "inherit",
   },
-  mobileMenuItemActive: { background: "rgba(255,159,28,0.15)", borderColor: "rgba(255,159,28,0.4)", color: "#FF9F1C", fontWeight: 700 },
-  mobileMenuDivider: { height: 1, background: "rgba(247,241,230,0.1)", margin: "6px 0" },
-  navLink: { background: "none", border: "none", color: "rgba(247,241,230,0.6)", fontSize: 13.5, padding: "8px 12px", borderRadius: 4, cursor: "pointer" },
-  navLinkActive: { background: "rgba(255,159,28,0.14)", color: "#FF9F1C", fontWeight: 700 },
-  pill: { padding: "8px 18px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "transparent", color: "#F7F1E6", cursor: "pointer", fontSize: 14 },
-  pillActive: { background: "#FF9F1C", color: "#0A0A0C", fontWeight: 700, borderColor: "#FF9F1C" },
-  input: { width: "100%", padding: "12px 14px", borderRadius: 4, border: "1px solid rgba(247,241,230,0.2)", background: "#1A1611", color: "#F7F1E6", fontSize: 14.5, boxSizing: "border-box", caretColor: "#F7F1E6" },
-  primaryBtn: { background: "#FF9F1C", color: "#0A0A0C", border: "none", borderRadius: 4, padding: "12px 22px", fontWeight: 700, fontSize: 14.5, cursor: "pointer" },
+  mobileMenuItemActive: { background: "rgba(255,140,0,0.15)", borderColor: "rgba(255,140,0,0.4)", color: "#FF8C00", fontWeight: 700 },
+  mobileMenuDivider: { height: 1, background: "rgba(42,61,60,0.1)", margin: "6px 0" },
+  navLink: { background: "none", border: "none", color: "rgba(42,61,60,0.6)", fontSize: 13.5, padding: "8px 12px", borderRadius: 4, cursor: "pointer" },
+  navLinkActive: { background: "rgba(255,140,0,0.14)", color: "#FF8C00", fontWeight: 700 },
+  pill: { padding: "8px 18px", borderRadius: 4, border: "1px solid rgba(42,61,60,0.2)", background: "transparent", color: "#2A3D3C", cursor: "pointer", fontSize: 14 },
+  pillActive: { background: "#FF8C00", color: "#F5F5DC", fontWeight: 700, borderColor: "#FF8C00" },
+  input: { width: "100%", padding: "12px 14px", borderRadius: 4, border: "1px solid rgba(42,61,60,0.2)", background: "#FFFFFF", color: "#2A3D3C", fontSize: 14.5, boxSizing: "border-box", caretColor: "#2A3D3C" },
+  primaryBtn: { background: "#FF8C00", color: "#F5F5DC", border: "none", borderRadius: 4, padding: "12px 22px", fontWeight: 700, fontSize: 14.5, cursor: "pointer" },
   modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 },
-  modalBox: { background: "#141416", border: "1px solid rgba(255,159,28,0.25)", borderRadius: 12, padding: 28, width: "100%", maxWidth: 360, position: "relative" },
-  modalClose: { position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "rgba(247,241,230,0.6)", fontSize: 16, cursor: "pointer" },
-  linkBtn: { background: "none", border: "none", color: "#FF9F1C", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 13 },
+  modalBox: { background: "#EDEDD4", border: "1px solid rgba(255,140,0,0.25)", borderRadius: 12, padding: 28, width: "100%", maxWidth: 360, position: "relative" },
+  modalClose: { position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "rgba(42,61,60,0.6)", fontSize: 16, cursor: "pointer" },
+  linkBtn: { background: "none", border: "none", color: "#FF8C00", fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 13 },
   googleBtn: {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%",
     padding: "11px 14px", borderRadius: 8, background: "#fff", color: "#3c4043",
@@ -1769,13 +1769,13 @@ const portalStyles = {
   },
   orDivider: {
     display: "flex", alignItems: "center", textAlign: "center", margin: "14px 0",
-    color: "rgba(247,241,230,0.4)", fontSize: 12,
+    color: "rgba(42,61,60,0.4)", fontSize: 12,
   },
-  premiumDot: { color: "#E8C766", marginLeft: 4 },
+  premiumDot: { color: "#003366", marginLeft: 4 },
   gatePrompt: { textAlign: "center", padding: "60px 20px", opacity: 0.9 },
   botFab: {
     position: "relative", width: 54, height: 54, borderRadius: "50%",
-    background: "#2FBFA0", color: "#0A0A0C", border: "none", fontSize: 22, cursor: "pointer",
+    background: "#00A896", color: "#F5F5DC", border: "none", fontSize: 22, cursor: "pointer",
     boxShadow: "0 4px 18px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
   },
   botFabWrap: { position: "fixed", bottom: 22, right: 22, zIndex: 40, width: 54, height: 54 },
@@ -1785,57 +1785,57 @@ const portalStyles = {
   },
   botPanel: {
     position: "fixed", bottom: 86, right: 22, zIndex: 40, width: 300, maxHeight: "60vh", overflowY: "auto",
-    background: "#141416", border: "1px solid rgba(255,159,28,0.3)", borderRadius: 12,
+    background: "#EDEDD4", border: "1px solid rgba(255,140,0,0.3)", borderRadius: 12,
     boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
   },
   botHeader: {
     display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px",
-    borderBottom: "1px solid rgba(247,241,230,0.1)", fontWeight: 700, fontSize: 14,
+    borderBottom: "1px solid rgba(42,61,60,0.1)", fontWeight: 700, fontSize: 14,
   },
-  botClose: { background: "none", border: "none", color: "rgba(247,241,230,0.6)", cursor: "pointer", fontSize: 14 },
+  botClose: { background: "none", border: "none", color: "rgba(42,61,60,0.6)", cursor: "pointer", fontSize: 14 },
   botBody: { padding: 14 },
   botFaqBtn: {
     display: "block", width: "100%", textAlign: "left", padding: "9px 10px", marginBottom: 6, borderRadius: 6,
-    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(247,241,230,0.08)", color: "#F7F1E6",
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.08)", color: "#2A3D3C",
     fontSize: 12.8, cursor: "pointer", fontFamily: "inherit",
   },
-  botBack: { background: "none", border: "none", color: "#FF9F1C", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 },
+  botBack: { background: "none", border: "none", color: "#FF8C00", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 },
   botAnswerQ: { fontWeight: 700, fontSize: 13.5, marginBottom: 8 },
   botAnswerA: { fontSize: 13, lineHeight: 1.6, opacity: 0.85 },
-  lessonCard: { background: "rgba(255,255,255,0.035)", border: "1px solid rgba(247,241,230,0.12)", borderRadius: 4, overflow: "hidden" },
-  lessonHeader: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", color: "#F7F1E6", padding: "14px 16px", fontSize: 14.5, cursor: "pointer", textAlign: "left" },
+  lessonCard: { background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.12)", borderRadius: 4, overflow: "hidden" },
+  lessonHeader: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", color: "#2A3D3C", padding: "14px 16px", fontSize: 14.5, cursor: "pointer", textAlign: "left" },
   lessonBody: {
     whiteSpace: "pre-wrap", fontFamily: "'Inter', sans-serif", fontSize: 13.5, lineHeight: 1.7,
-    padding: "0 16px 18px", margin: 0, opacity: 0.85, borderTop: "1px solid rgba(247,241,230,0.08)", paddingTop: 14,
+    padding: "0 16px 18px", margin: 0, opacity: 0.85, borderTop: "1px solid rgba(42,61,60,0.08)", paddingTop: 14,
   },
   lessonBodyWrap: {},
-  vocabBox: { margin: "0 16px 18px", padding: 16, background: "rgba(255,159,28,0.06)", border: "1px solid rgba(255,159,28,0.25)", borderRadius: 4 },
-  vocabTitle: { fontSize: 13, fontWeight: 700, color: "#FF9F1C" },
+  vocabBox: { margin: "0 16px 18px", padding: 16, background: "rgba(255,140,0,0.06)", border: "1px solid rgba(255,140,0,0.25)", borderRadius: 4 },
+  vocabTitle: { fontSize: 13, fontWeight: 700, color: "#FF8C00" },
   pdfLink: {
     display: "inline-flex", alignItems: "center", gap: 8, margin: "0 16px 18px", padding: "11px 18px",
     background: "linear-gradient(135deg, rgba(212,175,55,0.14), rgba(212,175,55,0.05))",
     border: "1px solid rgba(212,175,55,0.55)", borderRadius: 8,
-    color: "#E8C766", fontSize: 13.5, fontWeight: 700, textDecoration: "none",
+    color: "#003366", fontSize: 13.5, fontWeight: 700, textDecoration: "none",
     letterSpacing: 0.2, boxShadow: "0 0 14px rgba(212,175,55,0.12)",
   },
   pdfLinkLocked: {
     display: "inline-flex", alignItems: "center", gap: 8, margin: "0 16px 18px", padding: "11px 18px",
-    background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(247,241,230,0.25)", borderRadius: 8,
-    color: "rgba(247,241,230,0.55)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    background: "rgba(255,255,255,0.85)", border: "1px dashed rgba(42,61,60,0.25)", borderRadius: 8,
+    color: "rgba(42,61,60,0.55)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
   },
   authRequiredBox: {
-    textAlign: "center", padding: "50px 20px", background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,159,28,0.2)", borderRadius: 14,
+    textAlign: "center", padding: "50px 20px", background: "rgba(255,255,255,0.85)",
+    border: "1px solid rgba(255,140,0,0.2)", borderRadius: 14,
   },
   secondaryBtnLight: {
-    background: "transparent", color: "#F7F1E6", border: "1px solid rgba(247,241,230,0.3)",
+    background: "transparent", color: "#2A3D3C", border: "1px solid rgba(42,61,60,0.3)",
     borderRadius: 8, padding: "12px 22px", fontSize: 14.5, cursor: "pointer",
   },
-  dictRow: { background: "rgba(255,255,255,0.035)", borderRadius: 4, padding: "10px 14px", borderLeft: "3px solid #FF9F1C" },
+  dictRow: { background: "rgba(255,255,255,0.85)", borderRadius: 4, padding: "10px 14px", borderLeft: "3px solid #FF8C00" },
   dictTerm: { fontWeight: 700, fontSize: 14.5 },
   dictTrans: { fontSize: 13, opacity: 0.7, marginTop: 2 },
   speakBtn: {
-    background: "rgba(255,159,28,0.1)", border: "1px solid rgba(255,159,28,0.3)", borderRadius: "50%",
+    background: "rgba(255,140,0,0.1)", border: "1px solid rgba(255,140,0,0.3)", borderRadius: "50%",
     width: 34, height: 34, fontSize: 15, cursor: "pointer", flexShrink: 0,
   },
 };
@@ -1861,17 +1861,17 @@ function CircularScore({ value, color, tier = 1 }) {
   return (
     <svg width="140" height="140" viewBox="0 0 140 140" style={{ margin: "0 auto", display: "block", position: "relative" }}>
       {tier >= 4 && (
-        <circle cx="70" cy="70" r={r + 8} fill="none" stroke="#FFF6E0" strokeWidth="1" strokeDasharray="2 6" opacity="0.5">
+        <circle cx="70" cy="70" r={r + 8} fill="none" stroke="#2A3D3C" strokeWidth="1" strokeDasharray="2 6" opacity="0.5">
           <animateTransform attributeName="transform" type="rotate" from="0 70 70" to="360 70 70" dur="12s" repeatCount="indefinite" />
         </circle>
       )}
-      <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+      <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="10" />
       <circle
         cx="70" cy="70" r={r} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
         strokeDasharray={c} strokeDashoffset={offset}
         transform="rotate(-90 70 70)" style={{ transition: "stroke-dashoffset .1s linear" }}
       />
-      <text x="70" y="78" textAnchor="middle" fontSize="30" fontWeight="700" fill="#F5EFE0" fontFamily="'Fraunces', serif">
+      <text x="70" y="78" textAnchor="middle" fontSize="30" fontWeight="700" fill="#2A3D3C" fontFamily="'Fraunces', serif">
         {display}%
       </text>
     </svg>
@@ -1879,13 +1879,13 @@ function CircularScore({ value, color, tier = 1 }) {
 }
 
 const SECTION_THEME = {
-  lessons: { color: "#FF9F1C", soft: "rgba(255,159,28,0.14)", label: "Dərslər" },
+  lessons: { color: "#FF8C00", soft: "rgba(255,140,0,0.14)", label: "Dərslər" },
   dictionary: { color: "#4FC3E8", soft: "rgba(79,195,232,0.14)", label: "Lüğət" },
   books: { color: "#B98CE8", soft: "rgba(185,140,232,0.14)", label: "Kitablar" },
   courses: { color: "#6FD19A", soft: "rgba(111,209,154,0.14)", label: "Kurslar" },
   contact: { color: "#E86C8C", soft: "rgba(232,108,140,0.14)", label: "Əlaqə" },
   quiz: { color: "#FFD580", soft: "rgba(255,213,128,0.14)", label: "Özünü Yoxla" },
-  premium: { color: "#E8C766", soft: "rgba(232,199,102,0.14)", label: "Profilim" },
+  premium: { color: "#003366", soft: "rgba(0,51,102,0.14)", label: "Profilim" },
 };
 
 function SectionIcon({ type, size = 24, color = "currentColor" }) {
@@ -1975,8 +1975,8 @@ function EleganceOrnament({ tier, color }) {
       <path d="M90 0 L90 40 Q90 10 60 10 L90 10 Z" fill={color} opacity="0.5" />
       {tier >= 3 && <circle cx="72" cy="18" r="2.5" fill={color} />}
       {tier >= 3 && <path d="M90 22 Q60 22 50 45" stroke={color} strokeWidth="1" fill="none" opacity="0.6" />}
-      {tier >= 4 && <circle cx="50" cy="45" r="2" fill="#FFF6E0" />}
-      {tier >= 4 && <path d="M90 30 Q70 30 65 55" stroke="#FFF6E0" strokeWidth="0.75" fill="none" opacity="0.7" />}
+      {tier >= 4 && <circle cx="50" cy="45" r="2" fill="#2A3D3C" />}
+      {tier >= 4 && <path d="M90 30 Q70 30 65 55" stroke="#2A3D3C" strokeWidth="0.75" fill="none" opacity="0.7" />}
     </svg>
   );
 }
@@ -1984,7 +1984,7 @@ function EleganceOrnament({ tier, color }) {
 function ReportIssue({ questionId }) {
   const [state, setState] = useState("idle"); // idle | sent
   if (state === "sent") {
-    return <div style={{ ...styles.reportLink, color: "#00D9A3" }}>✓ Təşəkkürlər, qeyd olundu</div>;
+    return <div style={{ ...styles.reportLink, color: "#00A896" }}>✓ Təşəkkürlər, qeyd olundu</div>;
   }
   return (
     <button onClick={() => setState("sent")} style={styles.reportLink}>
@@ -2019,8 +2019,8 @@ function Shell({ children, wide }) {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)",
-    color: "#F5EFE0",
+    background: "linear-gradient(160deg, #F5F5DC 0%, #EDEDD4 100%)",
+    color: "#2A3D3C",
     fontFamily: "'Inter', -apple-system, sans-serif",
     display: "flex",
     justifyContent: "center",
@@ -2029,57 +2029,57 @@ const styles = {
   container: { width: "100%" },
   h1: { fontFamily: "'Fraunces', serif", fontSize: 34, margin: 0, fontWeight: 700, letterSpacing: -1 },
   h2: { fontFamily: "'Fraunces', serif", fontSize: 24, marginBottom: 4, fontWeight: 700 },
-  h3: { fontFamily: "'Fraunces', serif", fontSize: 17, color: "#FF9F1C", marginBottom: 10 },
+  h3: { fontFamily: "'Fraunces', serif", fontSize: 17, color: "#FF8C00", marginBottom: 10 },
   sub: { opacity: 0.7, fontSize: 14, marginTop: 4 },
   label: { fontSize: 13, opacity: 0.75, marginBottom: 6, display: "block" },
   input: {
-    width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)",
-    background: "#1A1611", color: "#F5EFE0", fontSize: 15, outline: "none", boxSizing: "border-box", caretColor: "#F5EFE0",
+    width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,140,0,0.25)",
+    background: "#FFFFFF", color: "#2A3D3C", fontSize: 15, outline: "none", boxSizing: "border-box", caretColor: "#2A3D3C",
   },
   card: {
-    background: "rgba(255,255,255,0.035)", border: "1px solid rgba(245,239,224,0.12)", borderRadius: 10,
-    padding: "16px 14px", color: "#F5EFE0", cursor: "pointer", textAlign: "left", transition: "border-color .2s, background .2s",
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.12)", borderRadius: 10,
+    padding: "16px 14px", color: "#2A3D3C", cursor: "pointer", textAlign: "left", transition: "border-color .2s, background .2s",
   },
-  cardActive: { borderColor: "#FF9F1C", background: "rgba(255,159,28,0.1)" },
-  cardGold: { background: "rgba(255,159,28,0.1)", borderColor: "#FF9F1C" },
+  cardActive: { borderColor: "#FF8C00", background: "rgba(255,140,0,0.1)" },
+  cardGold: { background: "rgba(255,140,0,0.1)", borderColor: "#FF8C00" },
   pill: {
-    padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(245,239,224,0.2)",
-    background: "transparent", color: "#F5EFE0", cursor: "pointer",
+    padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(42,61,60,0.2)",
+    background: "transparent", color: "#2A3D3C", cursor: "pointer",
   },
-  pillActive: { background: "#FF9F1C", color: "#0A0A0C", fontWeight: 700, borderColor: "#FF9F1C" },
+  pillActive: { background: "#FF8C00", color: "#F5F5DC", fontWeight: 700, borderColor: "#FF8C00" },
   primaryBtn: {
-    background: "#FF9F1C", color: "#0A0A0C", border: "none", borderRadius: 8, padding: "12px 22px",
+    background: "#FF8C00", color: "#F5F5DC", border: "none", borderRadius: 8, padding: "12px 22px",
     fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, justifyContent: "center",
   },
   secondaryBtn: {
-    background: "transparent", color: "#F5EFE0", border: "1px solid rgba(245,239,224,0.25)", borderRadius: 8,
+    background: "transparent", color: "#2A3D3C", border: "1px solid rgba(42,61,60,0.25)", borderRadius: 8,
     padding: "12px 22px", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
   },
-  backBtn: { background: "none", border: "none", color: "#FF9F1C", display: "flex", alignItems: "center", gap: 4, cursor: "pointer", marginBottom: 14, fontSize: 14, padding: 0 },
+  backBtn: { background: "none", border: "none", color: "#FF8C00", display: "flex", alignItems: "center", gap: 4, cursor: "pointer", marginBottom: 14, fontSize: 14, padding: 0 },
   testHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 },
-  exitBtn: { background: "none", border: "none", color: "rgba(245,239,224,0.5)", display: "flex", alignItems: "center", gap: 2, cursor: "pointer", fontSize: 13, padding: 0 },
-  progressTrack: { height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 4, marginTop: 10 },
-  progressFill: { height: 3, background: "linear-gradient(90deg, #FF9F1C, #FFD580)", borderRadius: 4, transition: "width .4s cubic-bezier(.2,.7,.3,1)" },
+  exitBtn: { background: "none", border: "none", color: "rgba(42,61,60,0.5)", display: "flex", alignItems: "center", gap: 2, cursor: "pointer", fontSize: 13, padding: 0 },
+  progressTrack: { height: 3, background: "rgba(255,255,255,0.85)", borderRadius: 4, marginTop: 10 },
+  progressFill: { height: 3, background: "linear-gradient(90deg, #FF8C00, #FFD580)", borderRadius: 4, transition: "width .4s cubic-bezier(.2,.7,.3,1)" },
   questionCard: {
-    background: "rgba(255,255,255,0.035)", border: "1px solid rgba(245,239,224,0.1)", borderRadius: 14,
+    background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.1)", borderRadius: 14,
     padding: "26px 22px", marginTop: 4,
   },
-  question: { fontSize: 19, marginBottom: 20, lineHeight: 1.55, fontWeight: 500, color: "#F5EFE0" },
+  question: { fontSize: 19, marginBottom: 20, lineHeight: 1.55, fontWeight: 500, color: "#2A3D3C" },
   option: {
-    padding: "14px 16px", borderRadius: 9, border: "1px solid rgba(245,239,224,0.14)", background: "rgba(255,255,255,0.02)",
-    color: "#F5EFE0", textAlign: "left", cursor: "pointer", fontSize: 15, transition: "border-color .15s, background .15s, transform .1s",
+    padding: "14px 16px", borderRadius: 9, border: "1px solid rgba(42,61,60,0.14)", background: "rgba(255,255,255,0.85)",
+    color: "#2A3D3C", textAlign: "left", cursor: "pointer", fontSize: 15, transition: "border-color .15s, background .15s, transform .1s",
   },
-  optionActive: { borderColor: "#FF9F1C", background: "rgba(255,159,28,0.12)" },
-  reportLink: { background: "none", border: "none", color: "rgba(245,239,224,0.35)", fontSize: 12, cursor: "pointer", padding: 0, marginTop: 18 },
+  optionActive: { borderColor: "#FF8C00", background: "rgba(255,140,0,0.12)" },
+  reportLink: { background: "none", border: "none", color: "rgba(42,61,60,0.35)", fontSize: 12, cursor: "pointer", padding: 0, marginTop: 18 },
   textarea: {
-    width: "100%", minHeight: 90, padding: 12, borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)",
-    background: "#1A1611", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", caretColor: "#F5EFE0",
+    width: "100%", minHeight: 90, padding: 12, borderRadius: 8, border: "1px solid rgba(255,140,0,0.25)",
+    background: "#FFFFFF", color: "#2A3D3C", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", caretColor: "#2A3D3C",
   },
   statRow: { display: "flex", alignItems: "center", gap: 10 },
-  statTrack: { flex: 1, height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" },
+  statTrack: { flex: 1, height: 8, background: "rgba(255,255,255,0.85)", borderRadius: 8, overflow: "hidden" },
   statFill: { height: 8, borderRadius: 8, transition: "width 1s cubic-bezier(.2,.7,.3,1)" },
-  reviewRow: { background: "rgba(255,255,255,0.03)", borderRadius: 6, padding: "8px 12px" },
-  adBox: { background: "rgba(255,159,28,0.06)", border: "1px solid rgba(255,159,28,0.2)", borderRadius: 12, padding: 18 },
+  reviewRow: { background: "rgba(255,255,255,0.85)", borderRadius: 6, padding: "8px 12px" },
+  adBox: { background: "rgba(255,140,0,0.06)", border: "1px solid rgba(255,140,0,0.2)", borderRadius: 12, padding: 18 },
 };
 
 /* ========================= ADMIN PANEL ========================= */
@@ -2087,15 +2087,15 @@ const styles = {
 function NotFoundPage() {
   return (
     <div style={{
-      minHeight: "100vh", background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)",
-      color: "#F7F1E6", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column",
+      minHeight: "100vh", background: "linear-gradient(160deg, #F5F5DC 0%, #EDEDD4 100%)",
+      color: "#2A3D3C", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", padding: 20, textAlign: "center",
     }}>
       <img src={LOGO_URL} alt="Deutsch Akademie" style={{ width: 64, height: 64, borderRadius: "50%", marginBottom: 20 }} />
-      <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, margin: "0 0 8px", color: "#FF9F1C" }}>404</h1>
+      <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, margin: "0 0 8px", color: "#FF8C00" }}>404</h1>
       <p style={{ fontSize: 16, opacity: 0.75, marginBottom: 24 }}>Bu səhifə tapılmadı.</p>
       <a href="/" style={{
-        background: "#FF9F1C", color: "#0A0A0C", textDecoration: "none", fontWeight: 700,
+        background: "#FF8C00", color: "#F5F5DC", textDecoration: "none", fontWeight: 700,
         padding: "12px 28px", borderRadius: 8, fontSize: 14.5,
       }}>Ana səhifəyə qayıt</a>
     </div>

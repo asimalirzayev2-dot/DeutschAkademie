@@ -116,8 +116,8 @@ function AuthModal({ portalStyles,  mode, onClose, onSwitch, saveSession, refres
           {(mode === "signup" || mode === "reset") && (
             <input type="password" placeholder="Şifrəni təkrarla" value={password2} onChange={(e) => setPassword2(e.target.value)} style={portalStyles.input} required />
           )}
-          {error && <p style={{ color: "#C97B6E", fontSize: 13, marginBottom: 10 }}>{error}</p>}
-          {confirmMsg && <p style={{ color: "#E8C766", fontSize: 13, marginBottom: 10 }}>{confirmMsg}</p>}
+          {error && <p style={{ color: "#C0392B", fontSize: 13, marginBottom: 10 }}>{error}</p>}
+          {confirmMsg && <p style={{ color: "#003366", fontSize: 13, marginBottom: 10 }}>{confirmMsg}</p>}
           <button type="submit" style={portalStyles.primaryBtn} disabled={loading}>
             {loading ? "..." : mode === "forgot" ? "Bərpa linkini göndər" : mode === "reset" ? "Şifrəni Yenilə" : mode === "signup" ? "Qeydiyyatdan keç" : "Daxil ol"}
           </button>

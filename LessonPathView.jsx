@@ -16,18 +16,18 @@ function GrowingTree({ progress, completedDays, totalDays, T }) {
     const length = 28 + t * 34;
     const endX = baseX + side * length;
     const endY = branchY - length * 0.4;
-    const color = i % 3 === 0 ? "#FF9F1C" : "#2FBFA0";
+    const color = i % 3 === 0 ? "#FF8C00" : "#00A896";
     const r = 9 + t * 7;
     leaves.push({ branchY, endX, endY, color, r });
   }
   return (
     <div style={{ textAlign: "center", marginBottom: 18 }}>
       <svg viewBox="0 0 280 210" width="100%" height="150" style={{ maxWidth: 260 }}>
-        <line x1="20" y1={baseY} x2="260" y2={baseY} stroke="rgba(247,241,230,0.15)" strokeWidth="2" />
-        <line x1={baseX} y1={baseY} x2={baseX} y2={baseY - trunkH} stroke="#8A6A4A" strokeWidth="8" strokeLinecap="round" />
+        <line x1="20" y1={baseY} x2="260" y2={baseY} stroke="rgba(42,61,60,0.15)" strokeWidth="2" />
+        <line x1={baseX} y1={baseY} x2={baseX} y2={baseY - trunkH} stroke="#7A6A55" strokeWidth="8" strokeLinecap="round" />
         {leaves.map((l, i) => (
           <g key={i}>
-            <line x1={baseX} y1={l.branchY} x2={l.endX} y2={l.endY} stroke="#8A6A4A" strokeWidth="4" strokeLinecap="round" />
+            <line x1={baseX} y1={l.branchY} x2={l.endX} y2={l.endY} stroke="#7A6A55" strokeWidth="4" strokeLinecap="round" />
             <circle cx={l.endX} cy={l.endY} r={l.r} fill={l.color} />
           </g>
         ))}
@@ -51,10 +51,10 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
 
   const today = new Date().toISOString().slice(0, 10);
   const T = {
-    bg: "#191510", card: "rgba(255,255,255,0.035)", border: "rgba(47,191,160,0.28)",
-    accent: "#2FBFA0", accentSoft: "rgba(47,191,160,0.14)",
-    warm: "#FF9F1C", warmSoft: "rgba(255,159,28,0.14)",
-    text: "#F7F1E6", textSoft: "rgba(247,241,230,0.65)",
+    bg: "#F5F5DC", card: "rgba(255,255,255,0.85)", border: "rgba(0,168,150,0.28)",
+    accent: "#00A896", accentSoft: "rgba(0,168,150,0.14)",
+    warm: "#FF8C00", warmSoft: "rgba(255,140,0,0.14)",
+    text: "#2A3D3C", textSoft: "rgba(42,61,60,0.65)",
   };
 
   useEffect(() => {
@@ -160,10 +160,10 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
 
   const wrapStyle = {
     background: `
-      radial-gradient(ellipse 220px 100px at 15% 10%, rgba(47,191,160,0.16), transparent 70%),
-      radial-gradient(ellipse 200px 90px at 85% 25%, rgba(255,159,28,0.14), transparent 70%),
-      radial-gradient(ellipse 180px 80px at 20% 70%, rgba(255,159,28,0.10), transparent 70%),
-      radial-gradient(ellipse 240px 110px at 80% 85%, rgba(47,191,160,0.13), transparent 70%),
+      radial-gradient(ellipse 220px 100px at 15% 10%, rgba(0,168,150,0.16), transparent 70%),
+      radial-gradient(ellipse 200px 90px at 85% 25%, rgba(255,140,0,0.14), transparent 70%),
+      radial-gradient(ellipse 180px 80px at 20% 70%, rgba(255,140,0,0.10), transparent 70%),
+      radial-gradient(ellipse 240px 110px at 80% 85%, rgba(0,168,150,0.13), transparent 70%),
       ${T.bg}
     `,
     borderRadius: 14, padding: "18px 16px", border: `1px solid ${T.border}`,
@@ -208,7 +208,7 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
     return (
       <div style={wrapStyle}>
         <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: T.text, marginTop: 0 }}>{quizResult.passed ? "✓ Keçdin!" : "Təkrar Lazımdır"}</h3>
-        <p style={{ fontSize: 30, fontWeight: 800, color: quizResult.passed ? T.accent : "#C97B6E" }}>{quizResult.pct}%</p>
+        <p style={{ fontSize: 30, fontWeight: 800, color: quizResult.passed ? T.accent : "#C0392B" }}>{quizResult.pct}%</p>
         <p style={{ fontSize: 13.5, color: T.textSoft, marginBottom: 14 }}>
           {quizResult.passed ? "Növbəti dərsə keçə bilərsən." : "75% və yuxarı lazımdır — dərsi bir daha nəzərdən keçirib yenidən sına."}
         </p>
@@ -237,7 +237,7 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
           <button key={lvl} onClick={() => setLevel(lvl)}
             style={{
               padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: "pointer",
-              background: level === lvl ? T.accent : "#241E17", color: level === lvl ? "#fff" : T.warm,
+              background: level === lvl ? T.accent : "#FFFFFF", color: level === lvl ? "#fff" : T.warm,
               border: `1px solid ${level === lvl ? T.accent : T.border}`,
             }}>{lvl}</button>
         ))}

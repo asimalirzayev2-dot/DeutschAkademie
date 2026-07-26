@@ -13,10 +13,10 @@ function ProfileChart({ points }) {
   });
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ marginTop: 10 }}>
-      <polyline points={coords.join(" ")} fill="none" stroke="#2FBFA0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={coords.join(" ")} fill="none" stroke="#00A896" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       {coords.map((c, i) => {
         const [x, y] = c.split(",");
-        return <circle key={i} cx={x} cy={y} r="3.5" fill="#2FBFA0" />;
+        return <circle key={i} cx={x} cy={y} r="3.5" fill="#00A896" />;
       })}
     </svg>
   );

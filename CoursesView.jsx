@@ -95,7 +95,7 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
 
       <h2 style={{ ...portalStyles.h2, marginTop: 32 }}>Qeydiyyat</h2>
       {regSent ? (
-        <p style={{ ...portalStyles.body, color: "#00D9A3" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlanılacaq.</p>
+        <p style={{ ...portalStyles.body, color: "#00A896" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlanılacaq.</p>
       ) : (
         <div style={{ display: "grid", gap: 12, maxWidth: 400 }}>
           <input placeholder="Adın" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
@@ -117,7 +117,7 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
                   onClick={() => setRegForm({ ...regForm, course: l })}
                   style={{ ...portalStyles.levelPill, ...(regForm.course === l ? portalStyles.levelPillActive : {}) }}
                 >
-                  <LevelIcon level={l} color={regForm.course === l ? "#0A0A0C" : "#FF9F1C"} /> {l}
+                  <LevelIcon level={l} color={regForm.course === l ? "#F5F5DC" : "#FF8C00"} /> {l}
                 </button>
               ))}
             </div>

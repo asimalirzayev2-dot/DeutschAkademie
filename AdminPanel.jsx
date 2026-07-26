@@ -54,14 +54,14 @@ function AdminPanel() {
   }, [token]);
 
   const styleA = {
-    page: { minHeight: "100vh", background: "linear-gradient(160deg, #0A0A0C 0%, #141416 100%)", color: "#F5EFE0", fontFamily: "'Inter', -apple-system, sans-serif", padding: "32px 16px" },
+    page: { minHeight: "100vh", background: "linear-gradient(160deg, #F5F5DC 0%, #EDEDD4 100%)", color: "#2A3D3C", fontFamily: "'Inter', -apple-system, sans-serif", padding: "32px 16px" },
     box: { maxWidth: 900, margin: "0 auto" },
-    input: { width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,159,28,0.25)", background: "#1A1611", color: "#F5EFE0", fontSize: 15, boxSizing: "border-box", marginBottom: 12, caretColor: "#F5EFE0" },
-    btn: { background: "#FF9F1C", color: "#0A0A0C", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 15, cursor: "pointer" },
-    tabBtn: (active) => ({ padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(245,239,224,0.2)", background: active ? "#FF9F1C" : "transparent", color: active ? "#0A0A0C" : "#F5EFE0", fontWeight: active ? 700 : 400, cursor: "pointer", marginRight: 8 }),
+    input: { width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,140,0,0.25)", background: "#FFFFFF", color: "#2A3D3C", fontSize: 15, boxSizing: "border-box", marginBottom: 12, caretColor: "#2A3D3C" },
+    btn: { background: "#FF8C00", color: "#F5F5DC", border: "none", borderRadius: 8, padding: "12px 22px", fontWeight: 700, fontSize: 15, cursor: "pointer" },
+    tabBtn: (active) => ({ padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(42,61,60,0.2)", background: active ? "#FF8C00" : "transparent", color: active ? "#F5F5DC" : "#2A3D3C", fontWeight: active ? 700 : 400, cursor: "pointer", marginRight: 8 }),
     table: { width: "100%", borderCollapse: "collapse", fontSize: 13.5 },
-    th: { textAlign: "left", padding: "8px 10px", borderBottom: "1px solid rgba(245,239,224,0.2)", opacity: 0.7, fontWeight: 600 },
-    td: { padding: "8px 10px", borderBottom: "1px solid rgba(245,239,224,0.08)" },
+    th: { textAlign: "left", padding: "8px 10px", borderBottom: "1px solid rgba(42,61,60,0.2)", opacity: 0.7, fontWeight: 600 },
+    td: { padding: "8px 10px", borderBottom: "1px solid rgba(42,61,60,0.08)" },
   };
 
   if (!token) {
@@ -72,7 +72,7 @@ function AdminPanel() {
           <form onSubmit={handleLogin}>
             <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={styleA.input} required />
             <input type="password" placeholder="Şifrə" value={password} onChange={(e) => setPassword(e.target.value)} style={styleA.input} required />
-            {error && <p style={{ color: "#C97B6E", fontSize: 13, marginBottom: 10 }}>{error}</p>}
+            {error && <p style={{ color: "#C0392B", fontSize: 13, marginBottom: 10 }}>{error}</p>}
             <button type="submit" style={styleA.btn} disabled={loading}>{loading ? "..." : "Daxil ol"}</button>
           </form>
         </div>
@@ -89,7 +89,7 @@ function AdminPanel() {
       <div style={styleA.box}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26 }}>Admin Panel</h1>
-          <button onClick={logout} style={{ ...styleA.btn, background: "transparent", border: "1px solid rgba(245,239,224,0.3)", color: "#F5EFE0" }}>Çıxış</button>
+          <button onClick={logout} style={{ ...styleA.btn, background: "transparent", border: "1px solid rgba(42,61,60,0.3)", color: "#2A3D3C" }}>Çıxış</button>
         </div>
 
         <div style={{ marginBottom: 16 }}>
@@ -187,15 +187,15 @@ function AdminPanel() {
               return (
                 <div>
                   <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-                    <div style={{ background: "rgba(255,159,28,0.08)", border: "1px solid rgba(255,159,28,0.3)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
+                    <div style={{ background: "rgba(255,140,0,0.08)", border: "1px solid rgba(255,140,0,0.3)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
                       <div style={{ fontSize: 26, fontWeight: 700 }}>{visitsToday}</div>
                       <div style={{ fontSize: 12.5, opacity: 0.7 }}>Bugünkü ziyarət</div>
                     </div>
-                    <div style={{ background: "rgba(47,191,160,0.08)", border: "1px solid rgba(47,191,160,0.3)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
+                    <div style={{ background: "rgba(0,168,150,0.08)", border: "1px solid rgba(0,168,150,0.3)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
                       <div style={{ fontSize: 26, fontWeight: 700 }}>{usersToday}</div>
                       <div style={{ fontSize: 12.5, opacity: 0.7 }}>Bugünkü qeydiyyat</div>
                     </div>
-                    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,239,224,0.15)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
+                    <div style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.15)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
                       <div style={{ fontSize: 26, fontWeight: 700 }}>{visits ? visits.length : "..."}</div>
                       <div style={{ fontSize: 12.5, opacity: 0.7 }}>Ümumi ziyarət (son 2000)</div>
                     </div>

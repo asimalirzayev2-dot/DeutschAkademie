@@ -17,11 +17,11 @@ const C = {
   bg: "#12100C",
   card: "#1E1A14",
   cardBack: "#17251F",
-  border: "rgba(47,191,160,0.30)",
-  turq: "#2FBFA0",
-  turqBright: "#3FE0BC",
-  orange: "#FF9F1C",
-  orangeBright: "#FFB84D",
+  border: "rgba(0,168,150,0.30)",
+  turq: "#00A896",
+  turqBright: "#00A896",
+  orange: "#FF8C00",
+  orangeBright: "#FF8C00",
   text: "#FBF6EC",
   textSoft: "rgba(251,246,236,0.62)",
 };
@@ -59,8 +59,8 @@ function FactCard({ item, onNext }) {
 
       <span style={{
         display: "inline-block", fontSize: 11, fontWeight: 700, letterSpacing: 0.4,
-        color: C.orange, background: "rgba(255,159,28,0.12)",
-        border: "1px solid rgba(255,159,28,0.28)", borderRadius: 20,
+        color: C.orange, background: "rgba(255,140,0,0.12)",
+        border: "1px solid rgba(255,140,0,0.28)", borderRadius: 20,
         padding: "4px 11px", marginBottom: 14,
       }}>{item.category}</span>
 
@@ -73,9 +73,9 @@ function FactCard({ item, onNext }) {
         {options.map((opt, i) => {
           const isCorrect = i === correctIdx;
           const isPicked = i === picked;
-          let bg = "rgba(255,255,255,0.03)", bc = "rgba(251,246,236,0.14)", col = C.text;
-          if (revealed && isCorrect) { bg = "rgba(47,191,160,0.16)"; bc = C.turq; col = C.turqBright; }
-          else if (revealed && isPicked) { bg = "rgba(201,123,110,0.14)"; bc = "#C97B6E"; col = "#E3A99E"; }
+          let bg = "rgba(255,255,255,0.85)", bc = "rgba(251,246,236,0.14)", col = C.text;
+          if (revealed && isCorrect) { bg = "rgba(0,168,150,0.16)"; bc = C.turq; col = C.turqBright; }
+          else if (revealed && isPicked) { bg = "rgba(192,57,43,0.14)"; bc = "#C0392B"; col = "#E3A99E"; }
           else if (revealed) { col = C.textSoft; }
           return (
             <button key={i}
@@ -96,7 +96,7 @@ function FactCard({ item, onNext }) {
       {revealed && (
         <div style={{
           marginTop: 16, padding: "14px 15px", borderRadius: 12,
-          background: "rgba(255,159,28,0.09)", border: "1px solid rgba(255,159,28,0.25)",
+          background: "rgba(255,140,0,0.09)", border: "1px solid rgba(255,140,0,0.25)",
         }}>
           <p style={{ margin: "0 0 6px", fontSize: 12.5, fontWeight: 800, color: C.orangeBright, letterSpacing: 0.3 }}>
             🦅 BİLİRDİNMİ?
@@ -172,7 +172,7 @@ function QartalGozu() {
             style={{
               padding: "7px 13px", borderRadius: 20, fontSize: 12.5, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit",
-              background: cat === c ? C.orange : "rgba(255,255,255,0.04)",
+              background: cat === c ? C.orange : "rgba(255,255,255,0.85)",
               color: cat === c ? "#1A1206" : C.textSoft,
               border: `1px solid ${cat === c ? C.orange : "rgba(251,246,236,0.16)"}`,
               transition: "all .18s ease",
