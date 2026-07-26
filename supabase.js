@@ -1,6 +1,16 @@
 const SUPABASE_URL = "https://krtfwdhdxspljykdglzp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtydGZ3ZGhkeHNwbGp5a2RnbHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzMTY5MDAsImV4cCI6MjA5OTg5MjkwMH0.iNwM5TLqXeuo5NCupYvo_vEO1uioY6CwPiVWGUbpBYE";
 
+export async function refreshSession(refreshToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  if (!res.ok) throw new Error("Sessiya yenilənmədi");
+  return res.json();
+}
+
 export async function sb(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: {

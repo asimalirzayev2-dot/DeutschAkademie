@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Crown, Bird } from "lucide-react";
 import emailjs from "@emailjs/browser";
-import { sb, sbInsert, adminLogin, sbAuth, sbAuthPatch, sbAuthInsert, signUp, verifyGumroadLicense, pdfUrl, resetPasswordRequest, updatePasswordWithToken, fetchOAuthUser, getGoogleLoginUrl } from "./supabase";
+import { sb, sbInsert, adminLogin, sbAuth, sbAuthPatch, sbAuthInsert, signUp, verifyGumroadLicense, pdfUrl, resetPasswordRequest, updatePasswordWithToken, fetchOAuthUser, getGoogleLoginUrl, refreshSession } from "./supabase";
 import AdminPanel from "./AdminPanel";
 import DictionaryView from "./DictionaryView";
 import { speakGerman, exportAnki, shuffle, shuffleOptions, notifyTeacher } from "./utils";
@@ -148,7 +148,7 @@ function InnerApp() {
     }
   }, []);
 
-  async function refreshProfile(sess) {
+  async function refreshProfile(sess, _retried) {
     if (!sess) { setProfile(null); return; }
     try {
       const rows = await sbAuth(`profiles?id=eq.${sess.user.id}&select=*`, sess.access_token);
@@ -169,6 +169,22 @@ function InnerApp() {
         if (rows2[0]?.name) setName(rows2[0].name);
       }
     } catch {
+      // Stored access token has most likely expired — try to renew it once
+      // using the refresh token, so the user stays logged in across visits.
+      if (!_retried && sess.refresh_token) {
+        try {
+          const fresh = await refreshSession(sess.refresh_token);
+          if (fresh?.access_token) {
+            const merged = { ...sess, ...fresh };
+            setSession(merged);
+            try { localStorage.setItem("session", JSON.stringify(merged)); } catch {}
+            return refreshProfile(merged, true);
+          }
+        } catch {}
+        // refresh token itself is invalid/expired -> genuine logout
+        setSession(null);
+        try { localStorage.removeItem("session"); } catch {}
+      }
       setProfile(null);
     }
   }

@@ -236,8 +236,8 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
         {LEVELS.map((lvl) => (
           <button key={lvl} onClick={() => setLevel(lvl)}
             style={{
-              padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              background: level === lvl ? T.accent : "#fff", color: level === lvl ? "#fff" : T.text,
+              padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              background: level === lvl ? T.accent : "#241E17", color: level === lvl ? "#fff" : T.warm,
               border: `1px solid ${level === lvl ? T.accent : T.border}`,
             }}>{lvl}</button>
         ))}
