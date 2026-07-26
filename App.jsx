@@ -151,6 +151,8 @@ function InnerApp() {
       if (token) {
         setRecoveryToken(token);
         setAuthModal("reset");
+        // Clear the hash so a stale recovery link doesn't force reset mode on every load
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
       }
     } else if (hash.includes("access_token")) {
       // Google (or other OAuth) login callback

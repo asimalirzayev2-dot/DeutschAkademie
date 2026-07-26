@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { signUp, resetPasswordRequest, updatePasswordWithToken, getGoogleLoginUrl } from "./supabase";
+import { signUp, adminLogin, resetPasswordRequest, updatePasswordWithToken, getGoogleLoginUrl } from "./supabase";
 import { LOGO_URL } from "./assets";
 
 function AuthModal({ portalStyles,  mode, onClose, onSwitch, saveSession, refreshProfile, recoveryToken }) {
