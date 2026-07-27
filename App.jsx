@@ -14,6 +14,7 @@ import ProfileView from "./ProfileView";
 import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
+import AdlerCup from "./AdlerCup";
 
 
 
@@ -1233,6 +1234,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "dictionary", label: "Lüğət" },
     { key: "books", label: "Kitablar" },
     { key: "courses", label: "Kurslar" },
+    { key: "adlercup", label: "🏆 Adler Cup" },
     { key: "contact", label: "Əlaqə" },
   ];
 
@@ -1506,6 +1508,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
+        {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "books" && (session ? (
