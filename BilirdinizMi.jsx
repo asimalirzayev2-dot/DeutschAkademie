@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { sb } from "./supabase";
-import { shuffle } from "./utils";
 
 const T = {
   navy: "#003366",
@@ -12,27 +11,41 @@ const T = {
   border: "rgba(42,61,60,0.14)",
 };
 
+// Hər ziyarətçi üçün sabit təsadüfi toxum -> eyni gündə fərqli fakt
+function visitorSeed() {
+  try {
+    let s = localStorage.getItem("factSeed");
+    if (!s) {
+      s = String(Math.floor(Math.random() * 100000));
+      localStorage.setItem("factSeed", s);
+    }
+    return parseInt(s, 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function dayNumber() {
+  return Math.floor(Date.now() / 86400000);
+}
+
 export default function BilirdinizMi() {
-  const [pool, setPool] = useState([]);
-  const [idx, setIdx] = useState(0);
+  const [item, setItem] = useState(null);
   const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    sb("germany_facts?select=*")
-      .then((rows) => { if (alive) setPool(shuffle(rows)); })
-      .catch(() => { if (alive) setPool([]); });
+    sb("daily_facts?select=*&order=id")
+      .then((rows) => {
+        if (!alive || !rows || rows.length === 0) return;
+        const i = (dayNumber() + visitorSeed()) % rows.length;
+        setItem(rows[i]);
+      })
+      .catch(() => {});
     return () => { alive = false; };
   }, []);
 
-  const item = pool[idx];
   if (!item) return null;
-
-  function next(e) {
-    e.stopPropagation();
-    setFlipped(false);
-    setTimeout(() => setIdx((i) => (i + 1 < pool.length ? i + 1 : 0)), 260);
-  }
 
   const face = {
     position: "absolute", inset: 0,
@@ -51,7 +64,7 @@ export default function BilirdinizMi() {
         }
         .bdm-scene { perspective: 1400px; }
         .bdm-inner {
-          position: relative; width: 100%; min-height: 230px;
+          position: relative; width: 100%; min-height: 250px;
           transition: transform .62s cubic-bezier(.22,.75,.28,1);
           transform-style: preserve-3d; cursor: pointer;
         }
@@ -64,15 +77,13 @@ export default function BilirdinizMi() {
           className={`bdm-inner${flipped ? " is-flipped" : ""}`}
           onClick={() => setFlipped((v) => !v)}
         >
-          {/* ---------- ÖN ÜZ ---------- */}
           <div style={{
             ...face,
             background: `linear-gradient(150deg, ${T.navy} 0%, #00284F 55%, #001F3D 100%)`,
-            border: `1px solid rgba(255,140,0,0.35)`,
+            border: "1px solid rgba(255,140,0,0.35)",
             textAlign: "center", alignItems: "center",
           }}>
-            {/* qartal silueti */}
-            <svg viewBox="0 0 120 74" width="104" height="64" style={{ marginBottom: 12, opacity: 0.95 }}>
+            <svg viewBox="0 0 120 74" width="100" height="62" style={{ marginBottom: 12 }}>
               <defs>
                 <linearGradient id="bdmWing" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#FF8C00" />
@@ -86,29 +97,26 @@ export default function BilirdinizMi() {
               <circle cx="60" cy="19" r="2.6" fill="#F5F5DC" />
             </svg>
 
-            <div style={{
-              fontSize: 11, fontWeight: 800, letterSpacing: 2.4,
-              color: T.warm, marginBottom: 7,
-            }}>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2.4, color: T.warm, marginBottom: 7 }}>
               QARTAL GÖZÜ
             </div>
 
             <div style={{
               fontFamily: "'Fraunces', serif", fontSize: 27, fontWeight: 700,
-              color: "#F5F5DC", lineHeight: 1.18, marginBottom: 10,
+              color: "#F5F5DC", lineHeight: 1.18, marginBottom: 12,
             }}>
               BİLİRDİNİZ Mİ?
             </div>
 
             <p style={{
-              margin: 0, fontSize: 13.5, lineHeight: 1.55,
-              color: "rgba(245,245,220,0.82)", maxWidth: 330,
+              margin: 0, fontSize: 15, lineHeight: 1.5, fontWeight: 600,
+              color: "rgba(245,245,220,0.92)", maxWidth: 340,
             }}>
-              {item.question}
+              {item.title}
             </p>
 
             <div style={{
-              marginTop: 15, fontSize: 11.5, fontWeight: 700,
+              marginTop: 16, fontSize: 11.5, fontWeight: 700,
               color: T.warm, letterSpacing: 0.5,
               display: "flex", alignItems: "center", gap: 6,
             }}>
@@ -117,52 +125,35 @@ export default function BilirdinizMi() {
                 border: `1.5px solid ${T.warm}`,
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                 fontSize: 11,
-              }}>↻</span>
+              }}>&#8635;</span>
               Kartı çevir
             </div>
           </div>
 
-          {/* ---------- ARXA ÜZ ---------- */}
           <div style={{
             ...face,
             transform: "rotateY(180deg)",
             background: T.surface,
             border: `1px solid ${T.border}`,
           }}>
-            <div style={{
-              fontSize: 10.5, fontWeight: 800, letterSpacing: 1.6,
-              color: T.warm, marginBottom: 9,
-            }}>
-              🦅 CAVAB
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1.6, color: T.warm, marginBottom: 10 }}>
+              &#129413; {(item.category || "FAKT").toUpperCase()}
             </div>
 
-            <p style={{
-              margin: "0 0 10px", fontSize: 15.5, fontWeight: 700,
-              color: T.accent, lineHeight: 1.4,
-            }}>
-              {item.correct === "A" ? item.option_a : item.correct === "B" ? item.option_b : item.option_c}
+            <p style={{ margin: "0 0 10px", fontSize: 15, fontWeight: 700, color: T.navy, lineHeight: 1.4 }}>
+              {item.title}
             </p>
 
-            <p style={{
-              margin: 0, fontSize: 13.5, color: T.text, lineHeight: 1.65,
-              maxHeight: 118, overflow: "auto",
-            }}>
+            <p style={{ margin: 0, fontSize: 13.5, color: T.text, lineHeight: 1.68, maxHeight: 130, overflow: "auto" }}>
               {item.fact}
             </p>
 
             <div style={{
-              marginTop: 14, display: "flex", gap: 8, alignItems: "center",
+              marginTop: 14, paddingTop: 11, borderTop: `1px solid ${T.border}`,
+              fontSize: 11.5, color: T.textSoft, display: "flex", alignItems: "center", gap: 6,
             }}>
-              <button onClick={next} style={{
-                flex: 1, padding: "10px 0", borderRadius: 9, border: "none",
-                background: T.accent, color: "#fff",
-                fontSize: 13.5, fontWeight: 800, cursor: "pointer",
-              }}>
-                Növbəti fakt →
-              </button>
-              <span style={{ fontSize: 10.5, color: T.textSoft, whiteSpace: "nowrap" }}>
-                {item.category}
-              </span>
+              <span style={{ color: T.accent, fontWeight: 700 }}>&#9679;</span>
+              Növbəti fakt sabah səni gözləyir
             </div>
           </div>
         </div>
