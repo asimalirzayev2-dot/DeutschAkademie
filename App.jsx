@@ -1178,7 +1178,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   const [regForm, setRegForm] = useState({ name: "", phone: "", course: "A1" });
   const [regSent, setRegSent] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [botOpen, setBotOpen] = useState(false);
   const [botQuestion, setBotQuestion] = useState(null);
   const [chatInput, setChatInput] = useState("");
@@ -1228,14 +1228,19 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     return () => { alive = false; };
   }, []);
 
-  const navItems = [
-    { key: "home", label: "Ana səhifə" },
-    { key: "lessons", label: "Dərslər" },
-    { key: "dictionary", label: "Lüğət" },
-    { key: "books", label: "Kitablar" },
-    { key: "courses", label: "Kurslar" },
-    { key: "adlercup", label: "🏆 Adler Cup" },
-    { key: "contact", label: "Əlaqə" },
+  const TABS = [
+    { key: "home",       label: "Ana",     icon: "⌂" },
+    { key: "lessons",    label: "Dərslər", icon: "▤" },
+    { key: "dictionary", label: "Lüğət",   icon: "⌕" },
+    { key: "adlercup",   label: "Cup",     icon: "♛" },
+    { key: "more",       label: "Daha",    icon: "⋯" },
+  ];
+
+  const MORE_ITEMS = [
+    { key: "books",   label: "Kitablar", sub: "PDF dərsliklər", icon: "▦", color: "#7A5C3C" },
+    { key: "courses", label: "Kurslar",  sub: "müəllimlər",     icon: "✎", color: "#FF8C00" },
+    { key: "premium", label: "Premium",  sub: "əlavə imkanlar", icon: "✦", color: "#D4AF37" },
+    { key: "contact", label: "Əlaqə",    sub: "bizə yaz",       icon: "✉", color: "#00A896" },
   ];
 
   return (
@@ -1247,11 +1252,8 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
         button, input, select { -webkit-tap-highlight-color: transparent; appearance: none; outline: none; font-family: inherit; }
         button:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,0.6); }
-        .desktop-nav-groups { display: flex; }
-        .mobile-hamburger-btn { display: none; }
-        @media (max-width: 860px) {
-          .desktop-nav-groups { display: none !important; }
-          .mobile-hamburger-btn { display: flex !important; }
+        @media (min-width: 861px) {
+          .da-sheet { max-width: 560px; margin: 0 auto; border-radius: 20px 20px 0 0; }
         }
       `}</style>
 
@@ -1289,79 +1291,77 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         );
       })()}
 
-      {/* Nav bar */}
+      {/* ---------- Üst zolaq: loqo + hesab ---------- */}
       <nav style={portalStyles.nav}>
         <div style={portalStyles.navBrand} onClick={() => setView("home")}>
           <img src={LOGO_URL} alt="Deutsch Akademie" style={portalStyles.navEmblem} />
           <span style={portalStyles.navBrandText}>Deutsch Akademie</span>
         </div>
-        <div className="desktop-nav-groups" style={portalStyles.navGroupsWrap}>
-          <div style={portalStyles.navGroup}>
-            <span style={portalStyles.navGroupIcon} title="Bölmələr">♜</span>
-            {navItems.map((n) => (
-              <button key={n.key} onClick={() => setView(n.key)}
-                style={{ ...portalStyles.navLink, ...(view === n.key ? portalStyles.navLinkActive : {}) }}>
-                {n.label}
-              </button>
-            ))}
-          </div>
-          <div style={portalStyles.navGroup}>
-            <span style={portalStyles.navGroupIcon} title="Hesab">🛡️</span>
-            <button onClick={() => setView("premium")}
-              style={{ ...portalStyles.navLink, ...(view === "premium" ? portalStyles.navLinkActive : {}) }}>
-              Premium
-            </button>
-            {session ? (
-              <>
-                <button onClick={() => setView("profile")}
-                  style={{ ...portalStyles.navLink, ...(view === "profile" ? portalStyles.navLinkActive : {}) }}>
-                  {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""}
-                </button>
-                <button onClick={() => setShowLogoutConfirm(true)} style={portalStyles.navLink}>Çıxış</button>
-              </>
-            ) : (
-              <button onClick={() => setAuthModal("login")} style={{ ...portalStyles.navLink, color: "#FF8C00", fontWeight: 700 }}>
-                Daxil ol
-              </button>
-            )}
-          </div>
-        </div>
 
-        <button className="mobile-hamburger-btn" onClick={() => setMobileMenuOpen((v) => !v)} style={portalStyles.hamburgerBtn}>
-          {mobileMenuOpen ? "✕" : "☰"}
-        </button>
+        {session ? (
+          <button onClick={() => setView("profile")} style={portalStyles.avatarBtn} title={profile?.name || "Hesab"}>
+            {(profile?.name || "?").trim().charAt(0).toUpperCase()}
+            {(isPremium || isAdmin) && <span style={portalStyles.avatarDot} />}
+          </button>
+        ) : (
+          <button onClick={() => setAuthModal("login")} style={portalStyles.loginPill}>Daxil ol</button>
+        )}
       </nav>
 
-      {mobileMenuOpen && (
-        <div style={portalStyles.mobileMenuPanel}>
-          {navItems.map((n) => (
-            <button key={n.key} onClick={() => { setView(n.key); setMobileMenuOpen(false); }}
-              style={{ ...portalStyles.mobileMenuItem, ...(view === n.key ? portalStyles.mobileMenuItemActive : {}) }}>
-              {n.label}
+      {/* ---------- Alt tab paneli ---------- */}
+      <div style={portalStyles.tabBar}>
+        {TABS.map((t) => {
+          const active = t.key === "more" ? moreOpen : (view === t.key && !moreOpen);
+          return (
+            <button key={t.key}
+              onClick={() => { if (t.key === "more") { setMoreOpen((v) => !v); } else { setMoreOpen(false); setView(t.key); } }}
+              style={portalStyles.tabBtn}>
+              <span style={{ ...portalStyles.tabIconWrap, ...(active ? portalStyles.tabIconWrapActive : {}) }}>
+                <span style={{ ...portalStyles.tabIcon, ...(active ? portalStyles.tabIconActive : {}) }}>{t.icon}</span>
+              </span>
+              <span style={{ ...portalStyles.tabLabel, ...(active ? portalStyles.tabLabelActive : {}) }}>{t.label}</span>
             </button>
-          ))}
-          <div style={portalStyles.mobileMenuDivider} />
-          <button onClick={() => { setView("premium"); setMobileMenuOpen(false); }}
-            style={{ ...portalStyles.mobileMenuItem, ...(view === "premium" ? portalStyles.mobileMenuItemActive : {}) }}>
-            ✦ Premium
-          </button>
-          {session ? (
-            <>
-              <button onClick={() => { setMobileMenuOpen(false); setView("profile"); }} style={portalStyles.mobileMenuItem}>
-                {profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""}
-              </button>
-              <button onClick={() => { setMobileMenuOpen(false); setShowLogoutConfirm(true); }} style={portalStyles.mobileMenuItem}>
-                Çıxış
-              </button>
-            </>
-          ) : (
-            <button onClick={() => { setMobileMenuOpen(false); setAuthModal("login"); }} style={{ ...portalStyles.mobileMenuItem, color: "#FF8C00", fontWeight: 700 }}>
-              Daxil ol
-            </button>
-          )}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
+      {/* ---------- "Daha" vərəqi ---------- */}
+      {moreOpen && (
+        <>
+          <div style={portalStyles.sheetBackdrop} onClick={() => setMoreOpen(false)} />
+          <div className="da-sheet" style={portalStyles.sheet}>
+            <div style={portalStyles.sheetHandle} />
+            <p style={portalStyles.sheetTitle}>Bölmələr</p>
+            <div style={portalStyles.sheetGrid}>
+              {MORE_ITEMS.map((m) => (
+                <button key={m.key} onClick={() => { setMoreOpen(false); setView(m.key); }}
+                  style={{ ...portalStyles.sheetCard, ...(view === m.key ? portalStyles.sheetCardActive : {}) }}>
+                  <span style={{ ...portalStyles.sheetCardIcon, background: m.color }}>{m.icon}</span>
+                  <span style={portalStyles.sheetCardText}>
+                    <span style={portalStyles.sheetCardTitle}>{m.label}</span>
+                    <span style={portalStyles.sheetCardSub}>{m.sub}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div style={portalStyles.sheetDivider} />
+            {session ? (
+              <>
+                <button onClick={() => { setMoreOpen(false); setView("profile"); }} style={portalStyles.sheetRow}>
+                  <span>{profile?.name || "Hesab"}{isAdmin ? " (Admin)" : isPremium ? " ✦" : ""}</span>
+                  <span style={{ color: "rgba(42,61,60,0.4)" }}>›</span>
+                </button>
+                <button onClick={() => { setMoreOpen(false); setShowLogoutConfirm(true); }}
+                  style={{ ...portalStyles.sheetRow, color: "#C0392B" }}>Çıxış</button>
+              </>
+            ) : (
+              <button onClick={() => { setMoreOpen(false); setAuthModal("login"); }}
+                style={{ ...portalStyles.sheetRow, color: "#FF8C00", fontWeight: 700 }}>Daxil ol</button>
+            )}
+          </div>
+        </>
+      )}
       {authModal && (
         <AuthModal
           portalStyles={portalStyles}
@@ -1577,6 +1577,78 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 }
 
 const portalStyles = {
+  avatarBtn: {
+    position: "relative", width: 36, height: 36, borderRadius: "50%",
+    background: "#EAEAD2", border: "1px solid rgba(42,61,60,0.14)",
+    color: "#003366", fontWeight: 800, fontSize: 15, cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  avatarDot: {
+    position: "absolute", top: -2, right: -2, width: 11, height: 11,
+    borderRadius: "50%", background: "#D4AF37", border: "2px solid #FFFFFF",
+  },
+  loginPill: {
+    padding: "8px 16px", borderRadius: 20, border: "none",
+    background: "#FF8C00", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer",
+  },
+  tabBar: {
+    position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 40,
+    display: "flex", background: "#FFFFFF",
+    borderTop: "1px solid rgba(42,61,60,0.12)",
+    padding: "6px 0 calc(6px + env(safe-area-inset-bottom))",
+  },
+  tabBtn: {
+    flex: 1, background: "none", border: "none", cursor: "pointer",
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "2px 0",
+  },
+  tabIconWrap: {
+    width: 46, height: 28, borderRadius: 14, display: "flex",
+    alignItems: "center", justifyContent: "center", transition: "background .2s",
+  },
+  tabIconWrapActive: { background: "rgba(0,168,150,0.14)" },
+  tabIcon: { fontSize: 17, lineHeight: 1, color: "rgba(42,61,60,0.5)", transition: "color .2s" },
+  tabIconActive: { color: "#00A896" },
+  tabLabel: { fontSize: 10, fontWeight: 700, color: "rgba(42,61,60,0.5)", transition: "color .2s" },
+  tabLabelActive: { color: "#00A896" },
+  sheetBackdrop: {
+    position: "fixed", inset: 0, background: "rgba(0,51,102,0.28)", zIndex: 45,
+  },
+  sheet: {
+    position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
+    background: "#F5F5DC", borderRadius: "20px 20px 0 0",
+    padding: "10px 16px calc(84px + env(safe-area-inset-bottom))",
+    boxShadow: "0 -8px 34px rgba(0,51,102,0.18)",
+    maxHeight: "78vh", overflowY: "auto",
+  },
+  sheetHandle: {
+    width: 40, height: 4, borderRadius: 3, background: "rgba(42,61,60,0.22)",
+    margin: "0 auto 12px",
+  },
+  sheetTitle: {
+    fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700,
+    color: "#003366", margin: "0 0 12px",
+  },
+  sheetGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 },
+  sheetCard: {
+    display: "flex", alignItems: "center", gap: 10, textAlign: "left",
+    padding: "12px 12px", borderRadius: 13, cursor: "pointer",
+    background: "#FFFFFF", border: "1px solid rgba(42,61,60,0.12)",
+  },
+  sheetCardActive: { borderColor: "#00A896", background: "rgba(0,168,150,0.07)" },
+  sheetCardIcon: {
+    width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: "#fff", fontSize: 15, fontWeight: 700,
+  },
+  sheetCardText: { display: "flex", flexDirection: "column", minWidth: 0 },
+  sheetCardTitle: { fontSize: 13.5, fontWeight: 800, color: "#003366" },
+  sheetCardSub: { fontSize: 10.5, color: "rgba(42,61,60,0.6)" },
+  sheetDivider: { height: 1, background: "rgba(42,61,60,0.12)", margin: "16px 0 6px" },
+  sheetRow: {
+    width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+    background: "none", border: "none", cursor: "pointer",
+    padding: "13px 4px", fontSize: 14.5, fontWeight: 600, color: "#2A3D3C", textAlign: "left",
+  },
   page: {
     minHeight: "100vh", position: "relative", overflow: "hidden",
     background: "linear-gradient(160deg, #F5F5DC 0%, #EDEDD4 100%)",
@@ -1597,7 +1669,7 @@ const portalStyles = {
   blob: { position: "absolute", width: 380, height: 380, borderRadius: "50%", filter: "blur(85px)", opacity: 0.45, pointerEvents: "none" },
   angular: { position: "absolute", width: 130, height: 130, opacity: 0.28, filter: "blur(1px)", pointerEvents: "none", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" },
   angularOutline: { position: "absolute", width: 80, height: 80, border: "2px solid rgba(0,168,150,0.4)", opacity: 0.6, pointerEvents: "none" },
-  content: { position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "8px 20px 40px" },
+  content: { position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "8px 20px calc(96px + env(safe-area-inset-bottom))" },
   hero: { textAlign: "center", padding: "48px 0 44px" },
   emblem: { display: "flex", justifyContent: "center", marginBottom: 18 },
   emblemRing: {
@@ -1727,7 +1799,7 @@ const portalStyles = {
   footer: { textAlign: "center", opacity: 0.4, fontSize: 12.5, marginTop: 20 },
   nav: {
     position: "relative", zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "18px 24px", flexWrap: "wrap", gap: 12, borderBottom: "1px solid rgba(42,61,60,0.08)",
+    padding: "14px 20px", gap: 12, borderBottom: "1px solid rgba(42,61,60,0.10)", background: "#FFFFFF",
   },
   navBrand: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer" },
   navEmblem: { width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 },
