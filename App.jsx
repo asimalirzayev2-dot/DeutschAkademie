@@ -15,6 +15,7 @@ import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
 import AdlerCup from "./AdlerCup";
+import BirdAvatar from "./BirdAvatar";
 
 
 
@@ -1299,9 +1300,12 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         </div>
 
         {session ? (
-          <button onClick={() => setView("profile")} style={portalStyles.avatarBtn} title={profile?.name || "Hesab"}>
-            {(profile?.name || "?").trim().charAt(0).toUpperCase()}
-            {(isPremium || isAdmin) && <span style={portalStyles.avatarDot} />}
+          <button onClick={() => setView("profile")}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", position: "relative", lineHeight: 0 }}
+            title={profile?.name || "Hesab"}>
+            <BirdAvatar birdKey={profile?.avatar_bird} size={38}
+              fallbackLetter={(profile?.name || "?").trim().charAt(0).toUpperCase()}
+              ring={isPremium || isAdmin} />
           </button>
         ) : (
           <button onClick={() => setAuthModal("login")} style={portalStyles.loginPill}>Daxil ol</button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { sb, sbAuth } from "./supabase";
+import { sb, sbAuth, sbAuthPatch } from "./supabase";
+import BirdAvatar, { BIRD_OPTIONS } from "./BirdAvatar";
 
 function ProfileChart({ points }) {
   if (!points || points.length < 2) return null;
@@ -26,6 +27,8 @@ function ProfileView({ portalStyles, SectionHeader, AuthRequired,  session, prof
   const [results, setResults] = useState(null);
   const [streak, setStreak] = useState(0);
   const [teacherWhatsapp, setTeacherWhatsapp] = useState(null);
+  const [bird, setBird] = useState(profile?.avatar_bird || null);
+  const [savingBird, setSavingBird] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -64,10 +67,46 @@ function ProfileView({ portalStyles, SectionHeader, AuthRequired,  session, prof
 
   if (!session) return <AuthRequired setAuthModal={() => {}} />;
 
+  async function chooseBird(key) {
+    if (savingBird) return;
+    setSavingBird(true);
+    const prev = bird;
+    setBird(key);
+    try {
+      await sbAuthPatch(`profiles?id=eq.${session.user.id}`, session.access_token, { avatar_bird: key });
+    } catch {
+      setBird(prev);
+    }
+    setSavingBird(false);
+  }
+
   return (
     <section style={portalStyles.section}>
       <SectionHeader type="premium" desc="Sənin irəliləyişin və nailiyyətlərin" />
       <h2 style={portalStyles.h2}>Profilim</h2>
+
+      <div style={{ ...portalStyles.premiumPerkBox, marginBottom: 16 }}>
+        <h3 style={portalStyles.premiumPerkTitle}>🪶 Avatarını seç</h3>
+        <p style={{ fontSize: 12.5, color: "rgba(42,61,60,0.62)", margin: "0 0 12px" }}>
+          Seçdiyin quş bütün saytda profil şəklin kimi görünəcək.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(74px, 1fr))", gap: 9 }}>
+          {BIRD_OPTIONS.map((b) => (
+            <button key={b.key} onClick={() => chooseBird(b.key)} disabled={savingBird}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                padding: "9px 4px", borderRadius: 12, cursor: "pointer",
+                background: bird === b.key ? "rgba(0,168,150,0.10)" : "transparent",
+                border: `1px solid ${bird === b.key ? "#00A896" : "rgba(42,61,60,0.12)"}`,
+              }}>
+              <BirdAvatar birdKey={b.key} size={40} />
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: "#2A3D3C", textAlign: "center", lineHeight: 1.2 }}>
+                {b.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div style={portalStyles.premiumPerkBox}>
         <h3 style={portalStyles.premiumPerkTitle}>📈 İrəliləyiş Qrafiki</h3>
