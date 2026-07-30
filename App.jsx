@@ -15,7 +15,7 @@ import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
 import AdlerCup from "./AdlerCup";
-import BirdAvatar from "./BirdAvatar";
+import Avatar from "./Avatar";
 
 
 
@@ -1303,7 +1303,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <button onClick={() => setView("profile")}
             style={{ background: "none", border: "none", padding: 0, cursor: "pointer", position: "relative", lineHeight: 0 }}
             title={profile?.name || "Hesab"}>
-            <BirdAvatar birdKey={profile?.avatar_bird} size={38}
+            <Avatar avatarKey={profile?.avatar_bird} size={38}
               fallbackLetter={(profile?.name || "?").trim().charAt(0).toUpperCase()}
               ring={isPremium || isAdmin} />
           </button>
