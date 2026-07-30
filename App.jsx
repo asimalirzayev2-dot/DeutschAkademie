@@ -14,6 +14,7 @@ import ProfileView from "./ProfileView";
 import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
+import SozTapmacasi from "./SozTapmacasi";
 import AdlerCup from "./AdlerCup";
 import Avatar from "./Avatar";
 
@@ -1238,10 +1239,11 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   ];
 
   const MORE_ITEMS = [
-    { key: "books",   label: "Kitablar", sub: "PDF dərsliklər", icon: "▦", color: "#7A5C3C" },
-    { key: "courses", label: "Kurslar",  sub: "müəllimlər",     icon: "✎", color: "#FF8C00" },
-    { key: "premium", label: "Premium",  sub: "əlavə imkanlar", icon: "✦", color: "#D4AF37" },
-    { key: "contact", label: "Əlaqə",    sub: "bizə yaz",       icon: "✉", color: "#00A896" },
+    { key: "books",     label: "Kitablar",       sub: "PDF dərsliklər",  icon: "▦", color: "#7A5C3C" },
+    { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
+    { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
+    { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
+    { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        icon: "✉", color: "#00A896" },
   ];
 
   return (
@@ -1514,6 +1516,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "sozoyunu" && (session ? <Reveal><SozTapmacasi /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "books" && (session ? (
           <Reveal>
@@ -1859,7 +1862,10 @@ const portalStyles = {
     background: "#00A896", color: "#F5F5DC", border: "none", fontSize: 22, cursor: "pointer",
     boxShadow: "0 4px 18px rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
   },
-  botFabWrap: { position: "fixed", bottom: 22, right: 22, zIndex: 40, width: 54, height: 54 },
+  botFabWrap: {
+    position: "fixed", right: 18, zIndex: 35, width: 54, height: 54,
+    bottom: "calc(84px + env(safe-area-inset-bottom))",
+  },
   crownBadge: {
     position: "absolute", top: -14, left: "50%", transform: "translateX(-50%) rotate(0deg)",
     pointerEvents: "none", zIndex: 1,
