@@ -816,43 +816,39 @@ const BOOKS = [
   { key: "a1a2", cover: "a1a2", title: "A1 + A2 Paketi", desc: "Hər iki başlanğıc səviyyə bir paketdə, endirimli qiymətə.", url: "https://asimalirzayev.gumroad.com/l/qopvbl" },
 ];
 
-function PromoCard({ eyebrow, icon, title, body, cta, iconBg, onClick, featured }) {
+function PromoCard({ eyebrow, icon, title, body, cta, gradient, onClick }) {
   return (
     <button onClick={onClick} style={{
       display: "block", width: "100%", textAlign: "left", cursor: "pointer",
-      background: featured ? "linear-gradient(135deg, #00A896, #00695C)" : "#FFFFFF",
-      border: featured ? "none" : "1px solid rgba(42,61,60,0.13)",
-      borderRadius: 18, padding: "20px 20px 15px",
-      boxShadow: featured ? "0 12px 30px rgba(0,168,150,0.30)" : "0 3px 14px rgba(0,51,102,0.07)",
+      background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
+      border: "none", borderRadius: 18, padding: "20px 20px 15px",
+      boxShadow: `0 10px 26px ${gradient[2]}`,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <span style={{
           width: 38, height: 38, borderRadius: 11, flexShrink: 0, fontSize: 18,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: featured ? "rgba(255,255,255,0.20)" : iconBg,
+          background: "rgba(255,255,255,0.20)",
         }}>{icon}</span>
-        <span style={{
-          fontSize: 10.5, fontWeight: 800, letterSpacing: 1.4,
-          color: featured ? "rgba(245,245,220,0.85)" : "#00A896",
-        }}>{eyebrow}</span>
+        <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1.4, color: "rgba(245,245,220,0.88)" }}>
+          {eyebrow}
+        </span>
       </div>
 
-      <p style={{
-        margin: "0 0 7px", fontSize: 17.5, fontWeight: 800, lineHeight: 1.32,
-        color: featured ? "#F5F5DC" : "#003366",
-      }}>{title}</p>
+      <p style={{ margin: "0 0 7px", fontSize: 17.5, fontWeight: 800, lineHeight: 1.32, color: "#F5F5DC" }}>
+        {title}
+      </p>
 
-      <p style={{
-        margin: "0 0 14px", fontSize: 13, lineHeight: 1.58,
-        color: featured ? "rgba(245,245,220,0.85)" : "rgba(42,61,60,0.68)",
-      }}>{body}</p>
+      <p style={{ margin: "0 0 14px", fontSize: 13, lineHeight: 1.58, color: "rgba(245,245,220,0.85)" }}>
+        {body}
+      </p>
 
       <div style={{
         display: "flex", alignItems: "center", gap: 6, paddingTop: 12,
-        borderTop: featured ? "1px solid rgba(255,255,255,0.20)" : "1px solid rgba(42,61,60,0.09)",
+        borderTop: "1px solid rgba(255,255,255,0.20)",
       }}>
-        <span style={{ fontSize: 13, fontWeight: 800, color: featured ? "#F5F5DC" : "#00A896" }}>{cta}</span>
-        <ChevronRight size={16} color={featured ? "#F5F5DC" : "#00A896"} />
+        <span style={{ fontSize: 13, fontWeight: 800, color: "#F5F5DC" }}>{cta}</span>
+        <ChevronRight size={16} color="#F5F5DC" />
       </div>
     </button>
   );
@@ -1516,7 +1512,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
             {continueLevel !== null && (
               <Reveal delay={0.05}>
                 <PromoCard
-                  featured
+                  gradient={["#00A896", "#00695C", "rgba(0,168,150,0.30)"]}
                   eyebrow="DƏRS YOLU"
                   icon="🦅"
                   title={continueLevel ? `Qanadların ${continueLevel}-də açılıb!` : "İlk addımı at — A1 səni gözləyir!"}
@@ -1533,42 +1529,48 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
             <Reveal delay={0.08}>
               <section style={{ display: "grid", gap: 12, marginTop: 14 }}>
                 <PromoCard
-                  eyebrow="SƏVİYYƏ TESTİ" icon="🥨" iconBg="rgba(0,51,102,0.08)"
+                  gradient={["#003366", "#001B33", "rgba(0,51,102,0.32)"]}
+                  eyebrow="SƏVİYYƏ TESTİ" icon="🥨"
                   title="Bilirsən, yoxsa bilirsən sanırsan?"
                   body="Bir neçə dəqiqəlik onlayn testlə hansı səviyyədə olduğunu dəqiq öyrən — nəticəyə görə sənə uyğun dərs yolunu bizimlə birlikdə qurarıq."
                   cta="Testi sına"
                   onClick={onStart}
                 />
                 <PromoCard
-                  eyebrow="ADLER CUP" icon="🏆" iconBg="rgba(212,175,55,0.14)"
+                  gradient={["#D4AF37", "#9C7A1E", "rgba(212,175,55,0.32)"]}
+                  eyebrow="ADLER CUP" icon="🏆"
                   title="Dostların hazırdır — sən hazırsanmı?"
                   body="Canlı sual-cavab yarışında dostlarınla üz-üzə gəl. Sürətli və düzgün cavab daha çox xal qazandırır — kim qartal, kim ötəri quş, ekranda görünür."
                   cta="Yarışa qoşul"
                   onClick={() => setView("adlercup")}
                 />
                 <PromoCard
-                  eyebrow="SÖZ TAPMACASI" icon="🐝" iconBg="rgba(0,168,150,0.10)"
+                  gradient={["#00A896", "#FF8C00", "rgba(255,140,0,0.28)"]}
+                  eyebrow="SÖZ TAPMACASI" icon="🐝"
                   title="Bir söz gizlənib hərflərin arasında"
                   body="Azərbaycanca izaha bax, hərf sayını gör, alman sözünü tap. Oyunla öyrəndiyin hər söz yadında daha möhkəm qalır."
                   cta="Oyna"
                   onClick={() => setView("sozoyunu")}
                 />
                 <PromoCard
-                  eyebrow="KİTABLARIMIZ" icon="📚" iconBg="rgba(122,90,60,0.12)"
+                  gradient={["#8C6239", "#5C3F22", "rgba(92,63,34,0.32)"]}
+                  eyebrow="KİTABLARIMIZ" icon="📚"
                   title="Səhifədən səhifəyə, sözdən cümləyə"
                   body="A1-dən B2-yə qədər özümüz hazırladığımız test kitabları və qrammatika bələdçiləri ilə istədiyin yerdə, istədiyin zaman oxu."
                   cta="Kitablara bax"
                   onClick={() => setView("books")}
                 />
                 <PromoCard
-                  eyebrow="LÜĞƏT" icon="📖" iconBg="rgba(0,51,102,0.08)"
+                  gradient={["#12B6C9", "#0C7F8C", "rgba(12,127,140,0.30)"]}
+                  eyebrow="LÜĞƏT" icon="📖"
                   title="11.600 söz bir toxunuşda"
                   body="Axtardığın hər sözün Azərbaycanca qarşılığını tap, səsləndir, Anki formatında ixrac et — lüğət həmişə əlinin altındadır."
                   cta="Lüğətə keç"
                   onClick={() => setView("dictionary")}
                 />
                 <PromoCard
-                  eyebrow="KURSLAR" icon="🎓" iconBg="rgba(255,140,0,0.12)"
+                  gradient={["#FF8C00", "#C96800", "rgba(255,140,0,0.30)"]}
+                  eyebrow="KURSLAR" icon="🎓"
                   title="Tək uçma, müəllimlə yüksəl"
                   body="Öz müəllimini seç — sualların həmişə vaxtında cavablansın, irəliləyişin izlənsin, motivasiyanı itirmə."
                   cta="Müəllimləri gör"
