@@ -816,6 +816,48 @@ const BOOKS = [
   { key: "a1a2", cover: "a1a2", title: "A1 + A2 Paketi", desc: "Hər iki başlanğıc səviyyə bir paketdə, endirimli qiymətə.", url: "https://asimalirzayev.gumroad.com/l/qopvbl" },
 ];
 
+function PromoCard({ eyebrow, icon, title, body, cta, iconBg, onClick, featured }) {
+  return (
+    <button onClick={onClick} style={{
+      display: "block", width: "100%", textAlign: "left", cursor: "pointer",
+      background: featured ? "linear-gradient(135deg, #00A896, #00695C)" : "#FFFFFF",
+      border: featured ? "none" : "1px solid rgba(42,61,60,0.13)",
+      borderRadius: 18, padding: "20px 20px 15px",
+      boxShadow: featured ? "0 12px 30px rgba(0,168,150,0.30)" : "0 3px 14px rgba(0,51,102,0.07)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <span style={{
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0, fontSize: 18,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: featured ? "rgba(255,255,255,0.20)" : iconBg,
+        }}>{icon}</span>
+        <span style={{
+          fontSize: 10.5, fontWeight: 800, letterSpacing: 1.4,
+          color: featured ? "rgba(245,245,220,0.85)" : "#00A896",
+        }}>{eyebrow}</span>
+      </div>
+
+      <p style={{
+        margin: "0 0 7px", fontSize: 17.5, fontWeight: 800, lineHeight: 1.32,
+        color: featured ? "#F5F5DC" : "#003366",
+      }}>{title}</p>
+
+      <p style={{
+        margin: "0 0 14px", fontSize: 13, lineHeight: 1.58,
+        color: featured ? "rgba(245,245,220,0.85)" : "rgba(42,61,60,0.68)",
+      }}>{body}</p>
+
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6, paddingTop: 12,
+        borderTop: featured ? "1px solid rgba(255,255,255,0.20)" : "1px solid rgba(42,61,60,0.09)",
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: featured ? "#F5F5DC" : "#00A896" }}>{cta}</span>
+        <ChevronRight size={16} color={featured ? "#F5F5DC" : "#00A896"} />
+      </div>
+    </button>
+  );
+}
+
 function WordOfDay() {
   const [word, setWord] = useState(null);
 
@@ -1470,85 +1512,70 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               <BilirdinizMi />
             </Reveal>
 
-            {/* ---------- Davam Et: şəxsi banner ---------- */}
+            {/* ---------- Davam Et: seçilmiş banner ---------- */}
             {continueLevel !== null && (
               <Reveal delay={0.05}>
-                <button
+                <PromoCard
+                  featured
+                  eyebrow="DƏRS YOLU"
+                  icon="🦅"
+                  title={continueLevel ? `Qanadların ${continueLevel}-də açılıb!` : "İlk addımı at — A1 səni gözləyir!"}
+                  body={continueLevel
+                    ? "Azərbaycan dilində izahlı, addım-addım qurulmuş dərsliklərimizlə Alman qrammatikası artıq bu qədər asan olmayıb. Qaldığın yerdən davam et, zirvə yaxındır."
+                    : "Sıfırdan başlayanlar üçün düşünülüb: hər dərs sadə izahla, canlı nümunələrlə və tapşırıqlarla qurulub. Bizimlə öyrənməyə başla."}
+                  cta={continueLevel ? "Davam et" : "Başla"}
                   onClick={() => { setJumpLevel(continueLevel || "A1"); setView("lessons"); }}
-                  style={portalStyles.promoHero}>
-                  <span style={portalStyles.promoHeroIcon}>🦅</span>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={portalStyles.promoHeroTitle}>
-                      {continueLevel
-                        ? `Qanadların ${continueLevel}-də açılıb!`
-                        : "İlk addımı at — A1 səni gözləyir!"}
-                    </span>
-                    <span style={portalStyles.promoHeroSub}>
-                      {continueLevel
-                        ? "Qaldığın yerdən davam et, zirvə yaxındır."
-                        : "Hər qartal uçmağa kiçik bir addımla başlayıb."}
-                    </span>
-                  </span>
-                  <ChevronRight size={22} color="#F5F5DC" style={{ flexShrink: 0 }} />
-                </button>
+                />
               </Reveal>
             )}
 
-            {/* ---------- Poster tərzi bölmə reklamları ---------- */}
+            {/* ---------- Bölmə kartları ---------- */}
             <Reveal delay={0.08}>
-              <section style={{ display: "grid", gap: 12, marginTop: 18 }}>
-                <button onClick={onStart} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #003366, #00284F)" }}>
-                  <span style={portalStyles.promoIcon}>🥨</span>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={portalStyles.promoTitle}>Bilirsən, yoxsa bilirsən sanırsan?</span>
-                    <span style={portalStyles.promoSub}>Onlayn testlə səviyyəni bir neçə dəqiqəyə öyrən.</span>
-                  </span>
-                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
-                </button>
-
-                <button onClick={() => setView("adlercup")} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #7A5A0E, #5C4309)" }}>
-                  <span style={portalStyles.promoIcon}>🏆</span>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={portalStyles.promoTitle}>Dostların hazırdır — sən hazırsanmı?</span>
-                    <span style={portalStyles.promoSub}>Adler Cup-da canlı yarışa qoşul, xal topla.</span>
-                  </span>
-                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
-                </button>
-
-                <button onClick={() => setView("sozoyunu")} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #00695C, #004D40)" }}>
-                  <span style={portalStyles.promoIcon}>🐝</span>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={portalStyles.promoTitle}>Bir söz gizlənib hərflərin arasında</span>
-                    <span style={portalStyles.promoSub}>Tapa biləcəksənmi? Söz Tapmacasında sına.</span>
-                  </span>
-                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
-                </button>
-
-                <button onClick={() => setView("books")} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #6B4A2A, #4E351D)" }}>
-                  <span style={portalStyles.promoIcon}>📚</span>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={portalStyles.promoTitle}>Səhifədən səhifəyə, sözdən cümləyə</span>
-                    <span style={portalStyles.promoSub}>Hazırladığımız kitablarla oxu, öyrən, irəlilə.</span>
-                  </span>
-                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
-                </button>
+              <section style={{ display: "grid", gap: 12, marginTop: 14 }}>
+                <PromoCard
+                  eyebrow="SƏVİYYƏ TESTİ" icon="🥨" iconBg="rgba(0,51,102,0.08)"
+                  title="Bilirsən, yoxsa bilirsən sanırsan?"
+                  body="Bir neçə dəqiqəlik onlayn testlə hansı səviyyədə olduğunu dəqiq öyrən — nəticəyə görə sənə uyğun dərs yolunu bizimlə birlikdə qurarıq."
+                  cta="Testi sına"
+                  onClick={onStart}
+                />
+                <PromoCard
+                  eyebrow="ADLER CUP" icon="🏆" iconBg="rgba(212,175,55,0.14)"
+                  title="Dostların hazırdır — sən hazırsanmı?"
+                  body="Canlı sual-cavab yarışında dostlarınla üz-üzə gəl. Sürətli və düzgün cavab daha çox xal qazandırır — kim qartal, kim ötəri quş, ekranda görünür."
+                  cta="Yarışa qoşul"
+                  onClick={() => setView("adlercup")}
+                />
+                <PromoCard
+                  eyebrow="SÖZ TAPMACASI" icon="🐝" iconBg="rgba(0,168,150,0.10)"
+                  title="Bir söz gizlənib hərflərin arasında"
+                  body="Azərbaycanca izaha bax, hərf sayını gör, alman sözünü tap. Oyunla öyrəndiyin hər söz yadında daha möhkəm qalır."
+                  cta="Oyna"
+                  onClick={() => setView("sozoyunu")}
+                />
+                <PromoCard
+                  eyebrow="KİTABLARIMIZ" icon="📚" iconBg="rgba(122,90,60,0.12)"
+                  title="Səhifədən səhifəyə, sözdən cümləyə"
+                  body="A1-dən B2-yə qədər özümüz hazırladığımız test kitabları və qrammatika bələdçiləri ilə istədiyin yerdə, istədiyin zaman oxu."
+                  cta="Kitablara bax"
+                  onClick={() => setView("books")}
+                />
+                <PromoCard
+                  eyebrow="LÜĞƏT" icon="📖" iconBg="rgba(0,51,102,0.08)"
+                  title="11.600 söz bir toxunuşda"
+                  body="Axtardığın hər sözün Azərbaycanca qarşılığını tap, səsləndir, Anki formatında ixrac et — lüğət həmişə əlinin altındadır."
+                  cta="Lüğətə keç"
+                  onClick={() => setView("dictionary")}
+                />
+                <PromoCard
+                  eyebrow="KURSLAR" icon="🎓" iconBg="rgba(255,140,0,0.12)"
+                  title="Tək uçma, müəllimlə yüksəl"
+                  body="Öz müəllimini seç — sualların həmişə vaxtında cavablansın, irəliləyişin izlənsin, motivasiyanı itirmə."
+                  cta="Müəllimləri gör"
+                  onClick={() => setView("courses")}
+                />
               </section>
             </Reveal>
-
-            {/* ---------- İkinci dərəcəli: Lüğət + Kurslar ---------- */}
-            <Reveal delay={0.12}>
-              <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
-                <button onClick={() => setView("dictionary")} style={portalStyles.promoSmall}>
-                  <span style={{ fontSize: 20 }}>📖</span>
-                  <span style={portalStyles.promoSmallTitle}>11.600 söz bir toxunuşda</span>
-                </button>
-                <button onClick={() => setView("courses")} style={portalStyles.promoSmall}>
-                  <span style={{ fontSize: 20 }}>🎓</span>
-                  <span style={portalStyles.promoSmallTitle}>Tək uçma, müəllimlə yüksəl</span>
-                </button>
-              </section>
-            </Reveal>
-
             {/* ---------- Haqqımızda: qısa ---------- */}
             <Reveal delay={0.16}>
               <section style={{ ...portalStyles.section, marginTop: 26 }}>
