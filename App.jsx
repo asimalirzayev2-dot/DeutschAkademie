@@ -949,7 +949,7 @@ function LessonVocab({ level, num }) {
   );
 }
 
-function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView, session, profile }) {
+function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView, session, profile, initialLevel }) {
   const [subTab, setSubTab] = useState("path"); // path | browse
   const [level, setLevel] = useState("A1");
   const [openTopic, setOpenTopic] = useState(null);
@@ -971,7 +971,7 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView,
         <button onClick={() => setSubTab("browse")} style={{ ...portalStyles.pill, ...(subTab === "browse" ? portalStyles.pillActive : {}) }}>📖 Sərbəst Baxış</button>
       </div>
 
-      {subTab === "path" && <LessonPathView portalStyles={portalStyles} AuthRequired={AuthRequired} session={session} profile={profile} />}
+      {subTab === "path" && <LessonPathView portalStyles={portalStyles} AuthRequired={AuthRequired} session={session} profile={profile} initialLevel={initialLevel} />}
 
       {subTab === "browse" && (
       <>
@@ -1188,6 +1188,15 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
   const [chatLoading, setChatLoading] = useState(false);
   const glowRef = useRef(null);
   const [streak, setStreak] = useState(null);
+  const [continueLevel, setContinueLevel] = useState(null);
+  const [jumpLevel, setJumpLevel] = useState(null); // null=hesablanmayıb, ""=proqres yoxdur, "A1".. =mövcud
+
+  useEffect(() => {
+    if (!session) { setContinueLevel(""); return; }
+    sbAuth(`user_lesson_progress?user_id=eq.${session.user.id}&passed=eq.true&select=level&order=level.desc&limit=1`, session.access_token)
+      .then((rows) => setContinueLevel(rows && rows[0] ? rows[0].level : ""))
+      .catch(() => setContinueLevel(""));
+  }, [session]);
 
   useEffect(() => {
     try {
@@ -1449,7 +1458,9 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                   Deutsch <span style={{ color: "#FF8C00" }}>Akademie</span>
                 </h1>
                 <div style={portalStyles.titleRule} />
-                <p style={portalStyles.tagline}>Alman dilini Azərbaycan dilində öyrənənlər üçün</p>
+                <p style={portalStyles.tagline}>
+                  {profile?.name ? `Xoş gəldin, ${profile.name}!` : "Alman dilini Azərbaycan dilində öyrənənlər üçün"}
+                </p>
                 {streak > 0 && <div style={portalStyles.streakBadge}>🔥 {streak} gündür ardıcıl buradasan</div>}
                 <div style={{ marginTop: 22 }}><WordOfDay /></div>
               </div>
@@ -1459,60 +1470,99 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               <BilirdinizMi />
             </Reveal>
 
-            <Reveal delay={0.05}>
-              <section style={portalStyles.section}>
-                <h2 style={portalStyles.h2}>Haqqımızda</h2>
-                <p style={portalStyles.body}>
-                  Deutsch Akademie — Azərbaycanlı öyrənənlər üçün Goethe, TestDaF və telc kimi
-                  beynəlxalq imtahanların strukturuna uyğun hazırlanmış alman dili tədris materialları
-                  və test kitabları yaradır. Məqsədimiz alman dilini aydın izahlarla, praktik
-                  məşqlərlə hər kəsə əlçatan etməkdir.
-                </p>
+            {/* ---------- Davam Et: şəxsi banner ---------- */}
+            {continueLevel !== null && (
+              <Reveal delay={0.05}>
+                <button
+                  onClick={() => { setJumpLevel(continueLevel || "A1"); setView("lessons"); }}
+                  style={portalStyles.promoHero}>
+                  <span style={portalStyles.promoHeroIcon}>🦅</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={portalStyles.promoHeroTitle}>
+                      {continueLevel
+                        ? `Qanadların ${continueLevel}-də açılıb!`
+                        : "İlk addımı at — A1 səni gözləyir!"}
+                    </span>
+                    <span style={portalStyles.promoHeroSub}>
+                      {continueLevel
+                        ? "Qaldığın yerdən davam et, zirvə yaxındır."
+                        : "Hər qartal uçmağa kiçik bir addımla başlayıb."}
+                    </span>
+                  </span>
+                  <ChevronRight size={22} color="#F5F5DC" style={{ flexShrink: 0 }} />
+                </button>
+              </Reveal>
+            )}
+
+            {/* ---------- Poster tərzi bölmə reklamları ---------- */}
+            <Reveal delay={0.08}>
+              <section style={{ display: "grid", gap: 12, marginTop: 18 }}>
+                <button onClick={onStart} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #003366, #00284F)" }}>
+                  <span style={portalStyles.promoIcon}>🥨</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={portalStyles.promoTitle}>Bilirsən, yoxsa bilirsən sanırsan?</span>
+                    <span style={portalStyles.promoSub}>Onlayn testlə səviyyəni bir neçə dəqiqəyə öyrən.</span>
+                  </span>
+                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
+                </button>
+
+                <button onClick={() => setView("adlercup")} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #7A5A0E, #5C4309)" }}>
+                  <span style={portalStyles.promoIcon}>🏆</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={portalStyles.promoTitle}>Dostların hazırdır — sən hazırsanmı?</span>
+                    <span style={portalStyles.promoSub}>Adler Cup-da canlı yarışa qoşul, xal topla.</span>
+                  </span>
+                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
+                </button>
+
+                <button onClick={() => setView("sozoyunu")} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #00695C, #004D40)" }}>
+                  <span style={portalStyles.promoIcon}>🐝</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={portalStyles.promoTitle}>Bir söz gizlənib hərflərin arasında</span>
+                    <span style={portalStyles.promoSub}>Tapa biləcəksənmi? Söz Tapmacasında sına.</span>
+                  </span>
+                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
+                </button>
+
+                <button onClick={() => setView("books")} style={{ ...portalStyles.promoBanner, background: "linear-gradient(120deg, #6B4A2A, #4E351D)" }}>
+                  <span style={portalStyles.promoIcon}>📚</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={portalStyles.promoTitle}>Səhifədən səhifəyə, sözdən cümləyə</span>
+                    <span style={portalStyles.promoSub}>Hazırladığımız kitablarla oxu, öyrən, irəlilə.</span>
+                  </span>
+                  <ChevronRight size={20} color="rgba(245,245,220,0.75)" style={{ flexShrink: 0 }} />
+                </button>
               </section>
             </Reveal>
 
-            <Reveal delay={0.1}>
-              <section style={portalStyles.section}>
-                <h2 style={portalStyles.h2}>Fəaliyyətimiz</h2>
-                <div style={portalStyles.grid}>
-                  <TiltCard onClick={() => setView("lessons")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <IconBadge type="lessons" />
-                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Dərslər</h3>
-                    <p style={portalStyles.cardText}>A1-dən B2-yə qədər səviyyələr üzrə qrammatika izahları.</p>
-                  </TiltCard>
-                  <TiltCard onClick={() => setView("dictionary")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <IconBadge type="dictionary" />
-                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Lüğət</h3>
-                    <p style={portalStyles.cardText}>Mövzulara görə qruplaşdırılmış alman-azərbaycan lüğəti.</p>
-                  </TiltCard>
-                  <TiltCard onClick={onStart} style={{ ...portalStyles.card, ...portalStyles.cardCta, cursor: "pointer", textAlign: "left" }}>
-                    <div style={portalStyles.cardIcon}>🥨</div>
-                    <h3 style={portalStyles.cardTitle}>Özünü Yoxla</h3>
-                    <p style={portalStyles.cardText}>Onlayn testlə biliyini ölç, səviyyəni müəyyənləşdir.</p>
-                    <div style={portalStyles.ctaLink}>Testə başla <ChevronRight size={16} /></div>
-                  </TiltCard>
-                  <TiltCard onClick={() => setView("courses")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <IconBadge type="courses" />
-                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Kurslar</h3>
-                    <p style={portalStyles.cardText}>Müəllim rəhbərliyi ilə qruplarda alman dili kursları.</p>
-                  </TiltCard>
-                  <TiltCard onClick={() => setView("books")} style={{ ...portalStyles.card, cursor: "pointer", textAlign: "left" }}>
-                    <IconBadge type="books" />
-                    <h3 style={{ ...portalStyles.cardTitle, marginTop: 12 }}>Kitablarımız</h3>
-                    <p style={portalStyles.cardText}>Çap materiallarımızı Gumroad üzərindən əldə et.</p>
-                  </TiltCard>
-                  <div style={{ ...portalStyles.card, opacity: 0.45, cursor: "default" }}>
-                    <div style={portalStyles.cardIcon}>🧩</div>
-                    <h3 style={portalStyles.cardTitle}>Digər Fənlər</h3>
-                    <p style={portalStyles.cardText}>Riyaziyyat, İngilis dili və s. — tezliklə əlavə olunacaq.</p>
-                  </div>
-                </div>
+            {/* ---------- İkinci dərəcəli: Lüğət + Kurslar ---------- */}
+            <Reveal delay={0.12}>
+              <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+                <button onClick={() => setView("dictionary")} style={portalStyles.promoSmall}>
+                  <span style={{ fontSize: 20 }}>📖</span>
+                  <span style={portalStyles.promoSmallTitle}>11.600 söz bir toxunuşda</span>
+                </button>
+                <button onClick={() => setView("courses")} style={portalStyles.promoSmall}>
+                  <span style={{ fontSize: 20 }}>🎓</span>
+                  <span style={portalStyles.promoSmallTitle}>Tək uçma, müəllimlə yüksəl</span>
+                </button>
+              </section>
+            </Reveal>
+
+            {/* ---------- Haqqımızda: qısa ---------- */}
+            <Reveal delay={0.16}>
+              <section style={{ ...portalStyles.section, marginTop: 26 }}>
+                <h2 style={portalStyles.h2}>Haqqımızda</h2>
+                <p style={portalStyles.body}>
+                  Deutsch Akademie — Azərbaycanlı öyrənənlər üçün Goethe, TestDaF və telc
+                  standartlarına uyğun hazırlanmış alman dili materialları yaradır.
+                </p>
               </section>
             </Reveal>
           </>
         )}
 
-        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} initialLevel={jumpLevel} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
@@ -1584,6 +1634,32 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 }
 
 const portalStyles = {
+  promoHero: {
+    width: "100%", display: "flex", alignItems: "center", gap: 14,
+    padding: "18px 18px", borderRadius: 16, border: "none", cursor: "pointer",
+    background: "linear-gradient(120deg, #00A896, #007A6C)",
+    boxShadow: "0 8px 26px rgba(0,168,150,0.28)", textAlign: "left",
+  },
+  promoHeroIcon: { fontSize: 30, flexShrink: 0 },
+  promoHeroTitle: {
+    display: "block", fontFamily: "'Fraunces', serif", fontSize: 17.5, fontWeight: 700,
+    color: "#F5F5DC", lineHeight: 1.3,
+  },
+  promoHeroSub: { display: "block", fontSize: 12.5, color: "rgba(245,245,220,0.82)", marginTop: 3 },
+  promoBanner: {
+    width: "100%", display: "flex", alignItems: "center", gap: 13,
+    padding: "15px 16px", borderRadius: 14, border: "none", cursor: "pointer", textAlign: "left",
+    boxShadow: "0 4px 16px rgba(0,51,102,0.14)",
+  },
+  promoIcon: { fontSize: 24, flexShrink: 0 },
+  promoTitle: { display: "block", fontSize: 14.5, fontWeight: 800, color: "#F5F5DC", lineHeight: 1.35 },
+  promoSub: { display: "block", fontSize: 11.5, color: "rgba(245,245,220,0.72)", marginTop: 2 },
+  promoSmall: {
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center",
+    padding: "16px 10px", borderRadius: 13, cursor: "pointer",
+    background: "#FFFFFF", border: "1px solid rgba(42,61,60,0.12)",
+  },
+  promoSmallTitle: { fontSize: 12, fontWeight: 700, color: "#003366", lineHeight: 1.35 },
   avatarBtn: {
     position: "relative", width: 36, height: 36, borderRadius: "50%",
     background: "#EAEAD2", border: "1px solid rgba(42,61,60,0.14)",
