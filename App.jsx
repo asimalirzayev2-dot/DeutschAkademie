@@ -1563,7 +1563,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                 <PromoCard
                   gradient={["#12B6C9", "#0C7F8C", "rgba(12,127,140,0.30)"]}
                   eyebrow="LÜĞƏT" icon="📖"
-                  title="11.600 söz bir toxunuşda"
+                  title="Axtardığın söz bir toxunuşda"
                   body="Axtardığın hər sözün Azərbaycanca qarşılığını tap, səsləndir, Anki formatında ixrac et — lüğət həmişə əlinin altındadır."
                   cta="Lüğətə keç"
                   onClick={() => setView("dictionary")}
