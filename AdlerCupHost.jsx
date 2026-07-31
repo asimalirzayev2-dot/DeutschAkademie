@@ -38,12 +38,17 @@ async function buildQuestions(mode, level) {
     }));
   }
   async function fromVocab() {
-    const rows = await sb("dictionary?direction=eq.de-az&select=term,translation&limit=400");
+    const lvl = level || "A1";
+    // Dəqiq etiketlənmiş (level) sözlərdən istifadə et; kifayət qədər olmasa, bütün lüğətə keç
+    let rows = await sb(`dictionary?direction=eq.de-az&level=eq.${lvl}&select=term,translation&limit=400`);
+    if (!rows || rows.length < 6) {
+      rows = await sb("dictionary?direction=eq.de-az&select=term,translation&limit=400");
+    }
     const pool = shuffle(rows).filter((r) => r.term && r.translation);
     return pool.slice(0, QUESTION_COUNT).map((r) => {
       const wrong = shuffle(pool.filter((x) => x.translation !== r.translation)).slice(0, 2).map((x) => x.translation);
       const opts = shuffle([r.translation, ...wrong]);
-      return { q: `"${r.term}" sozunun menasi?`, options: opts, correct: opts.indexOf(r.translation), tag: "Luget" };
+      return { q: `"${r.term}" sozunun menasi?`, options: opts, correct: opts.indexOf(r.translation), tag: lvl };
     });
   }
   if (mode === "lesson")  return await fromLessons();
@@ -162,7 +167,7 @@ export default function AdlerCupHost({ profile, onExit }) {
             </button>
           ))}
         </div>
-        {mode === "lesson" && (
+        {(mode === "lesson" || mode === "vocab") && (
           <div style={{ display: "flex", gap: 7, marginBottom: 14, flexWrap: "wrap" }}>
             {LEVELS.map((l) => (
               <button key={l} onClick={() => setLevel(l)} style={{
