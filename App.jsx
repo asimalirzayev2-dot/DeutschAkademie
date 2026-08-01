@@ -15,6 +15,7 @@ import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
 import SozTapmacasi from "./SozTapmacasi";
+import OxuAnlama from "./OxuAnlama";
 import AdlerCup from "./AdlerCup";
 import Avatar from "./Avatar";
 
@@ -1289,6 +1290,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "books",     label: "Kitablar",       sub: "PDF dərsliklər",  icon: "▦", color: "#7A5C3C" },
     { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
     { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
+    { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
     { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
     { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        icon: "✉", color: "#00A896" },
   ];
@@ -1596,6 +1598,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "sozoyunu" && (session ? <Reveal><SozTapmacasi /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "oxuanlama" && (session ? <Reveal><OxuAnlama /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "books" && (session ? (
           <Reveal>
