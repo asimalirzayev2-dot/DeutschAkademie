@@ -7,14 +7,13 @@ const T = {
   border: "rgba(42,61,60,0.14)", gold: "#D4AF37", danger: "#C0392B",
 };
 const LEVELS = ["A1", "A2", "B1", "B2"];
-const LETTERS = ["a", "b", "c", "d", "e"];
 
 export default function OxuAnlama() {
-  const [screen, setScreen] = useState("level"); // level | list | test | result
+  const [screen, setScreen] = useState("level");
   const [level, setLevel] = useState("A1");
   const [units, setUnits] = useState(null);
   const [current, setCurrent] = useState(null);
-  const [answers, setAnswers] = useState({}); // { msg1: 'R', match1: 'a', info1: 'F', ... }
+  const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -44,11 +43,9 @@ export default function OxuAnlama() {
   function score() {
     if (!current) return { correct: 0, total: 15 };
     let correct = 0;
-    for (let i = 1; i <= 5; i++) {
-      if (answers[`msg${i}`] === current[`msg_a${i}`]) correct++;
-      if (answers[`match${i}`] === current[`match_${i}`]) correct++;
-      if (answers[`info${i}`] === current[`info_a${i}`]) correct++;
-    }
+    current.msg_questions.forEach((q, i) => { if (answers[`msg${i}`] === q.a) correct++; });
+    current.people.forEach((p, i) => { if (answers[`match${i}`] === p.answer) correct++; });
+    current.task3_questions.forEach((q, i) => { if (answers[`t3_${i}`] === q.a) correct++; });
     return { correct, total: 15 };
   }
 
@@ -56,7 +53,6 @@ export default function OxuAnlama() {
   const btnPrimary = { background: T.accent, color: "#fff", border: "none", borderRadius: 10, padding: "13px 20px", fontWeight: 800, fontSize: 14.5, cursor: "pointer" };
   const btnGhost = { background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" };
 
-  // ---------- 1. Səviyyə seçimi ----------
   if (screen === "level") {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
@@ -88,7 +84,6 @@ export default function OxuAnlama() {
     );
   }
 
-  // ---------- 2. Vahid siyahısı ----------
   if (screen === "list") {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
@@ -115,10 +110,10 @@ export default function OxuAnlama() {
     );
   }
 
-  // ---------- 3. Test ekranı ----------
   if (screen === "test" && current) {
     const u = current;
     const sc = submitted ? score() : null;
+    const adLetters = Object.keys(u.ads).sort();
 
     return (
       <section style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -139,58 +134,86 @@ export default function OxuAnlama() {
           </div>
         )}
 
-        {/* ---- Aufgabe 1: Mesaj ---- */}
+        {/* ---- Aufgabe 1 ---- */}
         <TaskHeader n={1} title="Mesajı oxuyun. Cümlələr doğru, yoxsa yanlışdır?" />
         <div style={{ ...box, marginBottom: 16 }}>
           <p style={{ whiteSpace: "pre-line", fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px", fontStyle: "italic" }}>
             {u.msg_text}
           </p>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <RFQuestion key={i} num={i} question={u[`msg_q${i}`]}
-              value={answers[`msg${i}`]} correct={u[`msg_a${i}`]} submitted={submitted}
+          {u.msg_questions.map((q, i) => (
+            <RFQuestion key={i} num={i + 1} question={q.q}
+              value={answers[`msg${i}`]} correct={q.a} submitted={submitted}
               onChange={(v) => setAns(`msg${i}`, v)} />
           ))}
         </div>
 
-        {/* ---- Aufgabe 2: Uyğunlaşdırma ---- */}
-        <TaskHeader n={2} title="Hər şəxsə uyğun elanı seçin" />
+        {/* ---- Aufgabe 2 ---- */}
+        <TaskHeader n={2} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
         <div style={{ ...box, marginBottom: 16 }}>
           <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
-            {LETTERS.map((l) => (
+            {adLetters.map((l) => (
               <div key={l} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
                 <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{l.toUpperCase()})</span>
-                <span>{u[`ad_${l}`]}</span>
+                <span>{u.ads[l]}</span>
               </div>
             ))}
           </div>
           <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
-          {[1, 2, 3, 4, 5].map((i) => (
-            <MatchQuestion key={i} num={i} person={u[`person_${i}`]}
-              value={answers[`match${i}`]} correct={u[`match_${i}`]} submitted={submitted}
+          {u.people.map((p, i) => (
+            <MatchQuestion key={i} num={i} person={p.text} letters={adLetters}
+              value={answers[`match${i}`]} correct={p.answer} submitted={submitted}
               onChange={(v) => setAns(`match${i}`, v)} />
           ))}
         </div>
 
-        {/* ---- Aufgabe 3: İctimai mətn ---- */}
-        <TaskHeader n={3} title="Mətni oxuyun. Cümlələr doğru, yoxsa yanlışdır?" />
+        {/* ---- Aufgabe 3 ---- */}
+        <TaskHeader n={3} title={
+          u.task3_type === "mc" ? "Mətni oxuyun və düzgün cavabı seçin"
+          : u.task3_type === "opinion" ? "Fikirləri oxuyun — kim nə deyir?"
+          : "Mətni oxuyun. Cümlələr doğru, yoxsa yanlışdır?"
+        } />
         <div style={{ ...box, marginBottom: 18 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.info_title}</p>
-          <p style={{ fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px" }}>{u.info_text}</p>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <RFQuestion key={i} num={i + 15} question={u[`info_q${i}`]}
-              value={answers[`info${i}`]} correct={u[`info_a${i}`]} submitted={submitted}
-              onChange={(v) => setAns(`info${i}`, v)} />
+          {u.task3_type !== "opinion" && (
+            <>
+              {u.task3_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.task3_title}</p>}
+              <p style={{ fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px" }}>{u.task3_text}</p>
+            </>
+          )}
+
+          {u.task3_type === "opinion" && (
+            <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+              {u.task3_speakers.map((s, i) => (
+                <div key={i} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(0,51,102,0.04)" }}>
+                  <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 800, color: T.navy }}>{s.name}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: T.text, lineHeight: 1.5, fontStyle: "italic" }}>„{s.text}"</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {u.task3_type === "tf" && u.task3_questions.map((q, i) => (
+            <RFQuestion key={i} num={i + 16} question={q.q}
+              value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+              onChange={(v) => setAns(`t3_${i}`, v)} />
+          ))}
+
+          {u.task3_type === "mc" && u.task3_questions.map((q, i) => (
+            <MCQuestion key={i} num={i + 16} question={q.q} options={q.options}
+              value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+              onChange={(v) => setAns(`t3_${i}`, v)} />
+          ))}
+
+          {u.task3_type === "opinion" && u.task3_questions.map((q, i) => (
+            <OpinionQuestion key={i} num={i + 16} question={q.q} names={u.task3_speakers.map((s) => s.name)}
+              value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+              onChange={(v) => setAns(`t3_${i}`, v)} />
           ))}
         </div>
 
         {!submitted ? (
-          <button onClick={() => setSubmitted(true)} style={{ ...btnPrimary, width: "100%" }}>
-            Yoxla
-          </button>
+          <button onClick={() => setSubmitted(true)} style={{ ...btnPrimary, width: "100%" }}>Yoxla</button>
         ) : (
-          <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>
-            Vahidlərə qayıt
-          </button>
+          <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>Vahidlərə qayıt</button>
         )}
       </section>
     );
@@ -207,6 +230,15 @@ function TaskHeader({ n, title }) {
   );
 }
 
+function optStyle(active, isRight, isWrongPick, submitted) {
+  let bg = "transparent", bd = T.border, col = T.text;
+  if (submitted) {
+    if (isRight) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; }
+    else if (isWrongPick) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; }
+  } else if (active) { bg = "rgba(0,51,102,0.08)"; bd = T.navy; col = T.navy; }
+  return { bg, bd, col };
+}
+
 function RFQuestion({ num, question, value, correct, submitted, onChange }) {
   return (
     <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
@@ -215,16 +247,11 @@ function RFQuestion({ num, question, value, correct, submitted, onChange }) {
       </p>
       <div style={{ display: "flex", gap: 8 }}>
         {["R", "F"].map((opt) => {
-          const active = value === opt;
-          let bg = "transparent", bd = T.border, col = T.text;
-          if (submitted) {
-            if (opt === correct) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; }
-            else if (active) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; }
-          } else if (active) { bg = "rgba(0,51,102,0.08)"; bd = T.navy; col = T.navy; }
+          const s = optStyle(value === opt, submitted && opt === correct, submitted && value === opt && opt !== correct, submitted);
           return (
             <button key={opt} disabled={submitted} onClick={() => onChange(opt)} style={{
               flex: 1, padding: "9px 0", borderRadius: 8, fontWeight: 700, fontSize: 13,
-              background: bg, border: `1px solid ${bd}`, color: col, cursor: submitted ? "default" : "pointer",
+              background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
               {opt === "R" ? "Doğru" : "Yanlış"}
             </button>
@@ -235,26 +262,68 @@ function RFQuestion({ num, question, value, correct, submitted, onChange }) {
   );
 }
 
-function MatchQuestion({ num, person, value, correct, submitted, onChange }) {
+function MatchQuestion({ num, person, letters, value, correct, submitted, onChange }) {
   return (
     <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
       <p style={{ margin: "0 0 8px", fontSize: 13.5, color: T.text, lineHeight: 1.4 }}>
-        <b style={{ color: T.textSoft }}>{num + 10}.</b> {person}
+        <b style={{ color: T.textSoft }}>{num + 11}.</b> {person}
       </p>
-      <div style={{ display: "flex", gap: 6 }}>
-        {LETTERS.map((l) => {
-          const active = value === l;
-          let bg = "transparent", bd = T.border, col = T.text;
-          if (submitted) {
-            if (l === correct) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; }
-            else if (active) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; }
-          } else if (active) { bg = "rgba(0,51,102,0.08)"; bd = T.navy; col = T.navy; }
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {letters.map((l) => {
+          const s = optStyle(value === l, submitted && l === correct, submitted && value === l && l !== correct, submitted);
           return (
             <button key={l} disabled={submitted} onClick={() => onChange(l)} style={{
-              width: 34, height: 34, borderRadius: 8, fontWeight: 800, fontSize: 13,
-              background: bg, border: `1px solid ${bd}`, color: col, cursor: submitted ? "default" : "pointer",
+              width: 32, height: 32, borderRadius: 8, fontWeight: 800, fontSize: 12.5,
+              background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
               {l.toUpperCase()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MCQuestion({ num, question, options, value, correct, submitted, onChange }) {
+  const keys = Object.keys(options).sort();
+  return (
+    <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${T.border}` }}>
+      <p style={{ margin: "0 0 8px", fontSize: 13.5, color: T.text, lineHeight: 1.4 }}>
+        <b style={{ color: T.textSoft }}>{num}.</b> {question}
+      </p>
+      <div style={{ display: "grid", gap: 6 }}>
+        {keys.map((k) => {
+          const s = optStyle(value === k, submitted && k === correct, submitted && value === k && k !== correct, submitted);
+          return (
+            <button key={k} disabled={submitted} onClick={() => onChange(k)} style={{
+              textAlign: "left", padding: "8px 11px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+              background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
+            }}>
+              <b>{k})</b> {options[k]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OpinionQuestion({ num, question, names, value, correct, submitted, onChange }) {
+  return (
+    <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
+      <p style={{ margin: "0 0 8px", fontSize: 13.5, color: T.text, lineHeight: 1.4 }}>
+        <b style={{ color: T.textSoft }}>{num}.</b> {question}
+      </p>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {names.map((n) => {
+          const s = optStyle(value === n, submitted && n === correct, submitted && value === n && n !== correct, submitted);
+          return (
+            <button key={n} disabled={submitted} onClick={() => onChange(n)} style={{
+              padding: "7px 12px", borderRadius: 8, fontWeight: 700, fontSize: 12.5,
+              background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
+            }}>
+              {n}
             </button>
           );
         })}
