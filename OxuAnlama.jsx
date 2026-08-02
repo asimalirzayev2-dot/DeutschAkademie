@@ -42,11 +42,14 @@ export default function OxuAnlama() {
 
   function score() {
     if (!current) return { correct: 0, total: 15 };
-    let correct = 0;
-    current.msg_questions.forEach((q, i) => { if (answers[`msg${i}`] === q.a) correct++; });
-    current.people.forEach((p, i) => { if (answers[`match${i}`] === p.answer) correct++; });
-    current.task3_questions.forEach((q, i) => { if (answers[`t3_${i}`] === q.a) correct++; });
-    return { correct, total: 15 };
+    let correct = 0, total = 0;
+    current.msg_questions.forEach((q, i) => { total++; if (answers[`msg${i}`] === q.a) correct++; });
+    if (current.article_questions) {
+      current.article_questions.forEach((q, i) => { total++; if (answers[`art_${i}`] === q.a) correct++; });
+    }
+    current.people.forEach((p, i) => { total++; if (answers[`match${i}`] === p.answer) correct++; });
+    current.task3_questions.forEach((q, i) => { total++; if (answers[`t3_${i}`] === q.a) correct++; });
+    return { correct, total };
   }
 
   const box = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 16px" };
@@ -114,6 +117,7 @@ export default function OxuAnlama() {
     const u = current;
     const sc = submitted ? score() : null;
     const adLetters = Object.keys(u.ads).sort();
+    const isB1 = !!u.article_questions;
 
     return (
       <section style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -147,68 +151,125 @@ export default function OxuAnlama() {
           ))}
         </div>
 
-        {/* ---- Aufgabe 2 ---- */}
-        <TaskHeader n={2} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
-        <div style={{ ...box, marginBottom: 16 }}>
-          <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
-            {adLetters.map((l) => (
-              <div key={l} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
-                <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{l.toUpperCase()})</span>
-                <span>{u.ads[l]}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
-          {u.people.map((p, i) => (
-            <MatchQuestion key={i} num={i} person={p.text} letters={adLetters}
-              value={answers[`match${i}`]} correct={p.answer} submitted={submitted}
-              onChange={(v) => setAns(`match${i}`, v)} />
-          ))}
-        </div>
-
-        {/* ---- Aufgabe 3 ---- */}
-        <TaskHeader n={3} title={
-          u.task3_type === "mc" ? "Mətni oxuyun və düzgün cavabı seçin"
-          : u.task3_type === "opinion" ? "Fikirləri oxuyun — kim nə deyir?"
-          : "Mətni oxuyun. Cümlələr doğru, yoxsa yanlışdır?"
-        } />
-        <div style={{ ...box, marginBottom: 18 }}>
-          {u.task3_type !== "opinion" && (
-            <>
-              {u.task3_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.task3_title}</p>}
-              <p style={{ fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px" }}>{u.task3_text}</p>
-            </>
-          )}
-
-          {u.task3_type === "opinion" && (
-            <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-              {u.task3_speakers.map((s, i) => (
-                <div key={i} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(0,51,102,0.04)" }}>
-                  <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 800, color: T.navy }}>{s.name}</p>
-                  <p style={{ margin: 0, fontSize: 13, color: T.text, lineHeight: 1.5, fontStyle: "italic" }}>„{s.text}"</p>
-                </div>
+        {isB1 && (
+          <>
+            {/* ---- Teil 2: qəzet məqaləsi ---- */}
+            <TaskHeader n={2} title="Məqaləni oxuyun və düzgün cavabı seçin" />
+            <div style={{ ...box, marginBottom: 16 }}>
+              {u.article_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.article_title}</p>}
+              <p style={{ whiteSpace: "pre-line", fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px" }}>{u.article_text}</p>
+              {u.article_questions.map((q, i) => (
+                <MCQuestion key={i} num={i + 6} question={q.q} options={q.options}
+                  value={answers[`art_${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`art_${i}`, v)} />
               ))}
             </div>
-          )}
 
-          {u.task3_type === "tf" && u.task3_questions.map((q, i) => (
-            <RFQuestion key={i} num={i + 16} question={q.q}
-              value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
-              onChange={(v) => setAns(`t3_${i}`, v)} />
-          ))}
+            {/* ---- Teil 3: fikirlər ---- */}
+            <TaskHeader n={3} title="Fikirləri oxuyun — kim nə deyir?" />
+            <div style={{ ...box, marginBottom: 16 }}>
+              <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                {u.task3_speakers.map((s, i) => (
+                  <div key={i} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(0,51,102,0.04)" }}>
+                    <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 800, color: T.navy }}>{s.name}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: T.text, lineHeight: 1.5, fontStyle: "italic" }}>„{s.text}"</p>
+                  </div>
+                ))}
+              </div>
+              {u.task3_questions.map((q, i) => (
+                <OpinionQuestion key={i} num={i + 11} question={q.q} names={u.task3_speakers.map((s) => s.name)}
+                  value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`t3_${i}`, v)} />
+              ))}
+            </div>
 
-          {u.task3_type === "mc" && u.task3_questions.map((q, i) => (
-            <MCQuestion key={i} num={i + 16} question={q.q} options={q.options}
-              value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
-              onChange={(v) => setAns(`t3_${i}`, v)} />
-          ))}
+            {/* ---- Teil 4: elanlar ---- */}
+            <TaskHeader n={4} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
+            <div style={{ ...box, marginBottom: 18 }}>
+              <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
+                {adLetters.map((l) => (
+                  <div key={l} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
+                    <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{l.toUpperCase()})</span>
+                    <span>{u.ads[l]}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
+              {u.people.map((p, i) => (
+                <MatchQuestion key={i} num={i + 16} person={p.text} letters={adLetters}
+                  value={answers[`match${i}`]} correct={p.answer} submitted={submitted}
+                  onChange={(v) => setAns(`match${i}`, v)} />
+              ))}
+            </div>
+          </>
+        )}
 
-          {u.task3_type === "opinion" && u.task3_questions.map((q, i) => (
-            <OpinionQuestion key={i} num={i + 16} question={q.q} names={u.task3_speakers.map((s) => s.name)}
-              value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
-              onChange={(v) => setAns(`t3_${i}`, v)} />
-          ))}
-        </div>
+        {!isB1 && (
+          <>
+            {/* ---- Aufgabe 2 ---- */}
+            <TaskHeader n={2} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
+            <div style={{ ...box, marginBottom: 16 }}>
+              <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
+                {adLetters.map((l) => (
+                  <div key={l} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
+                    <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{l.toUpperCase()})</span>
+                    <span>{u.ads[l]}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
+              {u.people.map((p, i) => (
+                <MatchQuestion key={i} num={i + 11} person={p.text} letters={adLetters}
+                  value={answers[`match${i}`]} correct={p.answer} submitted={submitted}
+                  onChange={(v) => setAns(`match${i}`, v)} />
+              ))}
+            </div>
+
+            {/* ---- Aufgabe 3 ---- */}
+            <TaskHeader n={3} title={
+              u.task3_type === "mc" ? "Mətni oxuyun və düzgün cavabı seçin"
+              : u.task3_type === "opinion" ? "Fikirləri oxuyun — kim nə deyir?"
+              : "Mətni oxuyun. Cümlələr doğru, yoxsa yanlışdır?"
+            } />
+            <div style={{ ...box, marginBottom: 18 }}>
+              {u.task3_type !== "opinion" && (
+                <>
+                  {u.task3_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.task3_title}</p>}
+                  <p style={{ fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px" }}>{u.task3_text}</p>
+                </>
+              )}
+
+              {u.task3_type === "opinion" && (
+                <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                  {u.task3_speakers.map((s, i) => (
+                    <div key={i} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(0,51,102,0.04)" }}>
+                      <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 800, color: T.navy }}>{s.name}</p>
+                      <p style={{ margin: 0, fontSize: 13, color: T.text, lineHeight: 1.5, fontStyle: "italic" }}>„{s.text}"</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {u.task3_type === "tf" && u.task3_questions.map((q, i) => (
+                <RFQuestion key={i} num={i + 16} question={q.q}
+                  value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`t3_${i}`, v)} />
+              ))}
+
+              {u.task3_type === "mc" && u.task3_questions.map((q, i) => (
+                <MCQuestion key={i} num={i + 16} question={q.q} options={q.options}
+                  value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`t3_${i}`, v)} />
+              ))}
+
+              {u.task3_type === "opinion" && u.task3_questions.map((q, i) => (
+                <OpinionQuestion key={i} num={i + 16} question={q.q} names={u.task3_speakers.map((s) => s.name)}
+                  value={answers[`t3_${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`t3_${i}`, v)} />
+              ))}
+            </div>
+          </>
+        )}
 
         {!submitted ? (
           <button onClick={() => setSubmitted(true)} style={{ ...btnPrimary, width: "100%" }}>Yoxla</button>
@@ -266,7 +327,7 @@ function MatchQuestion({ num, person, letters, value, correct, submitted, onChan
   return (
     <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
       <p style={{ margin: "0 0 8px", fontSize: 13.5, color: T.text, lineHeight: 1.4 }}>
-        <b style={{ color: T.textSoft }}>{num + 11}.</b> {person}
+        <b style={{ color: T.textSoft }}>{num}.</b> {person}
       </p>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {letters.map((l) => {
