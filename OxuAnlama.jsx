@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { sb } from "./supabase";
+import { sb, sbAuthInsert } from "./supabase";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -7,21 +7,31 @@ const T = {
   border: "rgba(42,61,60,0.14)", gold: "#D4AF37", danger: "#C0392B",
 };
 const LEVELS = ["A1", "A2", "B1", "B2"];
+const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV"];
 
-export default function OxuAnlama() {
-  const [screen, setScreen] = useState("level");
+export default function OxuAnlama({ session }) {
+  const [screen, setScreen] = useState("level"); // level | groups | list | test
   const [level, setLevel] = useState("A1");
-  const [units, setUnits] = useState(null);
+  const [allUnits, setAllUnits] = useState(null);
+  const [progress, setProgress] = useState({});
+  const [selectedGroup, setSelectedGroup] = useState(null);
   const [current, setCurrent] = useState(null);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (screen !== "list") return;
-    setUnits(null);
-    sb(`reading_units?level=eq.${level}&select=id,unit_number&order=unit_number.asc`)
-      .then((rows) => setUnits(rows || []))
-      .catch(() => setUnits([]));
+    if (screen !== "groups") return;
+    setAllUnits(null);
+    const unitsP = sb(`reading_units?level=eq.${level}&select=id,unit_number&order=unit_number.asc`);
+    const progP = session?.user?.id
+      ? sb(`reading_progress?user_id=eq.${session.user.id}&level=eq.${level}&select=unit_number`)
+      : Promise.resolve([]);
+    Promise.all([unitsP, progP]).then(([units, prog]) => {
+      setAllUnits(units || []);
+      const p = {};
+      (prog || []).forEach((r) => { p[r.unit_number] = true; });
+      setProgress(p);
+    }).catch(() => setAllUnits([]));
   }, [screen, level]);
 
   function openUnit(id) {
@@ -52,10 +62,22 @@ export default function OxuAnlama() {
     return { correct, total };
   }
 
+  function handleSubmit() {
+    setSubmitted(true);
+    if (session?.user?.id && current) {
+      sbAuthInsert("reading_progress", session.access_token, {
+        user_id: session.user.id, level: current.level, unit_number: current.unit_number,
+      }).then(() => {
+        setProgress((prev) => ({ ...prev, [current.unit_number]: true }));
+      }).catch(() => {});
+    }
+  }
+
   const box = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 16px" };
   const btnPrimary = { background: T.accent, color: "#fff", border: "none", borderRadius: 10, padding: "13px 20px", fontWeight: 800, fontSize: 14.5, cursor: "pointer" };
   const btnGhost = { background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" };
 
+  // ---------- 1. Səviyyə seçimi ----------
   if (screen === "level") {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
@@ -75,7 +97,7 @@ export default function OxuAnlama() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {LEVELS.map((l) => (
-            <button key={l} onClick={() => { setLevel(l); setScreen("list"); }} style={{
+            <button key={l} onClick={() => { setLevel(l); setScreen("groups"); }} style={{
               textAlign: "left", padding: "16px", borderRadius: 13, cursor: "pointer",
               background: T.surface, border: `1px solid ${T.border}`,
             }}>
@@ -87,25 +109,66 @@ export default function OxuAnlama() {
     );
   }
 
-  if (screen === "list") {
+  // ---------- 2. Qruplar (I, II, III...) ----------
+  if (screen === "groups") {
+    const groups = [];
+    if (allUnits) {
+      for (let i = 0; i < allUnits.length; i += 5) groups.push(allUnits.slice(i, i + 5));
+    }
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← Səviyyələr</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
-          {level} · Oxu Anlama Vahidləri
+          {level} · Oxu Anlama
         </p>
-        {units === null && <p style={{ color: T.textSoft, textAlign: "center" }}>Yüklənir...</p>}
-        {units && units.length === 0 && (
+        {allUnits === null && <p style={{ color: T.textSoft, textAlign: "center" }}>Yüklənir...</p>}
+        {allUnits && groups.length === 0 && (
           <p style={{ color: T.textSoft, textAlign: "center" }}>Bu səviyyədə hələ vahid yoxdur.</p>
         )}
         <div style={{ display: "grid", gap: 9 }}>
-          {units && units.map((u) => (
+          {groups.map((g, gi) => {
+            const done = g.filter((u) => progress[u.unit_number]).length;
+            const roman = ROMAN[gi] || String(gi + 1);
+            return (
+              <button key={gi} onClick={() => { setSelectedGroup(g); setScreen("list"); }} style={{
+                ...box, textAlign: "left", cursor: "pointer",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <span>
+                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.navy }}>{roman} Qrup</span>
+                  <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 2 }}>
+                    Vahid {g[0].unit_number}-{g[g.length - 1].unit_number}
+                  </span>
+                </span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: done === g.length ? T.accent : T.textSoft }}>
+                  {done > 0 ? `${done}/${g.length} tamamlandı` : `${g.length} vahid →`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  // ---------- 3. Qrup daxilindəki vahidlər ----------
+  if (screen === "list" && selectedGroup) {
+    return (
+      <section style={{ maxWidth: 560, margin: "0 auto" }}>
+        <button onClick={() => setScreen("groups")} style={{ ...btnGhost, marginBottom: 14 }}>← Qruplar</button>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
+          {level} · Vahid {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
+        </p>
+        <div style={{ display: "grid", gap: 9 }}>
+          {selectedGroup.map((u) => (
             <button key={u.id} onClick={() => openUnit(u.id)} style={{
               ...box, textAlign: "left", cursor: "pointer",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
               <span style={{ fontWeight: 700, color: T.navy }}>Vahid {u.unit_number}</span>
-              <span style={{ color: T.textSoft, fontSize: 12 }}>3 mətn · 15 sual →</span>
+              <span style={{ color: progress[u.unit_number] ? T.accent : T.textSoft, fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400 }}>
+                {progress[u.unit_number] ? "✓ Tamamlandı" : "→"}
+              </span>
             </button>
           ))}
         </div>
@@ -113,6 +176,7 @@ export default function OxuAnlama() {
     );
   }
 
+  // ---------- 4. Test ekranı ----------
   if (screen === "test" && current) {
     const u = current;
     const sc = submitted ? score() : null;
@@ -129,7 +193,7 @@ export default function OxuAnlama() {
         {submitted && (
           <div style={{
             ...box, marginBottom: 16, textAlign: "center",
-            background: sc.correct >= 12 ? "rgba(0,168,150,0.08)" : "rgba(255,140,0,0.06)",
+            background: sc.correct >= sc.total * 0.7 ? "rgba(0,168,150,0.08)" : "rgba(255,140,0,0.06)",
           }}>
             <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 700, color: T.navy }}>
               {sc.correct} / {sc.total}
@@ -272,7 +336,7 @@ export default function OxuAnlama() {
         )}
 
         {!submitted ? (
-          <button onClick={() => setSubmitted(true)} style={{ ...btnPrimary, width: "100%" }}>Yoxla</button>
+          <button onClick={handleSubmit} style={{ ...btnPrimary, width: "100%" }}>Yoxla</button>
         ) : (
           <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>Vahidlərə qayıt</button>
         )}
