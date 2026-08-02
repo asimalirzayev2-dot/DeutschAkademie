@@ -137,7 +137,7 @@ export default function OxuAnlama({ session }) {
                 <span>
                   <span style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.navy }}>{roman} Qrup</span>
                   <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 2 }}>
-                    Vahid {g[0].unit_number}-{g[g.length - 1].unit_number}
+                    Fəsil {g[0].unit_number}-{g[g.length - 1].unit_number}
                   </span>
                 </span>
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: done === g.length ? T.accent : T.textSoft }}>
@@ -157,7 +157,7 @@ export default function OxuAnlama({ session }) {
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <button onClick={() => setScreen("groups")} style={{ ...btnGhost, marginBottom: 14 }}>← Qruplar</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
-          {level} · Vahid {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
+          {level} · Fəsil {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
         </p>
         <div style={{ display: "grid", gap: 9 }}>
           {selectedGroup.map((u) => (
@@ -165,7 +165,7 @@ export default function OxuAnlama({ session }) {
               ...box, textAlign: "left", cursor: "pointer",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <span style={{ fontWeight: 700, color: T.navy }}>Vahid {u.unit_number}</span>
+              <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {u.unit_number}</span>
               <span style={{ color: progress[u.unit_number] ? T.accent : T.textSoft, fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400 }}>
                 {progress[u.unit_number] ? "✓ Tamamlandı" : "→"}
               </span>
@@ -187,7 +187,7 @@ export default function OxuAnlama({ session }) {
       <section style={{ maxWidth: 640, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <button onClick={() => setScreen("list")} style={btnGhost}>← Geri</button>
-          <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{u.level} · Vahid {u.unit_number}</span>
+          <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{u.level} · Fəsil {u.unit_number}</span>
         </div>
 
         {submitted && (
@@ -338,7 +338,7 @@ export default function OxuAnlama({ session }) {
         {!submitted ? (
           <button onClick={handleSubmit} style={{ ...btnPrimary, width: "100%" }}>Yoxla</button>
         ) : (
-          <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>Vahidlərə qayıt</button>
+          <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>Fəsillərə qayıt</button>
         )}
       </section>
     );
