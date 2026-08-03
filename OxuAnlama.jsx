@@ -1,13 +1,46 @@
 import React, { useState, useEffect } from "react";
 import { sb, sbAuthInsert } from "./supabase";
+import { Flame, Award } from "lucide-react";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
   accent: "#00A896", warm: "#FF8C00", surface: "#FFFFFF",
   border: "rgba(42,61,60,0.14)", gold: "#D4AF37", danger: "#C0392B",
+  bronze: "#B8860B",
 };
 const LEVELS = ["A1", "A2", "B1", "B2"];
 const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV"];
+
+// ---- Səviyyəyə görə tədrici bəzək ("ağırlıq") — A1 ən sadə, B2 ən zəngin ----
+const LEVEL_TIER = { A1: 0, A2: 1, B1: 2, B2: 3 };
+
+function tierAccentColor(tier) {
+  if (tier === 1) return T.accent;
+  if (tier === 2) return T.warm;
+  if (tier === 3) return T.bronze;
+  return T.textSoft;
+}
+
+function DiamondWatermark() {
+  // B2 kartının küncündə, arxa fondakı romb motivinin təkrarı — çox aşağı opasitlik
+  return (
+    <svg
+      style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", opacity: 0.08 }}
+      width="64" height="64" viewBox="0 0 72 72" fill="none"
+    >
+      <rect x="18" y="0" width="36" height="36" rx="4" transform="rotate(45 36 18)" stroke={T.bronze} strokeWidth="2" />
+      <rect x="4" y="20" width="20" height="20" rx="3" transform="rotate(45 14 30)" stroke={T.bronze} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+// box-un tier-ə görə haşiyə/kölgə variasiyası — bazadakı `box` üzərinə əlavə olunur
+function tierBoxStyle(tier) {
+  if (tier === 0) return {};
+  if (tier === 1) return { borderBottom: `2px solid rgba(0,168,150,0.35)` };
+  if (tier === 2) return { borderLeft: `4px solid ${T.warm}`, paddingLeft: 13 };
+  return { border: `2px solid rgba(184,134,11,0.4)`, position: "relative", overflow: "hidden" };
+}
 
 export default function OxuAnlama({ session }) {
   const [screen, setScreen] = useState("level"); // level | groups | list | test
@@ -96,14 +129,30 @@ export default function OxuAnlama({ session }) {
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {LEVELS.map((l) => (
-            <button key={l} onClick={() => { setLevel(l); setScreen("groups"); }} style={{
-              textAlign: "left", padding: "16px", borderRadius: 13, cursor: "pointer",
-              background: T.surface, border: `1px solid ${T.border}`,
-            }}>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy }}>{l}</span>
-            </button>
-          ))}
+          {LEVELS.map((l) => {
+            const tier = LEVEL_TIER[l];
+            return (
+              <button key={l} onClick={() => { setLevel(l); setScreen("groups"); }} style={{
+                textAlign: "left", padding: "16px", borderRadius: 13, cursor: "pointer",
+                background: T.surface, border: `1px solid ${T.border}`,
+                position: "relative", overflow: "hidden",
+                ...(tier === 3 ? { border: `2px solid rgba(184,134,11,0.4)` } : {}),
+                ...(tier === 2 ? { borderLeft: `4px solid ${T.warm}` } : {}),
+                ...(tier === 1 ? { borderBottom: `2px solid rgba(0,168,150,0.35)` } : {}),
+              }}>
+                {tier === 3 && <DiamondWatermark />}
+                <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  {tier === 2 && <Flame size={14} color={T.warm} strokeWidth={2.5} />}
+                  {tier === 3 && (
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "rgba(184,134,11,0.1)" }}>
+                      <Award size={12} color={T.bronze} strokeWidth={2.5} />
+                    </span>
+                  )}
+                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy, letterSpacing: tier === 3 ? 0.3 : 0 }}>{l}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
     );
@@ -115,6 +164,8 @@ export default function OxuAnlama({ session }) {
     if (allUnits) {
       for (let i = 0; i < allUnits.length; i += 5) groups.push(allUnits.slice(i, i + 5));
     }
+    const tier = LEVEL_TIER[level] ?? 0;
+    const accent = tierAccentColor(tier);
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← Səviyyələr</button>
@@ -131,16 +182,25 @@ export default function OxuAnlama({ session }) {
             const roman = ROMAN[gi] || String(gi + 1);
             return (
               <button key={gi} onClick={() => { setSelectedGroup(g); setScreen("list"); }} style={{
-                ...box, textAlign: "left", cursor: "pointer",
+                ...box, ...tierBoxStyle(tier), textAlign: "left", cursor: "pointer",
                 display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>
-                <span>
-                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.navy }}>{roman} Qrup</span>
-                  <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 2 }}>
-                    Fəsil {g[0].unit_number}-{g[g.length - 1].unit_number}
+                {tier === 3 && <DiamondWatermark />}
+                <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  {tier === 2 && <Flame size={15} color={T.warm} strokeWidth={2.5} />}
+                  {tier === 3 && (
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "50%", background: "rgba(184,134,11,0.1)", flexShrink: 0 }}>
+                      <Award size={13} color={T.bronze} strokeWidth={2.5} />
+                    </span>
+                  )}
+                  <span>
+                    <span style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.navy, letterSpacing: tier === 3 ? 0.3 : 0 }}>{roman} Qrup</span>
+                    <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 2 }}>
+                      Fəsil {g[0].unit_number}-{g[g.length - 1].unit_number}
+                    </span>
                   </span>
                 </span>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: done === g.length ? T.accent : T.textSoft }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: done === g.length ? T.accent : (tier > 0 ? accent : T.textSoft) }}>
                   {done > 0 ? `${done}/${g.length} tamamlandı` : `${g.length} vahid →`}
                 </span>
               </button>
@@ -153,6 +213,8 @@ export default function OxuAnlama({ session }) {
 
   // ---------- 3. Qrup daxilindəki vahidlər ----------
   if (screen === "list" && selectedGroup) {
+    const tier = LEVEL_TIER[level] ?? 0;
+    const accent = tierAccentColor(tier);
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <button onClick={() => setScreen("groups")} style={{ ...btnGhost, marginBottom: 14 }}>← Qruplar</button>
@@ -162,11 +224,15 @@ export default function OxuAnlama({ session }) {
         <div style={{ display: "grid", gap: 9 }}>
           {selectedGroup.map((u) => (
             <button key={u.id} onClick={() => openUnit(u.id)} style={{
-              ...box, textAlign: "left", cursor: "pointer",
+              ...box, ...tierBoxStyle(tier), textAlign: "left", cursor: "pointer",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
+              {tier === 3 && <DiamondWatermark />}
               <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {u.unit_number}</span>
-              <span style={{ color: progress[u.unit_number] ? T.accent : T.textSoft, fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400 }}>
+              <span style={{
+                color: progress[u.unit_number] ? T.accent : (tier > 0 ? accent : T.textSoft),
+                fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400,
+              }}>
                 {progress[u.unit_number] ? "✓ Tamamlandı" : "→"}
               </span>
             </button>
