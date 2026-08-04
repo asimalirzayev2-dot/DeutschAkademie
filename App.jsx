@@ -16,6 +16,7 @@ import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
 import SozTapmacasi from "./SozTapmacasi";
 import OxuAnlama from "./OxuAnlama";
+import Flashcards from "./Flashcards";
 import AdlerCup from "./AdlerCup";
 import Avatar from "./Avatar";
 
@@ -663,7 +664,7 @@ function InnerApp() {
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {q.options.map((opt, i) => (
-                <button key={i} onClick={() => setAnswers({ ...answers, [q.id]: i })}
+                <button key={i} className="da-option" onClick={() => setAnswers({ ...answers, [q.id]: i })}
                   style={{
                     ...styles.option,
                     ...(answers[q.id] === i ? { borderColor: theme.accent, background: theme.soft } : {}),
@@ -703,7 +704,7 @@ function InnerApp() {
           </div>
         ) : (
           <div>
-            <div style={{ textAlign: "center", padding: "20px 0 30px", position: "relative" }}>
+            <div className="da-review-row" style={{ textAlign: "center", padding: "20px 0 30px", position: "relative" }}>
               {(() => {
                 const resultTier = mode === "level" ? scoreTier(results.finalPct) : Math.max(1, LEVELS.indexOf(results.finalLevel) + 1);
                 const tierAccent = accentForTier(resultTier);
@@ -759,8 +760,9 @@ function InnerApp() {
 
               <h3 style={styles.h3}>Sualların təhlili</h3>
               <div style={{ display: "grid", gap: 8, marginBottom: 28, maxHeight: 300, overflowY: "auto" }}>
-                {results.reviewList.map((r) => (
-                  <div key={r.i} style={{ ...styles.reviewRow, borderLeft: `3px solid ${r.ok ? "#6FA787" : "#C0392B"}` }}>
+                {results.reviewList.map((r, idx) => (
+                  <div key={r.i} className={r.ok ? "da-review-right" : "da-review-wrong"}
+                    style={{ ...styles.reviewRow, borderLeft: `3px solid ${r.ok ? "#6FA787" : "#C0392B"}`, animationDelay: `${Math.min(idx * 0.03, 0.6)}s` }}>
                     <div style={{ fontSize: 13, opacity: 0.9 }}>{r.i + 1}. {r.q}</div>
                     <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
                       Sənin cavabın: {r.userAnswer} {!r.ok && r.correctAnswer !== "—" && <>· Düzgün: {r.correctAnswer}</>}
@@ -819,7 +821,7 @@ const BOOKS = [
 
 function PromoCard({ eyebrow, icon, title, body, cta, gradient, onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button className="da-promo" onClick={onClick} style={{
       display: "block", width: "100%", textAlign: "left", cursor: "pointer",
       background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
       border: "none", borderRadius: 18, padding: "20px 20px 15px",
@@ -1291,6 +1293,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
     { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
     { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
+    { key: "flashcards", label: "Flashcards",    sub: "kartlarla təkrar et", icon: "🃏", color: "#C97B63" },
     { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
     { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        icon: "✉", color: "#00A896" },
   ];
@@ -1307,6 +1310,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         @media (min-width: 861px) {
           .da-sheet { max-width: 560px; margin: 0 auto; border-radius: 20px 20px 0 0; }
         }
+        @keyframes daShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-5px); } 40%,60% { transform: translateX(5px); } }
+        @keyframes daPulse { 0% { box-shadow: 0 0 0 0 rgba(0,168,150,0.45); } 70% { box-shadow: 0 0 0 9px rgba(0,168,150,0); } 100% { box-shadow: 0 0 0 0 rgba(0,168,150,0); } }
+        @keyframes daCountPop { from { transform: scale(0.94); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
+        .da-promo { transition: transform .18s ease, box-shadow .18s ease; }
+        .da-promo:hover { transform: translateY(-4px); }
+        .da-right { animation: daPulse .7s ease-out; }
+        .da-wrong { animation: daShake .45s ease-in-out; }
       `}</style>
 
       <div ref={glowRef} style={portalStyles.cursorGlow} />
@@ -1555,6 +1565,14 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                   onClick={() => setView("sozoyunu")}
                 />
                 <PromoCard
+                  gradient={["#C97B63", "#8B4A38", "rgba(201,123,99,0.30)"]}
+                  eyebrow="FLASHCARDS" icon="🃏"
+                  title="Kartı çevir, sözü yadında saxla"
+                  body="Lüğətimizdəki minlərlə sözdən səviyyənə uyğun kartlarla təkrar et — çevir, öyrən, yenidən sına. Bazamız daim yeni sözlərlə böyüyür."
+                  cta="Kartlara başla"
+                  onClick={() => setView("flashcards")}
+                />
+                <PromoCard
                   gradient={["#8C6239", "#5C3F22", "rgba(92,63,34,0.32)"]}
                   eyebrow="KİTABLARIMIZ" icon="📚"
                   title="Səhifədən səhifəyə, sözdən cümləyə"
@@ -1599,6 +1617,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "sozoyunu" && (session ? <Reveal><SozTapmacasi /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "oxuanlama" && (session ? <Reveal><OxuAnlama session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "flashcards" && (session ? <Reveal><Flashcards session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 
         {view === "books" && (session ? (
           <Reveal>
@@ -2205,6 +2224,15 @@ function Shell({ children, wide }) {
         textarea, input {
           -webkit-tap-highlight-color: transparent;
         }
+        @keyframes daShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-5px); } 40%,60% { transform: translateX(5px); } }
+        @keyframes daPulse { 0% { box-shadow: 0 0 0 0 rgba(0,168,150,0.45); } 70% { box-shadow: 0 0 0 9px rgba(0,168,150,0); } 100% { box-shadow: 0 0 0 0 rgba(0,168,150,0); } }
+        @keyframes daPop { from { transform: scale(0.94); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
+        .da-option { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease; }
+        .da-option:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(42,61,60,0.12); }
+        .da-option:active { transform: translateY(0) scale(0.98); }
+        .da-review-row { animation: daPop .35s cubic-bezier(.34,1.56,.64,1) backwards; }
+        .da-review-right { animation: daPop .35s cubic-bezier(.34,1.56,.64,1) backwards, daPulse .7s ease-out .35s; }
+        .da-review-wrong { animation: daPop .35s cubic-bezier(.34,1.56,.64,1) backwards, daShake .45s ease-in-out .35s; }
       `}</style>
       <div style={{ ...styles.container, maxWidth: wide ? 640 : 460 }}>{children}</div>
     </div>
