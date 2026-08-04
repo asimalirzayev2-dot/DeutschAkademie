@@ -61,11 +61,28 @@ export default function Flashcards({ session }) {
   const btnPrimary = { background: T.card, color: "#fff", border: "none", borderRadius: 10, padding: "13px 20px", fontWeight: 800, fontSize: 14.5, cursor: "pointer" };
   const btnGhost = { background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" };
 
+  async function getUsedIds(key) {
+    try {
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : [];
+    } catch { return []; }
+  }
+  async function saveUsedIds(key, ids) {
+    try { localStorage.setItem(key, JSON.stringify(ids.slice(-3000))); } catch {}
+  }
+
   async function loadWords(lvl, n) {
     setWords(null);
+    const key = `fc_used:${session?.user?.id || "guest"}:${lvl}`;
     try {
-      const rows = await sb(`dictionary?level=eq.${lvl}&direction=eq.de-az&select=id,term,translation&limit=400`);
-      const picked = shuffle(rows || []).slice(0, n);
+      const used = await getUsedIds(key);
+      const rows = await sb(`dictionary?level=eq.${lvl}&direction=eq.de-az&select=id,term,translation&limit=1000`);
+      const unseen = (rows || []).filter((r) => !used.includes(r.id));
+      // Səviyyənin bütün sözləri artıq görülübsə, pool sıfırlanır (təkrar yalnız bu halda başlayır)
+      const pool = unseen.length >= n ? unseen : (rows || []);
+      const poolUsed = unseen.length >= n ? used : [];
+      const picked = shuffle(pool).slice(0, n);
+      await saveUsedIds(key, [...poolUsed, ...picked.map((w) => w.id)]);
       setWords(picked);
     } catch {
       setWords([]);
@@ -180,13 +197,23 @@ export default function Flashcards({ session }) {
 }
 
 function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btnGhost }) {
-  const [idx, setIdx] = useState(0);
+  const [queue, setQueue] = useState([]);
+  const [learnedIds, setLearnedIds] = useState(new Set());
+  const [missedIds, setMissedIds] = useState(new Set());
   const [flipped, setFlipped] = useState(false);
-  const [known, setKnown] = useState(0);
-  const [unknown, setUnknown] = useState(0);
-  const [done, setDone] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  if (words === null) {
+  useEffect(() => {
+    if (words && words.length > 0) {
+      setQueue(shuffle(words));
+      setLearnedIds(new Set());
+      setMissedIds(new Set());
+      setFlipped(false);
+      setReady(true);
+    }
+  }, [words]);
+
+  if (words === null || !ready) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
         <p style={{ color: T.textSoft }}>Yüklənir...</p>
@@ -202,17 +229,21 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
     );
   }
 
+  const done = queue.length === 0;
+
   if (done) {
+    const firstTry = words.length - missedIds.size;
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <style>{MICRO_CSS}</style>
         <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
           <p style={{ fontSize: 30, margin: "0 0 6px" }}>🎉</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-            {words.length} söz tamamlandı
+            Hamısını öyrəndin!
           </p>
           <p style={{ fontSize: 13, color: T.textSoft, margin: 0 }}>
-            <span style={{ color: T.accent, fontWeight: 700 }}>{known} bilirdim</span> · <span style={{ color: T.danger, fontWeight: 700 }}>{unknown} bilmirdim</span>
+            <span style={{ color: T.accent, fontWeight: 700 }}>{firstTry} söz ilk dəfədən</span>
+            {missedIds.size > 0 && <> · <span style={{ color: T.warm, fontWeight: 700 }}>{missedIds.size} söz təkrarla</span></>} öyrənildi
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
@@ -222,13 +253,25 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
     );
   }
 
-  const w = words[idx];
+  const w = queue[0];
 
   function mark(status) {
     onLog(w.id, status);
-    if (status === "known") setKnown((k) => k + 1); else setUnknown((k) => k + 1);
-    if (idx + 1 >= words.length) setDone(true);
-    else { setIdx((i) => i + 1); setFlipped(false); }
+    if (status === "known") {
+      setLearnedIds((s) => new Set(s).add(w.id));
+      setQueue((q) => q.slice(1));
+    } else {
+      setMissedIds((s) => new Set(s).add(w.id));
+      setQueue((q) => {
+        const rest = q.slice(1);
+        // bu söz bir neçə kart sonra yenidən qarşıya çıxacaq, dərhal yox
+        const insertAt = Math.min(rest.length, 2 + Math.floor(Math.random() * 3));
+        const copy = [...rest];
+        copy.splice(insertAt, 0, w);
+        return copy;
+      });
+    }
+    setFlipped(false);
   }
 
   return (
@@ -236,11 +279,14 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
       <style>{MICRO_CSS}</style>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <button onClick={onExit} style={btnGhost}>← Çıx</button>
-        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{level} · {idx + 1}/{words.length}</span>
+        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{level} · {learnedIds.size}/{words.length} öyrənildi</span>
       </div>
       <div style={{ height: 3, background: T.border, borderRadius: 4, marginBottom: 20 }}>
-        <div style={{ height: 3, width: `${((idx) / words.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
+        <div style={{ height: 3, width: `${(learnedIds.size / words.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
       </div>
+      {missedIds.has(w.id) && (
+        <p style={{ fontSize: 11.5, color: T.warm, fontWeight: 700, margin: "0 0 8px", textAlign: "center" }}>↻ təkrar — bu sözü daha əvvəl bilmədin</p>
+      )}
 
       <div className="fc-flipwrap" style={{ height: 220, marginBottom: 20 }} onClick={() => setFlipped((f) => !f)}>
         <div className={`fc-flipinner${flipped ? " flipped" : ""}`} style={{ cursor: "pointer" }}>
