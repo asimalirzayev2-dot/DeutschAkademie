@@ -1615,7 +1615,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
-        {view === "sozoyunu" && (session ? <Reveal><SozTapmacasi /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "sozoyunu" && (session ? <Reveal><SozTapmacasi session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "oxuanlama" && (session ? <Reveal><OxuAnlama session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "flashcards" && (session ? <Reveal><Flashcards session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
 

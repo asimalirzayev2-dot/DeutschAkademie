@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Avatar from "./Avatar";
 import { shuffle } from "./utils";
+import { sb } from "./supabase";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -10,111 +11,86 @@ const T = {
 };
 
 const SESSION_TIME = 240;      // Ardıcıl rejim: 14 söz üçün ümumi 4 dəqiqə
+const WORDS_PER_SESSION = 14;
 const POINTS_PER_LETTER = 100;
 const HINT_PENALTY = 100;
 
 // Hər səviyyənin öz "medalyon heyvanı" — hamıya açıq heyvanlardan (Avatar.jsx)
 const LEVELS = {
-  A1: {
-    label: "A1 · Başlanğıc", medal: "dovsan",
-    words: [
-      { word: "HAUS", clue: "İnsanların yaşadığı tikili." },
-      { word: "BUCH", clue: "Səhifələrdən ibarət, oxumaq üçün olan əşya." },
-      { word: "APFEL", clue: "Ağacda bitən, adətən qırmızı və ya yaşıl meyvə." },
-      { word: "STUHL", clue: "Üstündə oturmaq üçün olan mebel." },
-      { word: "GARTEN", clue: "Evin yanında bitkilərin əkildiyi sahə." },
-      { word: "SCHULE", clue: "Uşaqların təhsil aldığı yer." },
-      { word: "FENSTER", clue: "Otağa işıq düşməsi üçün divardakı şüşəli açıqlıq." },
-      { word: "FAMILIE", clue: "Ana, ata və uşaqlardan ibarət qohumluq topluluğu." },
-      { word: "ARBEITEN", clue: "Pul qazanmaq üçün gördüyün fəaliyyət — işləmək feli." },
-      { word: "GESCHENK", clue: "Kiməsə sevgi əlaməti olaraq verilən əşya." },
-      { word: "SCHWESTER", clue: "Eyni valideynlərin qız övladı." },
-      { word: "FRÜHSTÜCK", clue: "Günün ilk yeməyi." },
-      { word: "GEBURTSTAG", clue: "Doğulduğun günün ildönümü." },
-      { word: "ABENDESSEN", clue: "Günün son, axşam yeməyi." },
-    ],
-  },
-  A2: {
-    label: "A2 · Elementar", medal: "tulku",
-    words: [
-      { word: "FAUL", clue: "İşləməyi sevməyən, tənbəl." },
-      { word: "KLUG", clue: "Zehni iti, ağıllı." },
-      { word: "ANGST", clue: "Təhlükə qarşısında hiss olunan qorxu." },
-      { word: "STOLZ", clue: "Nailiyyətdən doğan qürur hissi." },
-      { word: "FREUDE", clue: "Xoş bir hadisədən yaranan sevinc." },
-      { word: "STRAND", clue: "Dəniz kənarında qumlu istirahət yeri." },
-      { word: "EHRLICH", clue: "Yalan danışmayan, dürüst." },
-      { word: "BUCHUNG", clue: "Otel və ya bilet üçün əvvəlcədən sifariş." },
-      { word: "HOFFNUNG", clue: "Yaxşı nəticəyə inanma hissi." },
-      { word: "VERLIEBT", clue: "Kiməsə qarşı güclü sevgi hissi keçirən." },
-      { word: "AUFGEREGT", clue: "Gözləntidən yaranan həyəcanlı hal." },
-      { word: "ZUFRIEDEN", clue: "Vəziyyətindən razı qalan." },
-      { word: "SCHÜCHTERN", clue: "Yad adamlarla danışmaqdan utanan." },
-      { word: "FREUNDLICH", clue: "Başqalarına qarşı mehriban davranan." },
-    ],
-  },
-  B1: {
-    label: "B1 · Orta", medal: "qurd",
-    words: [
-      { word: "WAHL", clue: "Namizədlər arasından birini müəyyən etmə prosesi." },
-      { word: "BANK", clue: "Pulun saxlanıldığı və idarə olunduğu maliyyə qurumu." },
-      { word: "KRISE", clue: "Ciddi çətinlik yaradan böhran vəziyyəti." },
-      { word: "FIRMA", clue: "Ticarət və ya istehsalla məşğul olan müəssisə." },
-      { word: "STÄRKE", clue: "Xarakterdəki güclü tərəf." },
-      { word: "WÄHLEN", clue: "Neçə variant arasından birini seçmək feli." },
-      { word: "BETONEN", clue: "Bir fikri xüsusi vurğulamaq." },
-      { word: "WACHSEN", clue: "Getdikcə böyüməyi bildirən feil." },
-      { word: "TOLERANT", clue: "Fərqli fikirlərə dözümlü yanaşan." },
-      { word: "ARROGANT", clue: "Özünü başqalarından üstün sayan, təkəbbürlü." },
-      { word: "CHARAKTER", clue: "İnsanın daxili xüsusiyyətlərinin cəmi." },
-      { word: "VERHALTEN", clue: "İnsanın müəyyən şəraitdəki hərəkət tərzi." },
-      { word: "BESCHEIDEN", clue: "Öz uğurlarını önə çıxarmayan, təvazökar." },
-      { word: "GEWOHNHEIT", clue: "Təkrar nəticəsində yaranan davranış, vərdiş." },
-    ],
-  },
-  B2: {
-    label: "B2 · Yuxarı-orta", medal: "aslan",
-    words: [
-      { word: "NORM", clue: "Əməl olunması gözlənilən qayda." },
-      { word: "ZOLL", clue: "Sərhəddə mallara tətbiq olunan rüsum." },
-      { word: "WESEN", clue: "Bir şeyin əsl mahiyyəti, təbiəti." },
-      { word: "AKTIE", clue: "Şirkətdə paya sahibliyi bildirən qiymətli kağız." },
-      { word: "ASPEKT", clue: "Bir məsələyə baxışın müəyyən tərəfi." },
-      { word: "ESSENZ", clue: "Bir şeyin ən əsas, dəyişməz özəyi." },
-      { word: "PRINZIP", clue: "Hərəkətin əsasında duran ümumi qayda." },
-      { word: "PROZESS", clue: "Zaman ərzində baş verən mərhələli gedişat." },
-      { word: "PHÄNOMEN", clue: "Diqqəti cəlb edən müşahidə olunan hadisə." },
-      { word: "ABSTRAKT", clue: "Əli ilə toxunula bilməyən, mücərrəd." },
-      { word: "GRUNDLAGE", clue: "Bir şeyin üzərində qurulduğu əsas." },
-      { word: "DIMENSION", clue: "Bir məsələnin ölçüsü və ya tərəfi." },
-      { word: "WESENTLICH", clue: "Mahiyyət etibarilə vacib olan." },
-      { word: "EXISTIEREN", clue: "Real olaraq mövcud olmaq feli." },
-    ],
-  },
+  A1: { label: "A1 · Başlanğıc", medal: "dovsan" },
+  A2: { label: "A2 · Elementar", medal: "tulku" },
+  B1: { label: "B1 · Orta", medal: "qurd" },
+  B2: { label: "B2 · Yuxarı-orta", medal: "aslan" },
 };
 const LEVEL_ORDER = ["A1", "A2", "B1", "B2"];
 
 // Yalnız hərflərə icazə (ß qəsdən çıxarılıb: toUpperCase() onu "SS"-ə çevirir,
-// bu da tək qutuya iki hərf yazılmasına səbəb olur — söz banklarında SS işlədilir).
+// bu da tək qutuya iki hərf yazılmasına səbəb olur), boşluqsuz, tire olmadan tək söz.
 const LETTER_RE = /^[a-zA-ZäöüÄÖÜ]$/;
+const WORD_RE = /^[a-zA-ZäöüÄÖÜ]{4,14}$/;
 
-function normalize(rows) {
-  return rows.map((r) => ({ ...r, length: r.word.length }));
+// ---- Sözlərin heç vaxt təkrara düşməməsi üçün — buildLevelTest-dəki (App.jsx) eyni məntiq ----
+async function getUsedIds(key) {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : [];
+  } catch { return []; }
+}
+async function saveUsedIds(key, ids) {
+  try { localStorage.setItem(key, JSON.stringify(ids.slice(-3000))); } catch {}
 }
 
-export default function SozTapmacasi() {
-  const [screen, setScreen] = useState("select"); // select | game | result
+async function fetchLevelWords(userId, levelKey, n) {
+  const key = `stw_used:${userId || "guest"}:${levelKey}`;
+  const used = await getUsedIds(key);
+  const rows = await sb(`dictionary?level=eq.${levelKey}&direction=eq.de-az&select=id,term,translation&limit=3000`);
+  const valid = (rows || []).filter((r) => WORD_RE.test(r.term));
+  const unseen = valid.filter((r) => !used.includes(r.id));
+  // Səviyyənin bütün sözləri artıq görülübsə, hovuz sıfırlanır (təkrar yalnız bu halda başlayır)
+  const pool = unseen.length >= n ? unseen : valid;
+  const poolUsed = unseen.length >= n ? used : [];
+  const picked = shuffle(pool).slice(0, n).map((r) => ({
+    word: r.term.toUpperCase(), clue: r.translation, length: r.term.length, id: r.id, level: levelKey,
+  }));
+  await saveUsedIds(key, [...poolUsed, ...picked.map((r) => r.id)]);
+  return picked;
+}
+
+async function fetchMixedWords(userId, n) {
+  const key = `stw_used:${userId || "guest"}:MIXED`;
+  const used = await getUsedIds(key);
+  const rows = await sb(`dictionary?level=in.(A1,A2,B1,B2)&direction=eq.de-az&select=id,term,translation,level&limit=6000`);
+  const valid = (rows || []).filter((r) => WORD_RE.test(r.term));
+  const unseen = valid.filter((r) => !used.includes(r.id));
+  const pool = unseen.length >= n ? unseen : valid;
+  const poolUsed = unseen.length >= n ? used : [];
+  const picked = shuffle(pool).slice(0, n).map((r) => ({
+    word: r.term.toUpperCase(), clue: r.translation, length: r.term.length, id: r.id, level: r.level,
+  }));
+  await saveUsedIds(key, [...poolUsed, ...picked.map((r) => r.id)]);
+  return picked;
+}
+
+export default function SozTapmacasi({ session }) {
+  const [screen, setScreen] = useState("select"); // select | loading | game | result
   const [pickedLevel, setPickedLevel] = useState(null);
-  const [session, setSession] = useState(null);
+  const [gameSession, setGameSession] = useState(null);
   const timerRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => () => clearInterval(timerRef.current), []);
 
-  function start(levelKey, label, mode, wordsRaw) {
-    const words = normalize(wordsRaw);
-    const queue = mode === "mixed" ? shuffle(words) : words;
+  async function start(levelKey, label, mode) {
     clearInterval(timerRef.current);
+    setScreen("loading");
+    const raw = levelKey === "MIXED"
+      ? await fetchMixedWords(session?.user?.id, WORDS_PER_SESSION)
+      : await fetchLevelWords(session?.user?.id, levelKey, WORDS_PER_SESSION);
+    if (!raw || raw.length === 0) {
+      setScreen("select");
+      return;
+    }
+    const queue = mode === "mixed" ? shuffle(raw) : raw;
     const s = {
       levelKey, label, mode, queue, idx: 0,
       score: 0, timeLeft: SESSION_TIME,
@@ -123,11 +99,11 @@ export default function SozTapmacasi() {
       hintedIdx: new Set(), cursor: 0, solved: false,
       feedback: "", feedbackKind: "",
     };
-    setSession(s);
+    setGameSession(s);
     setScreen("game");
     if (mode === "sequential") {
       timerRef.current = setInterval(() => {
-        setSession((prev) => {
+        setGameSession((prev) => {
           if (!prev) return prev;
           const t = prev.timeLeft - 1;
           if (t <= 0) {
@@ -155,7 +131,7 @@ export default function SozTapmacasi() {
   function currentWord(s) { return s.queue[s.idx]; }
 
   function handleChar(ch) {
-    setSession((prev) => {
+    setGameSession((prev) => {
       if (!prev || prev.solved) return prev;
       const w = currentWord(prev);
       let cursor = prev.cursor;
@@ -170,7 +146,7 @@ export default function SozTapmacasi() {
   }
 
   function handleBackspace() {
-    setSession((prev) => {
+    setGameSession((prev) => {
       if (!prev || prev.solved) return prev;
       let i = prev.cursor - 1;
       while (i >= 0 && prev.hintedIdx.has(i)) i--;
@@ -196,7 +172,7 @@ export default function SozTapmacasi() {
   }
 
   function hint() {
-    setSession((prev) => {
+    setGameSession((prev) => {
       if (!prev || prev.solved) return prev;
       const w = currentWord(prev);
       const emptyIdx = prev.answer.findIndex((v) => v === null);
@@ -216,7 +192,7 @@ export default function SozTapmacasi() {
   }
 
   function clearGuess() {
-    setSession((prev) => {
+    setGameSession((prev) => {
       if (!prev || prev.solved) return prev;
       const w = currentWord(prev);
       const answer = new Array(w.word.length).fill(null);
@@ -228,7 +204,7 @@ export default function SozTapmacasi() {
   }
 
   function check() {
-    setSession((prev) => {
+    setGameSession((prev) => {
       if (!prev || prev.solved) return prev;
       const w = currentWord(prev);
       if (prev.answer.some((v) => v === null)) {
@@ -250,7 +226,7 @@ export default function SozTapmacasi() {
   }
 
   function advance() {
-    setSession((prev) => {
+    setGameSession((prev) => {
       if (!prev) return prev;
       const nextIdx = prev.idx + 1;
       if (nextIdx >= prev.queue.length) {
@@ -266,24 +242,23 @@ export default function SozTapmacasi() {
 
   function finishSession(finalSession, completedAll) {
     clearInterval(timerRef.current);
-    setSession({ ...finalSession, _completedAll: completedAll });
+    setGameSession({ ...finalSession, _completedAll: completedAll });
     setScreen("result");
   }
 
   function restart() {
-    if (!session) return;
-    const lv = LEVELS[session.levelKey];
-    if (session.levelKey === "MIXED") {
-      const all = LEVEL_ORDER.flatMap((k) => LEVELS[k].words.map((w) => ({ ...w, level: k })));
-      start("MIXED", "Bütün səviyyələr", "mixed", all);
+    if (!gameSession) return;
+    if (gameSession.levelKey === "MIXED") {
+      start("MIXED", "Bütün səviyyələr", "mixed");
     } else {
-      start(session.levelKey, lv.label, session.mode, lv.words);
+      const lv = LEVELS[gameSession.levelKey];
+      start(gameSession.levelKey, lv.label, gameSession.mode);
     }
   }
 
   function backToSelect() {
     clearInterval(timerRef.current);
-    setSession(null);
+    setGameSession(null);
     setScreen("select");
   }
 
@@ -291,6 +266,14 @@ export default function SozTapmacasi() {
   const box = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 16px" };
   const btnPrimary = { background: T.accent, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontWeight: 800, fontSize: 14, cursor: "pointer" };
   const btnGhost = { background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" };
+
+  if (screen === "loading") {
+    return (
+      <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
+        <p style={{ color: T.textSoft }}>Sözlər yüklənir...</p>
+      </section>
+    );
+  }
 
   if (screen === "select") {
     return (
@@ -306,7 +289,7 @@ export default function SozTapmacasi() {
             </span>
           </div>
           <p style={{ fontSize: 13.5, color: T.textSoft, margin: "10px 0 0", lineHeight: 1.55 }}>
-            Heç bir hərf əvvəlcədən görünmür — tərifə görə sözü özün tap və klaviaturadan yaz.
+            Heç bir hərf əvvəlcədən görünmür — tərcüməyə görə sözü özün tap və klaviaturadan yaz.
           </p>
         </div>
 
@@ -331,10 +314,7 @@ export default function SozTapmacasi() {
         </div>
 
         <button
-          onClick={() => {
-            const all = LEVEL_ORDER.flatMap((k) => LEVELS[k].words.map((w) => ({ ...w, level: k })));
-            start("MIXED", "Bütün səviyyələr", "mixed", all);
-          }}
+          onClick={() => start("MIXED", "Bütün səviyyələr", "mixed")}
           style={{
             width: "100%", textAlign: "left", padding: "13px 16px", borderRadius: 12, cursor: "pointer",
             background: "transparent", border: `1px dashed ${T.border}`, color: T.text,
@@ -350,16 +330,16 @@ export default function SozTapmacasi() {
               REJİM SEÇ
             </p>
             <div style={{ display: "grid", gap: 9 }}>
-              <button onClick={() => start(pickedLevel, LEVELS[pickedLevel].label, "sequential", LEVELS[pickedLevel].words)}
+              <button onClick={() => start(pickedLevel, LEVELS[pickedLevel].label, "sequential")}
                 style={{ ...box, textAlign: "left", cursor: "pointer", border: `1px solid ${T.navy}` }}>
                 <p style={{ margin: "0 0 3px", fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 700, color: T.navy }}>
-                  Ardıcıl (4→10 hərf)
+                  Ardıcıl ({WORDS_PER_SESSION} söz)
                 </p>
                 <p style={{ margin: 0, fontSize: 12, color: T.textSoft }}>
                   Ümumi 4 dəqiqə, hamısını tamamlasan medalyon qazanırsan
                 </p>
               </button>
-              <button onClick={() => start(pickedLevel, LEVELS[pickedLevel].label, "mixed", LEVELS[pickedLevel].words)}
+              <button onClick={() => start(pickedLevel, LEVELS[pickedLevel].label, "mixed")}
                 style={{ ...box, textAlign: "left", cursor: "pointer" }}>
                 <p style={{ margin: "0 0 3px", fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 700, color: T.navy }}>
                   Karma / Sərbəst təkrar
@@ -375,10 +355,10 @@ export default function SozTapmacasi() {
     );
   }
 
-  if (screen === "game" && session) {
-    const w = currentWord(session);
-    const mm = String(Math.floor(session.timeLeft / 60)).padStart(2, "0");
-    const ss = String(session.timeLeft % 60).padStart(2, "0");
+  if (screen === "game" && gameSession) {
+    const w = currentWord(gameSession);
+    const mm = String(Math.floor(gameSession.timeLeft / 60)).padStart(2, "0");
+    const ss = String(gameSession.timeLeft % 60).padStart(2, "0");
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }} onClick={() => inputRef.current && inputRef.current.focus()}>
         <input ref={inputRef} onChange={onHiddenChange} onKeyDown={onHiddenKeyDown}
@@ -386,27 +366,27 @@ export default function SozTapmacasi() {
           autoCapitalize="none" autoCorrect="off" autoComplete="off" />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: T.textSoft, marginBottom: 14 }}>
-          <span>{session.label} · {session.mode === "sequential" ? "Ardıcıl" : "Karma"}</span>
-          <span>{session.idx + 1} / {session.queue.length}</span>
+          <span>{gameSession.label} · {gameSession.mode === "sequential" ? "Ardıcıl" : "Karma"}</span>
+          <span>{gameSession.idx + 1} / {gameSession.queue.length}</span>
         </div>
 
         <div style={box}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${T.border}` }}>
             <div style={{ flex: 1 }}>
-              <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft }}>TƏRİF</p>
+              <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft }}>TƏRCÜMƏ</p>
               <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 600, color: T.navy, lineHeight: 1.45 }}>
                 {w.clue}
               </p>
             </div>
             <div style={{ display: "flex", gap: 18, flexShrink: 0 }}>
               <div style={{ textAlign: "center" }}>
-                <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: session.mode === "sequential" ? (session.timeLeft <= 30 ? T.danger : T.warm) : T.textSoft }}>
-                  {session.mode === "sequential" ? `${mm}:${ss}` : "∞"}
+                <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: gameSession.mode === "sequential" ? (gameSession.timeLeft <= 30 ? T.danger : T.warm) : T.textSoft }}>
+                  {gameSession.mode === "sequential" ? `${mm}:${ss}` : "∞"}
                 </p>
                 <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, color: T.textSoft, textTransform: "uppercase" }}>Vaxt</p>
               </div>
               <div style={{ textAlign: "center" }}>
-                <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.accent }}>{session.score}</p>
+                <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.accent }}>{gameSession.score}</p>
                 <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, color: T.textSoft, textTransform: "uppercase" }}>Xal</p>
               </div>
             </div>
@@ -417,9 +397,9 @@ export default function SozTapmacasi() {
           </p>
 
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
-            {session.answer.map((ch, i) => {
-              const isHinted = session.hintedIdx.has(i);
-              const isCurrent = i === session.cursor && !session.solved;
+            {gameSession.answer.map((ch, i) => {
+              const isHinted = gameSession.hintedIdx.has(i);
+              const isCurrent = i === gameSession.cursor && !gameSession.solved;
               return (
                 <span key={i} style={{
                   width: 32, height: 42, borderRadius: 7,
@@ -427,7 +407,7 @@ export default function SozTapmacasi() {
                   background: ch ? "rgba(0,51,102,0.05)" : "transparent",
                   borderBottom: `2px solid ${isCurrent ? T.warm : T.border}`,
                   fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 18,
-                  color: session.solved ? T.accent : isHinted ? T.warm : T.navy,
+                  color: gameSession.solved ? T.accent : isHinted ? T.warm : T.navy,
                 }}>{ch || ""}</span>
               );
             })}
@@ -435,9 +415,9 @@ export default function SozTapmacasi() {
 
           <p style={{
             textAlign: "center", minHeight: 20, fontSize: 12.5, fontWeight: 700, margin: "0 0 12px",
-            color: session.feedbackKind === "ok" ? T.accent : session.feedbackKind === "err" ? T.danger : T.textSoft,
+            color: gameSession.feedbackKind === "ok" ? T.accent : gameSession.feedbackKind === "err" ? T.danger : T.textSoft,
           }}>
-            {session.feedback}
+            {gameSession.feedback}
           </p>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
@@ -450,9 +430,9 @@ export default function SozTapmacasi() {
     );
   }
 
-  if (screen === "result" && session) {
-    const lv = session.levelKey !== "MIXED" ? LEVELS[session.levelKey] : null;
-    const earnsMedal = session.mode === "sequential" && session._completedAll && lv;
+  if (screen === "result" && gameSession) {
+    const lv = gameSession.levelKey !== "MIXED" ? LEVELS[gameSession.levelKey] : null;
+    const earnsMedal = gameSession.mode === "sequential" && gameSession._completedAll && lv;
     return (
       <section style={{ maxWidth: 480, margin: "0 auto" }}>
         <div style={{ ...box, textAlign: "center", padding: "34px 26px" }}>
@@ -462,13 +442,13 @@ export default function SozTapmacasi() {
                 <Avatar avatarKey={lv.medal} size={72} ring />
               </div>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy, margin: "0 0 8px" }}>
-                {session.levelKey} Söz Oyunu tamamlandı!
+                {gameSession.levelKey} Söz Oyunu tamamlandı!
               </p>
               <p style={{ fontSize: 13, color: T.textSoft, margin: "0 0 22px" }}>
                 Təbriklər — vaxt bitmədən bütün sözləri tapdın.
               </p>
             </>
-          ) : session.mode === "mixed" ? (
+          ) : gameSession.mode === "mixed" ? (
             <>
               <div style={{ fontSize: 40, marginBottom: 10 }}>✓</div>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 8px" }}>
@@ -492,15 +472,15 @@ export default function SozTapmacasi() {
 
           <div style={{ display: "flex", justifyContent: "center", gap: 28, marginBottom: 24 }}>
             <div style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.accent }}>{session.score}</p>
+              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.accent }}>{gameSession.score}</p>
               <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>Xal</p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy }}>{session.solvedCount}/{session.queue.length}</p>
+              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy }}>{gameSession.solvedCount}/{gameSession.queue.length}</p>
               <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>Tapılan</p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.warm }}>{session.hintsTotal}</p>
+              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.warm }}>{gameSession.hintsTotal}</p>
               <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>Alınan hərf</p>
             </div>
           </div>
