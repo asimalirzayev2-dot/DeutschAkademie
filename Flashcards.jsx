@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { sb, sbAuthInsert } from "./supabase";
+import { speakGerman } from "./utils";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -22,11 +23,13 @@ const MICRO_CSS = `
   .fc-right { animation: fcPulse .7s ease-out; }
   .fc-wrong { animation: fcShake .45s ease-in-out; }
   .fc-pop { animation: fcPop .35s cubic-bezier(.34,1.56,.64,1); }
-  .fc-flipwrap { perspective: 1200px; }
+  .fc-flipwrap { perspective: 1200px; touch-action: pan-y; user-select: none; }
   .fc-flipinner { position: relative; width: 100%; height: 100%; transition: transform .5s cubic-bezier(.2,.7,.3,1); transform-style: preserve-3d; }
   .fc-flipinner.flipped { transform: rotateY(180deg); }
+  .fc-flipinner.dragging { transition: none; }
   .fc-face { position: absolute; inset: 0; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; flex-direction: column; }
   .fc-face-back { transform: rotateY(180deg); }
+  .fc-speak-btn { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; }
 `;
 
 function shuffle(arr) {
@@ -202,6 +205,10 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
   const [missedIds, setMissedIds] = useState(new Set());
   const [flipped, setFlipped] = useState(false);
   const [ready, setReady] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(null);
+  const SWIPE_THRESHOLD = 90;
 
   useEffect(() => {
     if (words && words.length > 0) {
@@ -272,6 +279,36 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
       });
     }
     setFlipped(false);
+    setDragX(0);
+  }
+
+  function onPointerDown(e) {
+    dragStart.current = { x: e.clientX, moved: false };
+    setDragging(true);
+  }
+  function onPointerMove(e) {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    if (Math.abs(dx) > 4) dragStart.current.moved = true;
+    setDragX(dx);
+  }
+  function onPointerUp() {
+    if (!dragStart.current) return;
+    setDragging(false);
+    if (Math.abs(dragX) > SWIPE_THRESHOLD) {
+      mark(dragX > 0 ? "known" : "unknown");
+    } else if (!dragStart.current.moved) {
+      setFlipped((f) => !f);
+      setDragX(0);
+    } else {
+      setDragX(0);
+    }
+    dragStart.current = null;
+  }
+
+  function speak(e) {
+    e.stopPropagation();
+    speakGerman(w.term);
   }
 
   return (
@@ -288,22 +325,52 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
         <p style={{ fontSize: 11.5, color: T.warm, fontWeight: 700, margin: "0 0 8px", textAlign: "center" }}>↻ təkrar — bu sözü daha əvvəl bilmədin</p>
       )}
 
-      <div className="fc-flipwrap" style={{ height: 220, marginBottom: 20 }} onClick={() => setFlipped((f) => !f)}>
-        <div className={`fc-flipinner${flipped ? " flipped" : ""}`} style={{ cursor: "pointer" }}>
+      <div
+        className="fc-flipwrap"
+        style={{ height: 220, marginBottom: 20, position: "relative" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={() => { if (dragging) onPointerUp(); }}
+      >
+        {dragX > 20 && (
+          <div style={{
+            position: "absolute", top: 14, left: 14, zIndex: 2, padding: "5px 12px", borderRadius: 8,
+            background: T.accent, color: "#fff", fontWeight: 800, fontSize: 12.5,
+            opacity: Math.min(1, dragX / SWIPE_THRESHOLD), transform: `rotate(-8deg)`,
+          }}>BİLİRƏM</div>
+        )}
+        {dragX < -20 && (
+          <div style={{
+            position: "absolute", top: 14, right: 14, zIndex: 2, padding: "5px 12px", borderRadius: 8,
+            background: T.danger, color: "#fff", fontWeight: 800, fontSize: 12.5,
+            opacity: Math.min(1, -dragX / SWIPE_THRESHOLD), transform: `rotate(8deg)`,
+          }}>BİLMİRƏM</div>
+        )}
+        <div className={`fc-flipinner${flipped ? " flipped" : ""}${dragging ? " dragging" : ""}`} style={{
+          cursor: "grab",
+          transform: `${flipped ? "rotateY(180deg) " : ""}translateX(${dragX}px) rotate(${dragX / 22}deg)`,
+        }}>
           <div className="fc-face" style={{
             background: `linear-gradient(135deg, ${T.card}, ${T.cardDark})`, borderRadius: 16,
             boxShadow: "0 10px 26px rgba(201,123,99,0.30)", padding: 24,
           }}>
+            <button className="fc-speak-btn" onClick={speak} style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}>🔊</button>
             <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: "#fff", textAlign: "center", margin: 0 }}>{w.term}</p>
-            <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginTop: 10 }}>toxun, çevir</p>
+            <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginTop: 10 }}>toxun/çevir, ya da sürüşdür</p>
           </div>
           <div className="fc-face fc-face-back" style={{
             background: T.surface, border: `2px solid ${T.card}`, borderRadius: 16, padding: 24,
           }}>
+            <button className="fc-speak-btn" onClick={speak} style={{ background: "rgba(201,123,99,0.12)", color: T.card }}>🔊</button>
             <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, textAlign: "center", margin: 0 }}>{w.translation}</p>
           </div>
         </div>
       </div>
+
+      <p style={{ textAlign: "center", fontSize: 11, color: T.textSoft, margin: "-12px 0 14px" }}>
+        ← sürüşdür: bilmirdim &nbsp;·&nbsp; sürüşdür: bilirdim →
+      </p>
 
       <div style={{ display: "flex", gap: 10 }}>
         <button className="fc-opt" onClick={() => mark("unknown")} style={{
