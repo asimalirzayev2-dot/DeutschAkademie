@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sb, sbAuthInsert } from "./supabase";
+import { sb, sbAuthInsert, sbInsert } from "./supabase";
 import { speakGerman } from "./utils";
 
 const T = {
@@ -538,6 +538,7 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const [xpAwarded, setXpAwarded] = useState(false);
+  const [phase, setPhase] = useState("quiz"); // quiz | sentences
 
   useEffect(() => {
     let alive = true;
@@ -574,6 +575,10 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
     );
   }
 
+  if (phase === "sentences") {
+    return <SentenceGame words={words} level={level} onExit={onExit} onXp={onXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
+  }
+
   if (finished) {
     const pct = Math.round((correctCount / questions.length) * 100);
     const xp = correctCount * 10;
@@ -587,7 +592,10 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
           </p>
           <p style={{ fontSize: 13, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{xp} XP</p>
         </div>
-        <button onClick={onExit} style={{ ...btnPrimary, width: "100%", marginTop: 16 }}>Rejimlərə qayıt</button>
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>Rejimlərə qayıt</button>
+          <button onClick={() => setPhase("sentences")} style={{ ...btnPrimary, flex: 1.4 }}>Fırlanan Sözlər →</button>
+        </div>
       </section>
     );
   }
@@ -635,6 +643,234 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
           );
         })}
       </div>
+    </section>
+  );
+}
+
+// ============ Fırlanan Sözlər — boşluq doldurma + söz sıralama ============
+// Cümlələr word_sentences cədvəlində keşlənir; hər söz üçün ilk dəfə lazım olanda
+// TƏK bir API çağırışı ilə 3 cümlə generasiya edilir və əbədi saxlanılır, sonra
+// bütün istifadəçilər arasında təsadüfi fırlanaraq təkrar istifadə olunur.
+
+function stripPunct(tok) {
+  return tok.replace(/[.,!?;:„"]+$/, "").replace(/^[„"]+/, "");
+}
+
+async function fetchOrGenerateSentences(word, level) {
+  try {
+    const cached = await sb(`word_sentences?word_id=eq.${word.id}&select=sentence`);
+    if (cached && cached.length > 0) {
+      return cached[Math.floor(Math.random() * cached.length)].sentence;
+    }
+  } catch {}
+
+  try {
+    const res = await fetch("/api/generate-sentences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ term: word.term, translation: word.translation, level }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.sentences) return null;
+    try {
+      await sbInsert("word_sentences", data.sentences.map((s) => ({ word_id: word.id, level, sentence: s })));
+    } catch {}
+    return data.sentences[Math.floor(Math.random() * data.sentences.length)];
+  } catch {
+    return null;
+  }
+}
+
+function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost }) {
+  const [rounds, setRounds] = useState(null); // [{ word, sentence, mode, tokens, gapIdx, options }]
+  const [idx, setIdx] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [xpAwarded, setXpAwarded] = useState(false);
+  // scramble state
+  const [pickedOrder, setPickedOrder] = useState([]);
+  const [pool, setPool] = useState([]);
+  const [scrambleResult, setScrambleResult] = useState(null); // 'ok' | 'err' | null
+  // gap state
+  const [gapPicked, setGapPicked] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const built = [];
+      for (const w of words) {
+        const sentence = await fetchOrGenerateSentences(w, level);
+        if (!sentence) continue;
+        const tokens = sentence.trim().split(/\s+/);
+        const gapIdx = tokens.findIndex((t) => stripPunct(t) === w.term);
+        const useGap = gapIdx !== -1 && Math.random() < 0.5;
+        built.push({ word: w, sentence, tokens, gapIdx: useGap ? gapIdx : -1, mode: useGap ? "gap" : "scramble" });
+      }
+      if (alive) setRounds(built);
+    })();
+    return () => { alive = false; };
+  }, [words, level]);
+
+  useEffect(() => {
+    if (rounds && rounds[idx] && rounds[idx].mode === "scramble") {
+      setPool(shuffle(rounds[idx].tokens.map((t, i) => ({ id: i, text: t }))));
+      setPickedOrder([]);
+      setScrambleResult(null);
+    }
+    if (rounds && rounds[idx] && rounds[idx].mode === "gap") {
+      setGapPicked(null);
+    }
+  }, [rounds, idx]);
+
+  useEffect(() => {
+    if (finished && !xpAwarded && rounds) {
+      setXpAwarded(true);
+      const xp = correctCount * 15;
+      if (onXp) onXp(xp, "sentence_game", { level, total: rounds.length, correct: correctCount });
+    }
+  }, [finished]);
+
+  if (rounds === null) {
+    return (
+      <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
+        <p style={{ color: T.textSoft }}>Cümlələr hazırlanır...</p>
+      </section>
+    );
+  }
+  if (rounds.length === 0) {
+    return (
+      <section style={{ maxWidth: 560, margin: "0 auto" }}>
+        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← Geri</button>
+        <p style={{ color: T.textSoft, textAlign: "center" }}>Hazırda cümlə tapılmadı, bir az sonra yenidən sına.</p>
+      </section>
+    );
+  }
+
+  if (finished) {
+    const xp = correctCount * 15;
+    return (
+      <section style={{ maxWidth: 480, margin: "0 auto" }}>
+        <style>{MICRO_CSS}</style>
+        <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
+          <p style={{ fontSize: 30, margin: "0 0 6px" }}>🌀</p>
+          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
+            {correctCount} / {rounds.length} doğru
+          </p>
+          <p style={{ fontSize: 13, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{xp} XP</p>
+        </div>
+        <button onClick={onExit} style={{ ...btnPrimary, width: "100%", marginTop: 16 }}>Rejimlərə qayıt</button>
+      </section>
+    );
+  }
+
+  const r = rounds[idx];
+
+  function next(wasCorrect) {
+    if (wasCorrect) setCorrectCount((c) => c + 1);
+    setTimeout(() => {
+      if (idx + 1 >= rounds.length) setFinished(true);
+      else setIdx((i) => i + 1);
+    }, 750);
+  }
+
+  function chooseGap(opt) {
+    if (gapPicked) return;
+    setGapPicked(opt);
+    next(opt === r.word.term);
+  }
+
+  function tapPoolToken(tok) {
+    if (scrambleResult) return;
+    setPool((p) => p.filter((t) => t.id !== tok.id));
+    const newOrder = [...pickedOrder, tok];
+    setPickedOrder(newOrder);
+    if (newOrder.length === r.tokens.length) {
+      const built = newOrder.map((t) => t.text).join(" ");
+      const ok = built === r.sentence.trim();
+      setScrambleResult(ok ? "ok" : "err");
+      next(ok);
+    }
+  }
+
+  function undoToken() {
+    if (scrambleResult || pickedOrder.length === 0) return;
+    const last = pickedOrder[pickedOrder.length - 1];
+    setPickedOrder((o) => o.slice(0, -1));
+    setPool((p) => [...p, last]);
+  }
+
+  return (
+    <section style={{ maxWidth: 560, margin: "0 auto" }}>
+      <style>{MICRO_CSS}</style>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <button onClick={onExit} style={btnGhost}>← Çıx</button>
+        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>Fırlanan Sözlər · {idx + 1}/{rounds.length}</span>
+      </div>
+      <div style={{ height: 3, background: T.border, borderRadius: 4, marginBottom: 20 }}>
+        <div style={{ height: 3, width: `${(idx / rounds.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
+      </div>
+
+      {r.mode === "gap" ? (
+        <>
+          <div style={{ ...box, marginBottom: 18 }}>
+            <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 10px", fontWeight: 700 }}>BOŞLUĞU DOLDUR</p>
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: T.navy, margin: 0 }}>
+              {r.tokens.map((t, i) => i === r.gapIdx
+                ? <span key={i} style={{ display: "inline-block", minWidth: 70, borderBottom: `2px solid ${T.card}`, margin: "0 4px" }}>&nbsp;</span>
+                : <span key={i}> {t}</span>
+              )}
+            </p>
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {(() => {
+              const distractors = shuffle(words.filter((w) => w.id !== r.word.id)).slice(0, 3).map((w) => w.term);
+              const opts = shuffle([r.word.term, ...distractors]);
+              return opts.map((opt) => {
+                let bg = T.surface, bd = T.border, col = T.text, cls = "fc-opt";
+                if (gapPicked) {
+                  if (opt === r.word.term) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; cls += " fc-right"; }
+                  else if (opt === gapPicked) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; cls += " fc-wrong"; }
+                }
+                return (
+                  <button key={opt} className={cls} disabled={!!gapPicked} onClick={() => chooseGap(opt)} style={{
+                    padding: "12px 16px", borderRadius: 10, fontSize: 14, fontWeight: 700, textAlign: "left",
+                    background: bg, border: `1px solid ${bd}`, color: col, cursor: gapPicked ? "default" : "pointer",
+                  }}>{opt}</button>
+                );
+              });
+            })()}
+          </div>
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 10px", fontWeight: 700, textAlign: "center" }}>
+            SÖZLƏRİ DÜZGÜN SIRAYLA DÜZ
+          </p>
+          <div style={{
+            ...box, minHeight: 70, marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center",
+            borderColor: scrambleResult === "ok" ? T.accent : scrambleResult === "err" ? T.danger : T.border,
+          }} className={scrambleResult === "ok" ? "fc-right" : scrambleResult === "err" ? "fc-wrong" : ""}>
+            {pickedOrder.length === 0 && <span style={{ fontSize: 12.5, color: T.textSoft }}>sözlərə toxunaraq cümlə qur</span>}
+            {pickedOrder.map((t) => (
+              <span key={t.id} style={{
+                padding: "7px 12px", borderRadius: 8, background: "rgba(201,123,99,0.12)",
+                border: `1px solid ${T.card}`, fontSize: 13.5, fontWeight: 600, color: T.navy,
+              }}>{t.text}</span>
+            ))}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            {pool.map((t) => (
+              <button key={t.id} className="fc-opt" onClick={() => tapPoolToken(t)} style={{
+                padding: "9px 14px", borderRadius: 8, background: T.surface, border: `1px solid ${T.border}`,
+                fontSize: 13.5, fontWeight: 600, color: T.text, cursor: "pointer",
+              }}>{t.text}</button>
+            ))}
+          </div>
+          <button onClick={undoToken} style={{ ...btnGhost, width: "100%" }} disabled={!!scrambleResult || pickedOrder.length === 0}>
+            ← Son sözü geri al
+          </button>
+        </>
+      )}
     </section>
   );
 }
