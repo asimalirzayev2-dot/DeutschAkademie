@@ -186,25 +186,35 @@ export default function Flashcards({ session }) {
     );
   }
 
+  async function logXp(amount, source, meta) {
+    if (!session?.user?.id) return;
+    try {
+      await sbAuthInsert("xp_log", session.access_token, {
+        user_id: session.user.id, source, amount, meta,
+      });
+    } catch {}
+  }
+
   // ---------- 3a. Flashcards rejimi ----------
   if (screen === "flashcards") {
-    return <FlashcardSession words={words} level={level} onExit={() => setScreen("mode")} onLog={logProgress} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
+    return <FlashcardSession words={words} level={level} onExit={() => setScreen("mode")} onLog={logProgress} onXp={logXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
   }
 
   // ---------- 3b. Match rejimi ----------
   if (screen === "match") {
-    return <MatchSession words={words} level={level} onExit={() => setScreen("mode")} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
+    return <MatchSession words={words} level={level} onExit={() => setScreen("mode")} onXp={logXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
   }
 
   return null;
 }
 
-function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btnGhost }) {
+function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimary, btnGhost }) {
   const [queue, setQueue] = useState([]);
   const [learnedIds, setLearnedIds] = useState(new Set());
   const [missedIds, setMissedIds] = useState(new Set());
   const [flipped, setFlipped] = useState(false);
   const [ready, setReady] = useState(false);
+  const [phase, setPhase] = useState("play"); // play | quiz
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef(null);
@@ -238,6 +248,10 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
 
   const done = queue.length === 0;
 
+  if (phase === "quiz") {
+    return <QuizSession words={words} level={level} onExit={onExit} onXp={onXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
+  }
+
   if (done) {
     const firstTry = words.length - missedIds.size;
     return (
@@ -255,6 +269,7 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>Rejimlərə qayıt</button>
+          <button onClick={() => setPhase("quiz")} style={{ ...btnPrimary, flex: 1.4 }}>Öyrəndiklərini sına →</button>
         </div>
       </section>
     );
@@ -386,7 +401,7 @@ function FlashcardSession({ words, level, onExit, onLog, T, box, btnPrimary, btn
   );
 }
 
-function MatchSession({ words, level, onExit, T, box, btnGhost }) {
+function MatchSession({ words, level, onExit, onXp, T, box, btnGhost }) {
   const [pairs, setPairs] = useState(null);
   const [selTerm, setSelTerm] = useState(null);
   const [selDef, setSelDef] = useState(null);
@@ -410,6 +425,7 @@ function MatchSession({ words, level, onExit, T, box, btnGhost }) {
     if (pairs && solved.length === pairs.terms.length && pairs.terms.length > 0) {
       clearInterval(timerRef.current);
       setFinished(true);
+      if (onXp) onXp(pairs.terms.length * 5, "flashcards_match", { level, seconds, wordCount: pairs.terms.length });
     }
   }, [solved, pairs]);
 
@@ -465,6 +481,7 @@ function MatchSession({ words, level, onExit, T, box, btnGhost }) {
             Tamamlandı!
           </p>
           <p style={{ fontSize: 13, color: T.textSoft, margin: 0 }}>Vaxt: <span style={{ color: T.card, fontWeight: 700 }}>{fmtTime(seconds)}</span></p>
+          <p style={{ fontSize: 12, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{pairs.terms.length * 5} XP</p>
         </div>
         <button onClick={onExit} style={{ ...btnGhost, width: "100%", marginTop: 16 }}>Rejimlərə qayıt</button>
       </section>
@@ -509,6 +526,114 @@ function MatchSession({ words, level, onExit, T, box, btnGhost }) {
             );
           })}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost }) {
+  const [questions, setQuestions] = useState(null);
+  const [idx, setIdx] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [xpAwarded, setXpAwarded] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let extra = [];
+      try {
+        const wordIds = words.map((w) => w.id);
+        const rows = await sb(`dictionary?level=eq.${level}&direction=eq.de-az&select=id,translation&limit=200`);
+        extra = (rows || []).filter((r) => !wordIds.includes(r.id));
+      } catch {}
+      const qs = shuffle(words).map((w) => {
+        const distractors = shuffle(extra.filter((r) => r.translation !== w.translation)).slice(0, 3).map((r) => r.translation);
+        const options = shuffle([w.translation, ...distractors]);
+        return { term: w.term, correct: w.translation, options };
+      });
+      if (alive) setQuestions(qs);
+    })();
+    return () => { alive = false; };
+  }, [words, level]);
+
+  useEffect(() => {
+    if (finished && !xpAwarded && questions) {
+      setXpAwarded(true);
+      const xp = correctCount * 10;
+      if (onXp) onXp(xp, "flashcards_quiz", { level, total: questions.length, correct: correctCount });
+    }
+  }, [finished]);
+
+  if (questions === null) {
+    return (
+      <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
+        <p style={{ color: T.textSoft }}>Test hazırlanır...</p>
+      </section>
+    );
+  }
+
+  if (finished) {
+    const pct = Math.round((correctCount / questions.length) * 100);
+    const xp = correctCount * 10;
+    return (
+      <section style={{ maxWidth: 480, margin: "0 auto" }}>
+        <style>{MICRO_CSS}</style>
+        <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
+          <p style={{ fontSize: 30, margin: "0 0 6px" }}>{pct >= 80 ? "🏅" : pct >= 50 ? "👍" : "💪"}</p>
+          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
+            {correctCount} / {questions.length} doğru
+          </p>
+          <p style={{ fontSize: 13, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{xp} XP</p>
+        </div>
+        <button onClick={onExit} style={{ ...btnPrimary, width: "100%", marginTop: 16 }}>Rejimlərə qayıt</button>
+      </section>
+    );
+  }
+
+  const q = questions[idx];
+
+  function choose(opt) {
+    if (picked) return;
+    setPicked(opt);
+    if (opt === q.correct) setCorrectCount((c) => c + 1);
+    setTimeout(() => {
+      if (idx + 1 >= questions.length) setFinished(true);
+      else { setIdx((i) => i + 1); setPicked(null); }
+    }, 650);
+  }
+
+  return (
+    <section style={{ maxWidth: 560, margin: "0 auto" }}>
+      <style>{MICRO_CSS}</style>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <button onClick={onExit} style={btnGhost}>← Çıx</button>
+        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>Sına · {idx + 1}/{questions.length}</span>
+      </div>
+      <div style={{ height: 3, background: T.border, borderRadius: 4, marginBottom: 20 }}>
+        <div style={{ height: 3, width: `${(idx / questions.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
+      </div>
+
+      <div style={{ ...box, marginBottom: 18, textAlign: "center" }}>
+        <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>BU SÖZÜN MƏNASI NƏDİR?</p>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: T.navy, margin: 0 }}>{q.term}</p>
+      </div>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {q.options.map((opt) => {
+          let cls = "fc-opt", bg = T.surface, bd = T.border, col = T.text;
+          if (picked) {
+            if (opt === q.correct) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; cls += " fc-right"; }
+            else if (opt === picked) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; cls += " fc-wrong"; }
+          }
+          return (
+            <button key={opt} className={cls} disabled={!!picked} onClick={() => choose(opt)} style={{
+              padding: "13px 16px", borderRadius: 10, fontSize: 14, fontWeight: 600, textAlign: "left",
+              background: bg, border: `1px solid ${bd}`, color: col, cursor: picked ? "default" : "pointer",
+            }}>{opt}</button>
+          );
+        })}
       </div>
     </section>
   );
