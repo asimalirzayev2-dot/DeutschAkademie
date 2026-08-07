@@ -13,73 +13,6 @@ const LEVELS = ["A1", "A2", "B1", "B2"];
 const LEVEL_TIER = { A1: 0, A2: 1, B1: 2, B2: 3 };
 // Səviyyələr kart rütbəsi kimi düşünülür: 10 → Valet → Dama → Karol (eyni dəst — milçək/xaç)
 const LEVEL_RANK = { A1: "10", A2: "V", B1: "D", B2: "K" };
-const SUIT_SYMBOL = "♣";
-
-function CardArt({ level, ink }) {
-  if (level === "A1") {
-    const pos = [
-      [50, 12], [50, 32],
-      [28, 22], [72, 22],
-      [28, 50], [72, 50],
-      [28, 78], [72, 78],
-      [50, 68], [50, 88],
-    ];
-    return (
-      <svg width="60" height="88" viewBox="0 0 100 100">
-        {pos.map(([x, y], i) => (
-          <text key={i} x={x} y={y} fontSize="14" textAnchor="middle" fill={ink}>{SUIT_SYMBOL}</text>
-        ))}
-      </svg>
-    );
-  }
-
-  // Üz kartları — ortaq büst + üz cizgiləri, rütbəyə görə fərqli baş geyimi
-  return (
-    <svg width="58" height="90" viewBox="0 0 100 140">
-      {/* çiyin/paltar */}
-      <path d="M18 138 Q24 96 50 88 Q76 96 82 138 Z" fill="none" stroke={ink} strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M18 138 Q24 96 50 88 Q76 96 82 138 Z" fill={ink} opacity="0.06" />
-      {/* yaxa/boyunbağı */}
-      <path d="M36 92 Q50 100 64 92" fill="none" stroke={ink} strokeWidth="1.6" />
-      <circle cx="50" cy="100" r="2" fill={ink} />
-      {/* baş */}
-      <circle cx="50" cy="58" r="22" fill="none" stroke={ink} strokeWidth="2.5" />
-      {/* zərif üz cizgiləri */}
-      <circle cx="42" cy="56" r="1.6" fill={ink} />
-      <circle cx="58" cy="56" r="1.6" fill={ink} />
-      <path d="M44 68 Q50 72 56 68" fill="none" stroke={ink} strokeWidth="1.4" strokeLinecap="round" />
-
-      {level === "A2" && (
-        <>
-          {/* Valet — bərabər tərəfli iti papaq, kiçik lələk */}
-          <path d="M30 38 L50 12 L70 38 Z" fill={ink} opacity="0.9" />
-          <path d="M62 20 L74 8" stroke={ink} strokeWidth="2" strokeLinecap="round" />
-        </>
-      )}
-      {level === "B1" && (
-        <>
-          {/* Dama — zərif tac, 3 uc + kiçik muncuqlar */}
-          <path d="M26 40 L34 16 L44 34 L50 10 L56 34 L66 16 L74 40 Z" fill="none" stroke={ink} strokeWidth="2.3" strokeLinejoin="round" />
-          <circle cx="34" cy="16" r="2.2" fill={ink} />
-          <circle cx="50" cy="10" r="2.4" fill={ink} />
-          <circle cx="66" cy="16" r="2.2" fill={ink} />
-          <path d="M26 40 L74 40" stroke={ink} strokeWidth="2" />
-        </>
-      )}
-      {level === "B2" && (
-        <>
-          {/* Karol — dolğun bağlı tac + xaç */}
-          <path d="M22 40 L30 14 L40 32 L50 8 L60 32 L70 14 L78 40 Z" fill={ink} opacity="0.92" />
-          <path d="M22 40 L78 40 L78 46 L22 46 Z" fill={ink} opacity="0.92" />
-          <path d="M50 6 L50 -2 M46 -2 L54 -2" stroke={ink} strokeWidth="2" strokeLinecap="round" transform="translate(0,10)" />
-          <circle cx="30" cy="14" r="2.4" fill={ink} />
-          <circle cx="50" cy="8" r="2.6" fill={ink} />
-          <circle cx="70" cy="14" r="2.4" fill={ink} />
-        </>
-      )}
-    </svg>
-  );
-}
 
 function DiamondWatermark() {
   // B2 kartının küncündə, tədricən bəzək sistemindəki bürünc romb naxışının təkrarı
@@ -208,6 +141,17 @@ export default function Flashcards({ session }) {
             const tier = LEVEL_TIER[l];
             const ink = tier === 1 ? T.accent : tier === 2 ? T.warm : tier === 3 ? T.bronze : T.text;
             const rank = LEVEL_RANK[l];
+            // Ağırlıq tier-ə görə tədricən dolğunlaşan fon — A1 sadə, B2 ən dolğun
+            const bg =
+              tier === 0 ? "#FFFDF7" :
+              tier === 1 ? "linear-gradient(160deg, #FFFDF7, rgba(0,168,150,0.10))" :
+              tier === 2 ? "linear-gradient(160deg, #FFFDF7, rgba(255,140,0,0.16))" :
+              "linear-gradient(160deg, #FFFDF7, rgba(184,134,11,0.24))";
+            const borderStyle =
+              tier === 0 ? `1px solid ${T.border}` :
+              tier === 1 ? `1.5px solid rgba(0,168,150,0.35)` :
+              tier === 2 ? `1.5px solid rgba(255,140,0,0.45)` :
+              `2px solid rgba(184,134,11,0.55)`;
             return (
               <button key={l} className="fc-card" onClick={() => { setLevel(l); setScreen("mode"); }} style={{
                 position: "relative", padding: 0, borderRadius: 13, cursor: "pointer",
@@ -215,25 +159,20 @@ export default function Flashcards({ session }) {
               }}>
                 <div style={{
                   position: "relative", width: "100%", aspectRatio: "5 / 7",
-                  background: "#FFFDF7", borderRadius: 12,
-                  border: tier === 3 ? `2px solid rgba(184,134,11,0.45)` : `1px solid ${T.border}`,
-                  boxShadow: "0 4px 14px rgba(42,61,60,0.10)",
+                  background: bg, borderRadius: 12, border: borderStyle,
+                  boxShadow: tier === 3 ? "0 6px 18px rgba(184,134,11,0.20)" : tier === 2 ? "0 5px 16px rgba(255,140,0,0.14)" : "0 4px 14px rgba(42,61,60,0.10)",
                 }}>
                   {tier === 3 && <DiamondWatermark />}
                   {tier === 2 && <span style={{ position: "absolute", top: 8, right: 10 }}><Flame size={13} color={T.warm} strokeWidth={2.5} /></span>}
 
-                  <div style={{ position: "absolute", top: 8, left: 10, textAlign: "center", lineHeight: 1.05 }}>
-                    <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 15, color: ink }}>{rank}</div>
-                    <div style={{ fontSize: 12, color: ink, marginTop: 1 }}>{SUIT_SYMBOL}</div>
-                  </div>
-                  <div style={{ position: "absolute", bottom: 8, right: 10, textAlign: "center", lineHeight: 1.05, transform: "rotate(180deg)" }}>
-                    <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 15, color: ink }}>{rank}</div>
-                    <div style={{ fontSize: 12, color: ink, marginTop: 1 }}>{SUIT_SYMBOL}</div>
-                  </div>
+                  <div style={{ position: "absolute", top: 8, left: 10, fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 13, color: ink, opacity: 0.7 }}>{rank}</div>
+                  <div style={{ position: "absolute", bottom: 8, right: 10, fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 13, color: ink, opacity: 0.7, transform: "rotate(180deg)" }}>{rank}</div>
 
-                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                    <CardArt level={l} ink={ink} />
-                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 14, color: T.navy, letterSpacing: 0.3, marginTop: 2 }}>{l}</span>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 32, color: tier === 0 ? T.navy : ink, letterSpacing: 0.5 }}>{l}</span>
+                    <span style={{ fontSize: 10.5, color: T.textSoft, marginTop: 6, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
+                      {tier === 0 ? "Başlanğıc" : tier === 1 ? "Elementar" : tier === 2 ? "Orta" : "Yuxarı-orta"}
+                    </span>
                   </div>
                 </div>
               </button>
