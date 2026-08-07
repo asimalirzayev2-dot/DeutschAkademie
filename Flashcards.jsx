@@ -15,53 +15,25 @@ const LEVEL_TIER = { A1: 0, A2: 1, B1: 2, B2: 3 };
 const LEVEL_RANK = { A1: "10", A2: "V", B1: "D", B2: "K" };
 const SUIT_SYMBOL = "♣";
 
+// Əsl kart üzü illüstrasiyaları — Simon (aussiesim), game-icons.net, CC BY 3.0
+const GI_BASE = "https://game-icons.net/icons/000000/transparent/1x1/aussiesim/";
+const GI_ICON = { A1: "card-10-clubs", A2: "card-jack-clubs", B1: "card-queen-clubs", B2: "card-king-clubs" };
+
 function CardArt({ level, ink }) {
-  if (level === "A1") {
-    // Klassik "10" pip düzülüşü — real kartlardakı kimi
-    const pos = [
-      [50, 14], [50, 34],
-      [30, 24], [70, 24],
-      [30, 50], [70, 50],
-      [30, 76], [70, 76],
-      [50, 66], [50, 86],
-    ];
-    return (
-      <svg width="72" height="100" viewBox="0 0 100 100">
-        {pos.map(([x, y], i) => (
-          <text key={i} x={x} y={y} fontSize="13" textAnchor="middle" fill={ink}>{SUIT_SYMBOL}</text>
-        ))}
-      </svg>
-    );
-  }
-
-  // Üz kartları (Valet/Dama/Karol) — ortaq büst, rütbəyə görə fərqli baş geyimi
+  const url = `${GI_BASE}${GI_ICON[level]}.svg`;
   return (
-    <svg width="60" height="86" viewBox="0 0 100 130">
-      {/* çiyin/gövdə */}
-      <path d="M22 128 Q28 88 50 82 Q72 88 78 128 Z" fill="none" stroke={ink} strokeWidth="2.5" />
-      {/* baş */}
-      <circle cx="50" cy="58" r="20" fill="none" stroke={ink} strokeWidth="2.5" />
-      {/* boyunbağı xətti */}
-      <path d="M38 76 Q50 82 62 76" fill="none" stroke={ink} strokeWidth="1.5" />
-
-      {level === "A2" && (
-        // Valet — sadə iti papaq
-        <path d="M32 40 L50 16 L68 40 Z" fill={ink} opacity="0.85" />
-      )}
-      {level === "B1" && (
-        // Dama — tac (3 zərif uc)
-        <path d="M28 42 L36 20 L44 36 L50 14 L56 36 L64 20 L72 42 Z" fill={ink} opacity="0.85" />
-      )}
-      {level === "B2" && (
-        // Karol — daha dolğun tac + muncuqlar
-        <>
-          <path d="M24 42 L32 16 L42 34 L50 10 L58 34 L68 16 L76 42 Z" fill={ink} opacity="0.9" />
-          <circle cx="32" cy="16" r="2.6" fill={ink} />
-          <circle cx="50" cy="10" r="2.8" fill={ink} />
-          <circle cx="68" cy="16" r="2.6" fill={ink} />
-        </>
-      )}
-    </svg>
+    <div
+      role="img"
+      aria-label={`${level} kart üzü`}
+      style={{
+        width: 60, height: 60,
+        backgroundColor: ink,
+        WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`,
+        WebkitMaskSize: "contain", maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center", maskPosition: "center",
+      }}
+    />
   );
 }
 
@@ -224,6 +196,9 @@ export default function Flashcards({ session }) {
             );
           })}
         </div>
+        <p style={{ textAlign: "center", fontSize: 10, color: T.textSoft, marginTop: 14, opacity: 0.6 }}>
+          Kart ikonları: Simon (aussiesim), game-icons.net — CC BY 3.0
+        </p>
       </section>
     );
   }
