@@ -10,6 +10,9 @@ const T = {
 };
 const LEVELS = ["A1", "A2", "B1", "B2"];
 const LEVEL_TIER = { A1: 0, A2: 1, B1: 2, B2: 3 };
+// Səviyyələr kart rütbəsi kimi düşünülür: 10 → Valet → Dama → Karol (eyni dəst — milçək/xaç)
+const LEVEL_RANK = { A1: "10", A2: "V", B1: "D", B2: "K" };
+const SUIT_SYMBOL = "♣";
 
 const MICRO_CSS = `
   @keyframes fcShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-5px); } 40%,60% { transform: translateX(5px); } }
@@ -120,18 +123,39 @@ export default function Flashcards({ session }) {
             Lüğətimizdən kartlarla təkrar et — bazamız daim yeni sözlərlə böyüyür.
           </p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {LEVELS.map((l) => {
             const tier = LEVEL_TIER[l];
+            const ink = tier === 1 ? T.accent : tier === 2 ? T.warm : tier === 3 ? T.bronze : T.text;
+            const rank = LEVEL_RANK[l];
             return (
               <button key={l} className="fc-card" onClick={() => { setLevel(l); setScreen("mode"); }} style={{
-                textAlign: "left", padding: "16px", borderRadius: 13, cursor: "pointer",
-                background: T.surface, border: `1px solid ${T.border}`,
-                ...(tier === 3 ? { border: `2px solid rgba(184,134,11,0.4)` } : {}),
-                ...(tier === 2 ? { borderLeft: `4px solid ${T.warm}` } : {}),
-                ...(tier === 1 ? { borderBottom: `2px solid rgba(0,168,150,0.35)` } : {}),
+                position: "relative", padding: 0, borderRadius: 13, cursor: "pointer",
+                background: "transparent", border: "none", overflow: "hidden",
               }}>
-                <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy }}>{l}</span>
+                <div style={{
+                  position: "relative", width: "100%", aspectRatio: "5 / 7",
+                  background: "#FFFDF7", borderRadius: 12,
+                  border: tier === 3 ? `2px solid rgba(184,134,11,0.45)` : `1px solid ${T.border}`,
+                  boxShadow: "0 4px 14px rgba(42,61,60,0.10)",
+                }}>
+                  {tier === 3 && <DiamondWatermark />}
+                  {tier === 2 && <span style={{ position: "absolute", top: 8, right: 10 }}><Flame size={13} color={T.warm} strokeWidth={2.5} /></span>}
+
+                  <div style={{ position: "absolute", top: 8, left: 10, textAlign: "center", lineHeight: 1.05 }}>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 15, color: ink }}>{rank}</div>
+                    <div style={{ fontSize: 12, color: ink, marginTop: 1 }}>{SUIT_SYMBOL}</div>
+                  </div>
+                  <div style={{ position: "absolute", bottom: 8, right: 10, textAlign: "center", lineHeight: 1.05, transform: "rotate(180deg)" }}>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 15, color: ink }}>{rank}</div>
+                    <div style={{ fontSize: 12, color: ink, marginTop: 1 }}>{SUIT_SYMBOL}</div>
+                  </div>
+
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    <span style={{ fontSize: 38, color: ink, opacity: 0.9 }}>{SUIT_SYMBOL}</span>
+                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 14, color: T.navy, letterSpacing: 0.3 }}>{l}</span>
+                  </div>
+                </div>
               </button>
             );
           })}
