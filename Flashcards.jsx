@@ -15,6 +15,56 @@ const LEVEL_TIER = { A1: 0, A2: 1, B1: 2, B2: 3 };
 const LEVEL_RANK = { A1: "10", A2: "V", B1: "D", B2: "K" };
 const SUIT_SYMBOL = "♣";
 
+function CardArt({ level, ink }) {
+  if (level === "A1") {
+    // Klassik "10" pip düzülüşü — real kartlardakı kimi
+    const pos = [
+      [50, 14], [50, 34],
+      [30, 24], [70, 24],
+      [30, 50], [70, 50],
+      [30, 76], [70, 76],
+      [50, 66], [50, 86],
+    ];
+    return (
+      <svg width="72" height="100" viewBox="0 0 100 100">
+        {pos.map(([x, y], i) => (
+          <text key={i} x={x} y={y} fontSize="13" textAnchor="middle" fill={ink}>{SUIT_SYMBOL}</text>
+        ))}
+      </svg>
+    );
+  }
+
+  // Üz kartları (Valet/Dama/Karol) — ortaq büst, rütbəyə görə fərqli baş geyimi
+  return (
+    <svg width="60" height="86" viewBox="0 0 100 130">
+      {/* çiyin/gövdə */}
+      <path d="M22 128 Q28 88 50 82 Q72 88 78 128 Z" fill="none" stroke={ink} strokeWidth="2.5" />
+      {/* baş */}
+      <circle cx="50" cy="58" r="20" fill="none" stroke={ink} strokeWidth="2.5" />
+      {/* boyunbağı xətti */}
+      <path d="M38 76 Q50 82 62 76" fill="none" stroke={ink} strokeWidth="1.5" />
+
+      {level === "A2" && (
+        // Valet — sadə iti papaq
+        <path d="M32 40 L50 16 L68 40 Z" fill={ink} opacity="0.85" />
+      )}
+      {level === "B1" && (
+        // Dama — tac (3 zərif uc)
+        <path d="M28 42 L36 20 L44 36 L50 14 L56 36 L64 20 L72 42 Z" fill={ink} opacity="0.85" />
+      )}
+      {level === "B2" && (
+        // Karol — daha dolğun tac + muncuqlar
+        <>
+          <path d="M24 42 L32 16 L42 34 L50 10 L58 34 L68 16 L76 42 Z" fill={ink} opacity="0.9" />
+          <circle cx="32" cy="16" r="2.6" fill={ink} />
+          <circle cx="50" cy="10" r="2.8" fill={ink} />
+          <circle cx="68" cy="16" r="2.6" fill={ink} />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function DiamondWatermark() {
   // B2 kartının küncündə, tədricən bəzək sistemindəki bürünc romb naxışının təkrarı
   return (
@@ -165,9 +215,9 @@ export default function Flashcards({ session }) {
                     <div style={{ fontSize: 12, color: ink, marginTop: 1 }}>{SUIT_SYMBOL}</div>
                   </div>
 
-                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                    <span style={{ fontSize: 38, color: ink, opacity: 0.9 }}>{SUIT_SYMBOL}</span>
-                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 14, color: T.navy, letterSpacing: 0.3 }}>{l}</span>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                    <CardArt level={l} ink={ink} />
+                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 14, color: T.navy, letterSpacing: 0.3, marginTop: 2 }}>{l}</span>
                   </div>
                 </div>
               </button>
