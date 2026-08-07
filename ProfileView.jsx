@@ -116,22 +116,35 @@ function ProfileView({ portalStyles, SectionHeader, AuthRequired,  session, prof
           <p style={{ fontSize: 12.5, color: "rgba(42,61,60,0.62)", margin: "0 0 12px" }}>
             Avatarını seç — bütün saytda görünəcək.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 9 }}>
-            {avatarOptionsFor(isAdmin).map((b) => (
-              <button key={b.key} onClick={() => chooseBird(b.key)} disabled={savingBird}
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-                  padding: "9px 4px", borderRadius: 12, cursor: "pointer",
-                  background: bird === b.key ? "rgba(0,168,150,0.10)" : "transparent",
-                  border: `1px solid ${bird === b.key ? "#00A896" : "rgba(42,61,60,0.12)"}`,
-                }}>
-                <Avatar avatarKey={b.key} size={40} />
-                <span style={{ fontSize: 9.5, fontWeight: 700, color: "#2A3D3C", textAlign: "center", lineHeight: 1.2 }}>
-                  {b.name}
-                </span>
-              </button>
-            ))}
-          </div>
+          {Object.entries(
+            avatarOptionsFor(isAdmin).reduce((groups, b) => {
+              const cat = b.category || "Digər";
+              (groups[cat] = groups[cat] || []).push(b);
+              return groups;
+            }, {})
+          ).map(([cat, items]) => (
+            <div key={cat} style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, color: "rgba(42,61,60,0.45)", margin: "0 0 8px", textTransform: "uppercase" }}>
+                {cat}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 9 }}>
+                {items.map((b) => (
+                  <button key={b.key} onClick={() => chooseBird(b.key)} disabled={savingBird}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                      padding: "9px 4px", borderRadius: 12, cursor: "pointer",
+                      background: bird === b.key ? "rgba(0,168,150,0.10)" : "transparent",
+                      border: `1px solid ${bird === b.key ? "#00A896" : "rgba(42,61,60,0.12)"}`,
+                    }}>
+                    <Avatar avatarKey={b.key} size={40} />
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: "#2A3D3C", textAlign: "center", lineHeight: 1.2 }}>
+                      {b.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
