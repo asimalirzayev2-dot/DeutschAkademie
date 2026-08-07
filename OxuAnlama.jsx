@@ -22,7 +22,6 @@ function tierAccentColor(tier) {
 }
 
 function DiamondWatermark() {
-  // B2 kartının küncündə, arxa fondakı romb motivinin təkrarı — çox aşağı opasitlik
   return (
     <svg
       style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", opacity: 0.08 }}
@@ -34,13 +33,28 @@ function DiamondWatermark() {
   );
 }
 
-// box-un tier-ə görə haşiyə/kölgə variasiyası — bazadakı `box` üzərinə əlavə olunur
 function tierBoxStyle(tier) {
   if (tier === 0) return {};
   if (tier === 1) return { borderBottom: `2px solid rgba(0,168,150,0.35)` };
   if (tier === 2) return { borderLeft: `4px solid ${T.warm}`, paddingLeft: 13 };
   return { border: `2px solid rgba(184,134,11,0.4)`, position: "relative", overflow: "hidden" };
 }
+
+// ---- Mikro-interaksiya: hover-qalxma, düzgün/səhv üçün rəngli reaksiya ----
+// Öz isti palitramızda (turkuaz=doğru, mərcan qırmızı=səhv, narıncı=hover), tünd fon/şüşə YOXDUR.
+const MICRO_CSS = `
+  @keyframes oaShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-5px); } 40%,60% { transform: translateX(5px); } }
+  @keyframes oaPulse { 0% { box-shadow: 0 0 0 0 rgba(0,168,150,0.45); } 70% { box-shadow: 0 0 0 9px rgba(0,168,150,0); } 100% { box-shadow: 0 0 0 0 rgba(0,168,150,0); } }
+  @keyframes oaPop { from { transform: scale(0.94); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
+  .oa-opt { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease; }
+  .oa-opt:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(42,61,60,0.12); }
+  .oa-opt:not(:disabled):active { transform: translateY(0) scale(0.97); }
+  .oa-card { transition: transform .18s ease, box-shadow .18s ease; }
+  .oa-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(42,61,60,0.10); }
+  .oa-right { animation: oaPulse .7s ease-out; }
+  .oa-wrong { animation: oaShake .45s ease-in-out; }
+  .oa-score-pop { animation: oaPop .4s cubic-bezier(.34,1.56,.64,1); }
+`;
 
 export default function OxuAnlama({ session }) {
   const [screen, setScreen] = useState("level"); // level | groups | list | test
@@ -90,8 +104,9 @@ export default function OxuAnlama({ session }) {
     if (current.article_questions) {
       current.article_questions.forEach((q, i) => { total++; if (answers[`art_${i}`] === q.a) correct++; });
     }
-    current.people.forEach((p, i) => { total++; if (answers[`match${i}`] === p.answer) correct++; });
+    (current.people || []).forEach((p, i) => { total++; if (answers[`match${i}`] === p.answer) correct++; });
     current.task3_questions.forEach((q, i) => { total++; if (answers[`t3_${i}`] === q.a) correct++; });
+    (current.gap_questions || []).forEach((q, i) => { total++; if (answers[`gap_${i}`] === q.a) correct++; });
     return { correct, total };
   }
 
@@ -114,6 +129,7 @@ export default function OxuAnlama({ session }) {
   if (screen === "level") {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
+        <style>{MICRO_CSS}</style>
         <div style={{ textAlign: "center", marginBottom: 18 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 9, padding: "7px 16px",
@@ -132,7 +148,7 @@ export default function OxuAnlama({ session }) {
           {LEVELS.map((l) => {
             const tier = LEVEL_TIER[l];
             return (
-              <button key={l} onClick={() => { setLevel(l); setScreen("groups"); }} style={{
+              <button key={l} className="oa-card" onClick={() => { setLevel(l); setScreen("groups"); }} style={{
                 textAlign: "left", padding: "16px", borderRadius: 13, cursor: "pointer",
                 background: T.surface, border: `1px solid ${T.border}`,
                 position: "relative", overflow: "hidden",
@@ -168,6 +184,7 @@ export default function OxuAnlama({ session }) {
     const accent = tierAccentColor(tier);
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
+        <style>{MICRO_CSS}</style>
         <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← Səviyyələr</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
           {level} · Oxu Anlama
@@ -181,7 +198,7 @@ export default function OxuAnlama({ session }) {
             const done = g.filter((u) => progress[u.unit_number]).length;
             const roman = ROMAN[gi] || String(gi + 1);
             return (
-              <button key={gi} onClick={() => { setSelectedGroup(g); setScreen("list"); }} style={{
+              <button key={gi} className="oa-card" onClick={() => { setSelectedGroup(g); setScreen("list"); }} style={{
                 ...box, ...tierBoxStyle(tier), textAlign: "left", cursor: "pointer",
                 display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>
@@ -217,13 +234,14 @@ export default function OxuAnlama({ session }) {
     const accent = tierAccentColor(tier);
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
+        <style>{MICRO_CSS}</style>
         <button onClick={() => setScreen("groups")} style={{ ...btnGhost, marginBottom: 14 }}>← Qruplar</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
           {level} · Fəsil {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
         </p>
         <div style={{ display: "grid", gap: 9 }}>
           {selectedGroup.map((u) => (
-            <button key={u.id} onClick={() => openUnit(u.id)} style={{
+            <button key={u.id} className="oa-card" onClick={() => openUnit(u.id)} style={{
               ...box, ...tierBoxStyle(tier), textAlign: "left", cursor: "pointer",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
@@ -247,17 +265,19 @@ export default function OxuAnlama({ session }) {
     const u = current;
     const sc = submitted ? score() : null;
     const adLetters = Object.keys(u.ads).sort();
-    const isB1 = !!u.article_questions;
+    const isB1 = u.level === "B1";
+    const isB2 = u.level === "B2";
 
     return (
       <section style={{ maxWidth: 640, margin: "0 auto" }}>
+        <style>{MICRO_CSS}</style>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <button onClick={() => setScreen("list")} style={btnGhost}>← Geri</button>
           <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{u.level} · Fəsil {u.unit_number}</span>
         </div>
 
         {submitted && (
-          <div style={{
+          <div className="oa-score-pop" style={{
             ...box, marginBottom: 16, textAlign: "center",
             background: sc.correct >= sc.total * 0.7 ? "rgba(0,168,150,0.08)" : "rgba(255,140,0,0.06)",
           }}>
@@ -269,19 +289,25 @@ export default function OxuAnlama({ session }) {
         )}
 
         {/* ---- Aufgabe 1 ---- */}
-        <TaskHeader n={1} title="Mesajı oxuyun. Cümlələr doğru, yoxsa yanlışdır?" />
+        <TaskHeader n={1} title={isB2 ? "Mətni oxuyun və düzgün cavabı seçin" : "Mesajı oxuyun. Cümlələr doğru, yoxsa yanlışdır?"} />
         <div style={{ ...box, marginBottom: 16 }}>
           <p style={{ whiteSpace: "pre-line", fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px", fontStyle: "italic" }}>
             {u.msg_text}
           </p>
-          {u.msg_questions.map((q, i) => (
-            <RFQuestion key={i} num={i + 1} question={q.q}
-              value={answers[`msg${i}`]} correct={q.a} submitted={submitted}
-              onChange={(v) => setAns(`msg${i}`, v)} />
-          ))}
+          {isB2
+            ? u.msg_questions.map((q, i) => (
+                <MCQuestion key={i} num={i + 1} question={q.q} options={q.options}
+                  value={answers[`msg${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`msg${i}`, v)} />
+              ))
+            : u.msg_questions.map((q, i) => (
+                <RFQuestion key={i} num={i + 1} question={q.q}
+                  value={answers[`msg${i}`]} correct={q.a} submitted={submitted}
+                  onChange={(v) => setAns(`msg${i}`, v)} />
+              ))}
         </div>
 
-        {isB1 && (
+        {(isB1 || isB2) && (
           <>
             {/* ---- Teil 2: qəzet məqaləsi ---- */}
             <TaskHeader n={2} title="Məqaləni oxuyun və düzgün cavabı seçin" />
@@ -313,28 +339,59 @@ export default function OxuAnlama({ session }) {
               ))}
             </div>
 
-            {/* ---- Teil 4: elanlar ---- */}
-            <TaskHeader n={4} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
-            <div style={{ ...box, marginBottom: 18 }}>
-              <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
-                {adLetters.map((l) => (
-                  <div key={l} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
-                    <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{l.toUpperCase()})</span>
-                    <span>{u.ads[l]}</span>
+            {isB1 && (
+              <>
+                {/* ---- Teil 4 (B1): elanlar ---- */}
+                <TaskHeader n={4} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
+                <div style={{ ...box, marginBottom: 18 }}>
+                  <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
+                    {adLetters.map((l) => (
+                      <div key={l} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
+                        <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{l.toUpperCase()})</span>
+                        <span>{u.ads[l]}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
-              {u.people.map((p, i) => (
-                <MatchQuestion key={i} num={i + 16} person={p.text} letters={adLetters}
-                  value={answers[`match${i}`]} correct={p.answer} submitted={submitted}
-                  onChange={(v) => setAns(`match${i}`, v)} />
-              ))}
-            </div>
+                  <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
+                  {u.people.map((p, i) => (
+                    <MatchQuestion key={i} num={i + 16} person={p.text} letters={adLetters}
+                      value={answers[`match${i}`]} correct={p.answer} submitted={submitted}
+                      onChange={(v) => setAns(`match${i}`, v)} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {isB2 && (
+              <>
+                {/* ---- Teil 4 (B2): Lückentext ---- */}
+                <TaskHeader n={4} title="Boşluqları uyğun hissə ilə doldurun (hamısı istifadə olunmaya bilər)" />
+                <div style={{ ...box, marginBottom: 18 }}>
+                  {u.gap_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.gap_title}</p>}
+                  <GapTextDisplay text={u.gap_text} T={T} />
+                  <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
+                  <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
+                    {(u.gap_options || []).map((o) => (
+                      <div key={o.label} style={{ fontSize: 12.5, color: T.text, display: "flex", gap: 8 }}>
+                        <span style={{ fontWeight: 800, color: T.warm, flexShrink: 0 }}>{o.label.toUpperCase()})</span>
+                        <span>{o.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
+                  {(u.gap_questions || []).map((q, i) => (
+                    <MatchQuestion key={i} num={i + 16} person={`Boşluq (${q.gap}) üçün uyğun hissəni seç`}
+                      letters={(u.gap_options || []).map((o) => o.label)}
+                      value={answers[`gap_${i}`]} correct={q.a} submitted={submitted}
+                      onChange={(v) => setAns(`gap_${i}`, v)} />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
 
-        {!isB1 && (
+        {(!isB1 && !isB2) && (
           <>
             {/* ---- Aufgabe 2 ---- */}
             <TaskHeader n={2} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
@@ -421,13 +478,34 @@ function TaskHeader({ n, title }) {
   );
 }
 
+// B2 Lückentext-i göstərir — __(16)__ kimi boşluqları nömrələnmiş, rəngli qutucuqla əvəz edir
+function GapTextDisplay({ text, T }) {
+  const parts = (text || "").split(/__\((\d+)\)__/);
+  return (
+    <p style={{ whiteSpace: "pre-line", fontSize: 14, lineHeight: 1.8, color: T.text, margin: 0 }}>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <span key={i} style={{
+            display: "inline-block", minWidth: 30, padding: "1px 8px", margin: "0 2px",
+            borderRadius: 6, background: "rgba(255,140,0,0.14)", color: T.warm,
+            fontWeight: 800, fontSize: 12.5, verticalAlign: "middle",
+          }}>({part})</span>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </p>
+  );
+}
+
+// isRight/isWrongPick əsasında rəng + mikro-animasiya class-ı birlikdə hesablanır
 function optStyle(active, isRight, isWrongPick, submitted) {
-  let bg = "transparent", bd = T.border, col = T.text;
+  let bg = "transparent", bd = T.border, col = T.text, cls = "oa-opt";
   if (submitted) {
-    if (isRight) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; }
-    else if (isWrongPick) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; }
+    if (isRight) { bg = "rgba(0,168,150,0.14)"; bd = T.accent; col = T.navy; cls += " oa-right"; }
+    else if (isWrongPick) { bg = "rgba(192,57,43,0.10)"; bd = T.danger; col = T.danger; cls += " oa-wrong"; }
   } else if (active) { bg = "rgba(0,51,102,0.08)"; bd = T.navy; col = T.navy; }
-  return { bg, bd, col };
+  return { bg, bd, col, cls };
 }
 
 function RFQuestion({ num, question, value, correct, submitted, onChange }) {
@@ -440,7 +518,7 @@ function RFQuestion({ num, question, value, correct, submitted, onChange }) {
         {["R", "F"].map((opt) => {
           const s = optStyle(value === opt, submitted && opt === correct, submitted && value === opt && opt !== correct, submitted);
           return (
-            <button key={opt} disabled={submitted} onClick={() => onChange(opt)} style={{
+            <button key={opt} className={s.cls} disabled={submitted} onClick={() => onChange(opt)} style={{
               flex: 1, padding: "9px 0", borderRadius: 8, fontWeight: 700, fontSize: 13,
               background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
@@ -463,7 +541,7 @@ function MatchQuestion({ num, person, letters, value, correct, submitted, onChan
         {letters.map((l) => {
           const s = optStyle(value === l, submitted && l === correct, submitted && value === l && l !== correct, submitted);
           return (
-            <button key={l} disabled={submitted} onClick={() => onChange(l)} style={{
+            <button key={l} className={s.cls} disabled={submitted} onClick={() => onChange(l)} style={{
               width: 32, height: 32, borderRadius: 8, fontWeight: 800, fontSize: 12.5,
               background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
@@ -487,7 +565,7 @@ function MCQuestion({ num, question, options, value, correct, submitted, onChang
         {keys.map((k) => {
           const s = optStyle(value === k, submitted && k === correct, submitted && value === k && k !== correct, submitted);
           return (
-            <button key={k} disabled={submitted} onClick={() => onChange(k)} style={{
+            <button key={k} className={s.cls} disabled={submitted} onClick={() => onChange(k)} style={{
               textAlign: "left", padding: "8px 11px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
               background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
@@ -510,7 +588,7 @@ function OpinionQuestion({ num, question, names, value, correct, submitted, onCh
         {names.map((n) => {
           const s = optStyle(value === n, submitted && n === correct, submitted && value === n && n !== correct, submitted);
           return (
-            <button key={n} disabled={submitted} onClick={() => onChange(n)} style={{
+            <button key={n} className={s.cls} disabled={submitted} onClick={() => onChange(n)} style={{
               padding: "7px 12px", borderRadius: 8, fontWeight: 700, fontSize: 12.5,
               background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
