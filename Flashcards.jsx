@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Flame } from "lucide-react";
 import { sb, sbAuthInsert, sbInsert } from "./supabase";
 import { speakGerman } from "./utils";
 
@@ -13,6 +14,19 @@ const LEVEL_TIER = { A1: 0, A2: 1, B1: 2, B2: 3 };
 // Səviyyələr kart rütbəsi kimi düşünülür: 10 → Valet → Dama → Karol (eyni dəst — milçək/xaç)
 const LEVEL_RANK = { A1: "10", A2: "V", B1: "D", B2: "K" };
 const SUIT_SYMBOL = "♣";
+
+function DiamondWatermark() {
+  // B2 kartının küncündə, tədricən bəzək sistemindəki bürünc romb naxışının təkrarı
+  return (
+    <svg
+      style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", opacity: 0.08 }}
+      width="64" height="64" viewBox="0 0 72 72" fill="none"
+    >
+      <rect x="18" y="0" width="36" height="36" rx="4" transform="rotate(45 36 18)" stroke="#B8860B" strokeWidth="2" />
+      <rect x="4" y="20" width="20" height="20" rx="3" transform="rotate(45 14 30)" stroke="#B8860B" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 const MICRO_CSS = `
   @keyframes fcShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-5px); } 40%,60% { transform: translateX(5px); } }
