@@ -181,6 +181,15 @@ export default function Flashcards({ session }) {
               <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>Sözü tərcüməsi ilə uyğunlaşdır</span>
             </span>
           </button>
+          <button className="fc-card" onClick={async () => { await loadWords(level, Math.min(count, 10)); setScreen("sentences"); }} style={{
+            ...box, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 14,
+          }}>
+            <span style={{ fontSize: 26 }}>🌀</span>
+            <span>
+              <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>Cümlə qur</span>
+              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>Boşluq doldur, sözləri sırala</span>
+            </span>
+          </button>
         </div>
       </section>
     );
@@ -203,6 +212,11 @@ export default function Flashcards({ session }) {
   // ---------- 3b. Match rejimi ----------
   if (screen === "match") {
     return <MatchSession words={words} level={level} onExit={() => setScreen("mode")} onXp={logXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
+  }
+
+  // ---------- 3c. Cümlə qurma rejimi ----------
+  if (screen === "sentences") {
+    return <SentenceGame words={words} level={level} onExit={() => setScreen("mode")} onXp={logXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
   }
 
   return null;
@@ -538,7 +552,7 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const [xpAwarded, setXpAwarded] = useState(false);
-  const [phase, setPhase] = useState("quiz"); // quiz | sentences
+  const [reviewList, setReviewList] = useState([]); // { term, translation, userAnswer, isRight }
 
   useEffect(() => {
     let alive = true;
@@ -575,27 +589,40 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
     );
   }
 
-  if (phase === "sentences") {
-    return <SentenceGame words={words} level={level} onExit={onExit} onXp={onXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
-  }
-
   if (finished) {
     const pct = Math.round((correctCount / questions.length) * 100);
     const xp = correctCount * 10;
     return (
       <section style={{ maxWidth: 480, margin: "0 auto" }}>
         <style>{MICRO_CSS}</style>
-        <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
+        <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px", marginBottom: 16 }}>
           <p style={{ fontSize: 30, margin: "0 0 6px" }}>{pct >= 80 ? "🏅" : pct >= 50 ? "👍" : "💪"}</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
             {correctCount} / {questions.length} doğru
           </p>
           <p style={{ fontSize: 13, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{xp} XP</p>
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>Rejimlərə qayıt</button>
-          <button onClick={() => setPhase("sentences")} style={{ ...btnPrimary, flex: 1.4 }}>Fırlanan Sözlər →</button>
+
+        <p style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft, margin: "0 0 10px" }}>
+          BU DƏFƏ NƏ ÖYRƏNDİN
+        </p>
+        <div style={{ display: "grid", gap: 7, marginBottom: 18 }}>
+          {reviewList.map((r, i) => (
+            <div key={i} style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "10px 14px", borderRadius: 10, background: T.surface,
+              borderLeft: `3px solid ${r.isRight ? T.accent : T.danger}`,
+            }}>
+              <span>
+                <span style={{ fontWeight: 700, color: T.navy, fontSize: 13.5 }}>{r.term}</span>
+                <span style={{ color: T.textSoft, fontSize: 12.5 }}> — {r.translation}</span>
+              </span>
+              <span style={{ fontSize: 15 }}>{r.isRight ? "✓" : "✗"}</span>
+            </div>
+          ))}
         </div>
+
+        <button onClick={onExit} style={{ ...btnPrimary, width: "100%" }}>Rejimlərə qayıt</button>
       </section>
     );
   }
@@ -605,7 +632,9 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
   function choose(opt) {
     if (picked) return;
     setPicked(opt);
-    if (opt === q.correct) setCorrectCount((c) => c + 1);
+    const isRight = opt === q.correct;
+    if (isRight) setCorrectCount((c) => c + 1);
+    setReviewList((r) => [...r, { term: q.term, translation: q.correct, userAnswer: opt, isRight }]);
     setTimeout(() => {
       if (idx + 1 >= questions.length) setFinished(true);
       else { setIdx((i) => i + 1); setPicked(null); }
