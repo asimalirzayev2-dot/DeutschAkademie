@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { adminLogin, sbAuth, sbAuthPatch } from "./supabase";
+import { adminLogin, sbAuth, sbAuthRpc } from "./supabase";
 
 
 function AdminPanel() {
@@ -20,10 +20,10 @@ function AdminPanel() {
     setPremiumBusy(u.id);
     const nextVal = !u.is_premium;
     try {
-      await sbAuthPatch(`profiles?id=eq.${u.id}`, token, { is_premium: nextVal });
+      await sbAuthRpc("admin_set_premium", token, { target_id: u.id, new_val: nextVal, until: null });
       setUsers((prev) => prev.map((row) => (row.id === u.id ? { ...row, is_premium: nextVal } : row)));
-    } catch {
-      alert("Yenilənmə uğursuz oldu — bir daha sına.");
+    } catch (err) {
+      alert(err.message || "Yenilənmə uğursuz oldu — bir daha sına.");
     } finally {
       setPremiumBusy(null);
     }
