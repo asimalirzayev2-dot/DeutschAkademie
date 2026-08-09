@@ -56,7 +56,7 @@ const MICRO_CSS = `
   .oa-score-pop { animation: oaPop .4s cubic-bezier(.34,1.56,.64,1); }
 `;
 
-export default function OxuAnlama({ session }) {
+export default function OxuAnlama({ session, guestMode, setAuthModal }) {
   const [screen, setScreen] = useState("level"); // level | groups | list | test
   const [level, setLevel] = useState("A1");
   const [allUnits, setAllUnits] = useState(null);
@@ -81,8 +81,12 @@ export default function OxuAnlama({ session }) {
     }).catch(() => setAllUnits([]));
   }, [screen, level]);
 
-  function openUnit(id) {
-    sb(`reading_units?id=eq.${id}&select=*`).then((rows) => {
+  function openUnit(u) {
+    if (guestMode && u.unit_number !== 1) {
+      if (setAuthModal) setAuthModal("signup");
+      return;
+    }
+    sb(`reading_units?id=eq.${u.id}&select=*`).then((rows) => {
       if (rows && rows[0]) {
         setCurrent(rows[0]);
         setAnswers({});
@@ -240,21 +244,25 @@ export default function OxuAnlama({ session }) {
           {level} · Fəsil {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
         </p>
         <div style={{ display: "grid", gap: 9 }}>
-          {selectedGroup.map((u) => (
-            <button key={u.id} className="oa-card" onClick={() => openUnit(u.id)} style={{
-              ...box, ...tierBoxStyle(tier), textAlign: "left", cursor: "pointer",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}>
-              {tier === 3 && <DiamondWatermark />}
-              <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {u.unit_number}</span>
-              <span style={{
-                color: progress[u.unit_number] ? T.accent : (tier > 0 ? accent : T.textSoft),
-                fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400,
+          {selectedGroup.map((u) => {
+            const locked = guestMode && u.unit_number !== 1;
+            return (
+              <button key={u.id} className="oa-card" onClick={() => openUnit(u)} style={{
+                ...box, ...tierBoxStyle(tier), textAlign: "left", cursor: "pointer",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                ...(locked ? { opacity: 0.55 } : {}),
               }}>
-                {progress[u.unit_number] ? "✓ Tamamlandı" : "→"}
-              </span>
-            </button>
-          ))}
+                {tier === 3 && <DiamondWatermark />}
+                <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {u.unit_number}</span>
+                <span style={{
+                  color: locked ? T.textSoft : (progress[u.unit_number] ? T.accent : (tier > 0 ? accent : T.textSoft)),
+                  fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400,
+                }}>
+                  {locked ? "🔒 Qeydiyyat lazımdır" : (progress[u.unit_number] ? "✓ Tamamlandı" : "→")}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
     );

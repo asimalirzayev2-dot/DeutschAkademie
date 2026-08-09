@@ -990,7 +990,7 @@ function LessonVocab({ level, num }) {
   );
 }
 
-function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView, session, profile, initialLevel }) {
+function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView, session, profile, initialLevel, guestMode }) {
   const [subTab, setSubTab] = useState("path"); // path | browse
   const [level, setLevel] = useState("A1");
   const [openTopic, setOpenTopic] = useState(null);
@@ -1012,7 +1012,7 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView,
         <button onClick={() => setSubTab("browse")} style={{ ...portalStyles.pill, ...(subTab === "browse" ? portalStyles.pillActive : {}) }}>📖 Sərbəst Baxış</button>
       </div>
 
-      {subTab === "path" && <LessonPathView portalStyles={portalStyles} AuthRequired={AuthRequired} session={session} profile={profile} initialLevel={initialLevel} />}
+      {subTab === "path" && <LessonPathView portalStyles={portalStyles} AuthRequired={AuthRequired} session={session} profile={profile} initialLevel={initialLevel} guestMode={guestMode} setAuthModal={setAuthModal} />}
 
       {subTab === "browse" && (
       <>
@@ -1647,13 +1647,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "oxuanlama" && (
           <Reveal>
             {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
-            <OxuAnlama session={session} guestMode={!session} />
+            <OxuAnlama session={session} guestMode={!session} setAuthModal={setAuthModal} />
           </Reveal>
         )}
         {view === "flashcards" && (
           <Reveal>
             {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi bir nümunə kartla tanış ola bilərsən — tam təcrübə üçün qeydiyyatdan keç." />}
-            <Flashcards session={session} guestMode={!session} />
+            <Flashcards session={session} guestMode={!session} setAuthModal={setAuthModal} />
           </Reveal>
         )}
 

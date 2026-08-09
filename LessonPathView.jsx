@@ -37,7 +37,7 @@ function GrowingTree({ progress, completedDays, totalDays, T }) {
   );
 }
 
-function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
+function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMode, setAuthModal }) {
   const [level, setLevel] = useState("A1");
   const [lessons, setLessons] = useState([]);
   const [progress, setProgress] = useState({});
@@ -58,10 +58,10 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
   };
 
   useEffect(() => {
-    if (!session) return;
     sb(`lessons?level=eq.${level}&select=level,num,title,content,day_number`)
       .then((rows) => setLessons(rows.sort((a, b) => parseInt(a.num) - parseInt(b.num))))
       .catch(() => setLessons([]));
+    if (!session) { setProgress({}); setDailyAdvances(0); return; }
     sbAuth(`user_lesson_progress?user_id=eq.${session.user.id}&level=eq.${level}&select=lesson_num,passed,best_score`, session.access_token)
       .then((rows) => {
         const map = {};
@@ -72,8 +72,6 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
       .then((rows) => setDailyAdvances(rows[0]?.lessons_completed || 0))
       .catch(() => setDailyAdvances(0));
   }, [level, session]);
-
-  if (!session) return <AuthRequired setAuthModal={() => {}} />;
 
   const days = (() => {
     const map = {};
@@ -89,6 +87,7 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
     return dayLessons.every((l) => progress[l.num]?.passed);
   }
   function isDayUnlocked(dayIdx) {
+    if (guestMode) return dayIdx === 0;
     if (dayIdx === 0) return true;
     return isDayFullyPassed(days[dayIdx - 1].lessons);
   }
@@ -114,6 +113,12 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
     questions.forEach((q, i) => { if (quizAnswers[i] === q.correct) correctCount++; });
     const pct = Math.round((correctCount / questions.length) * 100);
     const passed = pct >= 75;
+
+    if (!session) {
+      setQuizResult({ pct, passed, lessonNum });
+      return;
+    }
+
     const wasAlreadyPassed = !!progress[lessonNum]?.passed;
 
     await sbAuthInsert("user_lesson_progress", session.access_token, {
@@ -233,7 +238,7 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
       <GrowingTree progress={treeProgress} completedDays={completedDays} totalDays={totalDays} T={T} />
 
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        {LEVELS.map((lvl) => (
+        {(guestMode ? ["A1"] : LEVELS).map((lvl) => (
           <button key={lvl} onClick={() => setLevel(lvl)}
             style={{
               padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: "pointer",
@@ -241,6 +246,12 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
               border: `1px solid ${level === lvl ? T.accent : T.border}`,
             }}>{lvl}</button>
         ))}
+        {guestMode && (
+          <button onClick={() => setAuthModal && setAuthModal("signup")} style={{
+            padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: "pointer",
+            background: "#FFFFFF", color: T.textSoft, border: `1px dashed ${T.border}`,
+          }}>🔒 A2 / B1 / B2</button>
+        )}
       </div>
 
       {days.map((dayGroup, dayIdx) => {
@@ -257,7 +268,12 @@ function LessonPathView({ portalStyles, AuthRequired,  session, profile }) {
                 background: fullyPassed ? T.accent : T.warmSoft, color: fullyPassed ? "#fff" : T.warm, fontSize: 13, fontWeight: 700,
               }}>{fullyPassed ? "✓" : dayGroup.day}</div>
               <h4 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, color: T.text }}>Gün {dayGroup.day}</h4>
-              {!unlocked && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 əvvəlki günü bitir</span>}
+              {!unlocked && guestMode && (
+                <button onClick={() => setAuthModal && setAuthModal("signup")} style={{ fontSize: 12, color: T.warm, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  🔒 Qeydiyyat lazımdır
+                </button>
+              )}
+              {!unlocked && !guestMode && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 əvvəlki günü bitir</span>}
             </div>
 
             {unlocked && !fullyPassed && dayIdx > 0 && dailyAdvances >= 1 && !isDayFullyPassed(days[dayIdx - 1]?.lessons || []) === false && dailyAdvances >= 1 && dayGroup.lessons.every((l) => !progress[l.num]) && (

@@ -70,7 +70,7 @@ function tierBoxStyle(tier) {
   return { border: `2px solid rgba(184,134,11,0.4)` };
 }
 
-export default function Flashcards({ session }) {
+export default function Flashcards({ session, guestMode, setAuthModal }) {
   const [screen, setScreen] = useState("level"); // level | mode | flashcards | match | summary
   const [level, setLevel] = useState("A1");
   const [count, setCount] = useState(15);
@@ -193,20 +193,29 @@ export default function Flashcards({ session }) {
           {level} · Flashcards
         </p>
 
-        <p style={{ fontSize: 13, color: T.textSoft, marginBottom: 8 }}>Neçə söz istəyirsən?</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-          {[10, 15, 20, 30].map((n) => (
-            <button key={n} onClick={() => setCount(n)} className="fc-opt" style={{
-              padding: "8px 16px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
-              background: count === n ? T.card : "transparent",
-              color: count === n ? "#fff" : T.text,
-              border: `1px solid ${count === n ? T.card : T.border}`,
-            }}>{n} söz</button>
-          ))}
-        </div>
+        {!guestMode && (
+          <>
+            <p style={{ fontSize: 13, color: T.textSoft, marginBottom: 8 }}>Neçə söz istəyirsən?</p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+              {[10, 15, 20, 30].map((n) => (
+                <button key={n} onClick={() => setCount(n)} className="fc-opt" style={{
+                  padding: "8px 16px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  background: count === n ? T.card : "transparent",
+                  color: count === n ? "#fff" : T.text,
+                  border: `1px solid ${count === n ? T.card : T.border}`,
+                }}>{n} söz</button>
+              ))}
+            </div>
+          </>
+        )}
+        {guestMode && (
+          <p style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 16 }}>
+            Qonaq kimi 1 nümunə kartla tanış ola bilərsən — tam təcrübə üçün qeydiyyatdan keç.
+          </p>
+        )}
 
         <div style={{ display: "grid", gap: 10 }}>
-          <button className="fc-card" onClick={async () => { await loadWords(level, count); setScreen("flashcards"); }} style={{
+          <button className="fc-card" onClick={async () => { await loadWords(level, guestMode ? 1 : count); setScreen("flashcards"); }} style={{
             ...box, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 14,
           }}>
             <span style={{ fontSize: 26 }}>🔄</span>
@@ -215,22 +224,30 @@ export default function Flashcards({ session }) {
               <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>Kartı çevir, sözü öyrən</span>
             </span>
           </button>
-          <button className="fc-card" onClick={async () => { await loadWords(level, Math.min(count, 10)); setScreen("match"); }} style={{
+          <button className="fc-card" onClick={async () => {
+            if (guestMode) { setAuthModal && setAuthModal("signup"); return; }
+            await loadWords(level, Math.min(count, 10)); setScreen("match");
+          }} style={{
             ...box, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 14,
+            ...(guestMode ? { opacity: 0.55 } : {}),
           }}>
-            <span style={{ fontSize: 26 }}>🎯</span>
+            <span style={{ fontSize: 26 }}>{guestMode ? "🔒" : "🎯"}</span>
             <span>
               <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>Match</span>
-              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>Sözü tərcüməsi ilə uyğunlaşdır</span>
+              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{guestMode ? "Qeydiyyat lazımdır" : "Sözü tərcüməsi ilə uyğunlaşdır"}</span>
             </span>
           </button>
-          <button className="fc-card" onClick={async () => { await loadWords(level, Math.min(count, 10)); setScreen("sentences"); }} style={{
+          <button className="fc-card" onClick={async () => {
+            if (guestMode) { setAuthModal && setAuthModal("signup"); return; }
+            await loadWords(level, Math.min(count, 10)); setScreen("sentences");
+          }} style={{
             ...box, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 14,
+            ...(guestMode ? { opacity: 0.55 } : {}),
           }}>
-            <span style={{ fontSize: 26 }}>🌀</span>
+            <span style={{ fontSize: 26 }}>{guestMode ? "🔒" : "🌀"}</span>
             <span>
               <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>Cümlə qur</span>
-              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>Boşluq doldur, sözləri sırala</span>
+              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{guestMode ? "Qeydiyyat lazımdır" : "Boşluq doldur, sözləri sırala"}</span>
             </span>
           </button>
         </div>
@@ -249,7 +266,7 @@ export default function Flashcards({ session }) {
 
   // ---------- 3a. Flashcards rejimi ----------
   if (screen === "flashcards") {
-    return <FlashcardSession words={words} level={level} onExit={() => setScreen("mode")} onLog={logProgress} onXp={logXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} />;
+    return <FlashcardSession words={words} level={level} onExit={() => setScreen("mode")} onLog={logProgress} onXp={logXp} T={T} box={box} btnPrimary={btnPrimary} btnGhost={btnGhost} guestMode={guestMode} setAuthModal={setAuthModal} />;
   }
 
   // ---------- 3b. Match rejimi ----------
@@ -265,7 +282,7 @@ export default function Flashcards({ session }) {
   return null;
 }
 
-function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimary, btnGhost }) {
+function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimary, btnGhost, guestMode, setAuthModal }) {
   const [queue, setQueue] = useState([]);
   const [learnedIds, setLearnedIds] = useState(new Set());
   const [missedIds, setMissedIds] = useState(new Set());
@@ -324,10 +341,22 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
             {missedIds.size > 0 && <> · <span style={{ color: T.warm, fontWeight: 700 }}>{missedIds.size} söz təkrarla</span></>} öyrənildi
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>Rejimlərə qayıt</button>
-          <button onClick={() => setPhase("quiz")} style={{ ...btnPrimary, flex: 1.4 }}>Öyrəndiklərini sına →</button>
-        </div>
+        {guestMode ? (
+          <div style={{
+            background: "rgba(255,140,0,0.08)", border: "1px solid rgba(255,140,0,0.25)",
+            borderRadius: 10, padding: "14px 16px", marginTop: 16, textAlign: "center",
+          }}>
+            <p style={{ fontSize: 13.5, margin: "0 0 10px", color: T.text }}>
+              Bu qonaq nümunəsi idi — tam kart dəstinə, Match və Cümlə qur rejimlərinə çıxış üçün qeydiyyatdan keç.
+            </p>
+            <button onClick={() => setAuthModal && setAuthModal("signup")} style={{ ...btnPrimary, width: "100%" }}>Qeydiyyatdan keç</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>Rejimlərə qayıt</button>
+            <button onClick={() => setPhase("quiz")} style={{ ...btnPrimary, flex: 1.4 }}>Öyrəndiklərini sına →</button>
+          </div>
+        )}
       </section>
     );
   }
