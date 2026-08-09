@@ -1211,6 +1211,24 @@ function AuthRequired({ setAuthModal }) {
   );
 }
 
+// Qonaq (giriş etməmiş) istifadəçilər üçün — bölməni bağlamır, sadəcə yuxarıda incə xatırlatma göstərir.
+function GuestBanner({ setAuthModal, text }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+      background: "rgba(255,140,0,0.08)", border: "1px solid rgba(255,140,0,0.25)",
+      borderRadius: 10, padding: "10px 14px", marginBottom: 16, flexWrap: "wrap",
+    }}>
+      <span style={{ fontSize: 13, color: "#2A3D3C", opacity: 0.85 }}>
+        {text || "Qonaq kimi baxırsan — tam giriş üçün qeydiyyatdan keç."}
+      </span>
+      <button onClick={() => setAuthModal("signup")} style={{ ...portalStyles.primaryBtn, padding: "7px 14px", fontSize: 13 }}>
+        Qeydiyyatdan keç
+      </button>
+    </div>
+  );
+}
+
 
 
 
@@ -1611,13 +1629,33 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           </>
         )}
 
-        {view === "lessons" && (session ? <Reveal><LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} initialLevel={jumpLevel} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "lessons" && (
+          <Reveal>
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi A1-in ilk dərslərinə baxa bilərsən — davam etmək üçün qeydiyyatdan keç." />}
+            <LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} initialLevel={jumpLevel} guestMode={!session} />
+          </Reveal>
+        )}
 
         {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
-        {view === "dictionary" && (session ? <Reveal><DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
-        {view === "sozoyunu" && (session ? <Reveal><SozTapmacasi session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
-        {view === "oxuanlama" && (session ? <Reveal><OxuAnlama session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
-        {view === "flashcards" && (session ? <Reveal><Flashcards session={session} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
+        {view === "dictionary" && (
+          <Reveal>
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi gündə 10 axtarış edə bilərsən — limitsiz üçün qeydiyyatdan keç." />}
+            <DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} guestMode={!session} guestDailyLimit={10} />
+          </Reveal>
+        )}
+        {view === "sozoyunu" && <Reveal><SozTapmacasi session={session} /></Reveal>}
+        {view === "oxuanlama" && (
+          <Reveal>
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
+            <OxuAnlama session={session} guestMode={!session} />
+          </Reveal>
+        )}
+        {view === "flashcards" && (
+          <Reveal>
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi bir nümunə kartla tanış ola bilərsən — tam təcrübə üçün qeydiyyatdan keç." />}
+            <Flashcards session={session} guestMode={!session} />
+          </Reveal>
+        )}
 
         {view === "books" && (session ? (
           <Reveal>
