@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { adminLogin, sbAuth } from "./supabase";
+import { adminLogin, sbAuth, sbAuthPatch } from "./supabase";
 
 
 function AdminPanel() {
@@ -14,6 +14,20 @@ function AdminPanel() {
   const [users, setUsers] = useState(null);
   const [visits, setVisits] = useState(null);
   const [search, setSearch] = useState("");
+  const [premiumBusy, setPremiumBusy] = useState(null); // id currently being toggled
+
+  async function togglePremium(u) {
+    setPremiumBusy(u.id);
+    const nextVal = !u.is_premium;
+    try {
+      await sbAuthPatch(`profiles?id=eq.${u.id}`, token, { is_premium: nextVal });
+      setUsers((prev) => prev.map((row) => (row.id === u.id ? { ...row, is_premium: nextVal } : row)));
+    } catch {
+      alert("Yenilənmə uğursuz oldu — bir daha sına.");
+    } finally {
+      setPremiumBusy(null);
+    }
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -155,6 +169,7 @@ function AdminPanel() {
                   <th style={styleA.th}>Premium</th>
                   <th style={styleA.th}>Bugünkü testlər</th>
                   <th style={styleA.th}>Qeydiyyat tarixi</th>
+                  <th style={styleA.th}></th>
                 </tr>
               </thead>
               <tbody>
@@ -165,6 +180,23 @@ function AdminPanel() {
                     <td style={styleA.td}>{u.is_admin ? "—" : u.is_premium ? "✦ Bəli" : "Xeyr"}</td>
                     <td style={styleA.td}>{u.tests_count || 0}</td>
                     <td style={styleA.td}>{new Date(u.created_at).toLocaleString("az-AZ")}</td>
+                    <td style={styleA.td}>
+                      {!u.is_admin && (
+                        <button
+                          onClick={() => togglePremium(u)}
+                          disabled={premiumBusy === u.id}
+                          style={{
+                            ...styleA.btn, padding: "6px 14px", fontSize: 12.5,
+                            background: u.is_premium ? "transparent" : "#FF8C00",
+                            color: u.is_premium ? "#C0392B" : "#F5F5DC",
+                            border: u.is_premium ? "1px solid #C0392B" : "none",
+                            opacity: premiumBusy === u.id ? 0.6 : 1,
+                          }}
+                        >
+                          {premiumBusy === u.id ? "..." : u.is_premium ? "Premiumu ləğv et" : "Premium et"}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
