@@ -105,7 +105,7 @@ function resetUsed(level) {
   try { localStorage.removeItem(usedKey(level)); } catch {}
 }
 
-/* ============ Rəng teması — platforma ilə uyğun ============ */
+/* ============ Panel rəngi — platforma ilə uyğun (dəyişməz) ============ */
 const T = {
   card: "rgba(255,255,255,0.85)",
   border: "rgba(0,168,150,0.28)",
@@ -116,8 +116,17 @@ const T = {
   navy: "#1B2430",
   text: "#2A3D3C",
   textSoft: "rgba(42,61,60,0.62)",
-  cellBg: "#FFFFFF",
-  cellLine: "#E1D6BE",
+};
+
+/* ============ Krossvordun DAXİLİ görünüşü — köhnə kitab üslubu ============ */
+const P = {
+  paper: "#F2EBDD",
+  paperLine: "#E1D6BE",
+  ink: "#1B2430",
+  ink2: "#232F40",
+  gold: "#C9A227",
+  numColor: "#8A7F63",
+  active: "#FDEBC8",
   goodBg: "#DCEDE6", goodText: "#3F6E5A",
   badBg: "#F6DEDC", badText: "#8A3A34",
 };
@@ -299,7 +308,6 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
     setCellStatus(nextStatus);
   }
 
-  const box = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14 };
   const pillBtn = (active) => ({
     padding: "8px 16px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
     background: active ? T.accent : "transparent", color: active ? "#fff" : T.text,
@@ -315,17 +323,17 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
   const vs = placedWords.filter((p) => p.dir === "V").sort((a, b) => a.number - b.number);
 
   const ClueList = ({ items }) => (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 5 }}>
+    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
       {items.map((p) => (
         <li key={p.dir + p.number}
           onClick={() => { selectAt(p.row, p.col); focusCell(p.row, p.col); }}
           style={{
-            fontSize: 13.5, lineHeight: 1.4, cursor: "pointer", padding: "6px 9px", borderRadius: 8,
-            background: selected && selected.number === p.number && selected.dir === p.dir ? T.accentSoft : "transparent",
-            color: T.text,
+            fontSize: 12.5, lineHeight: 1.35, cursor: "pointer", padding: "3px 5px", borderRadius: 4,
+            background: selected && selected.number === p.number && selected.dir === p.dir ? P.active : "transparent",
+            color: P.ink,
           }}>
-          <b style={{ color: T.warm, marginRight: 6, fontFamily: "'IBM Plex Mono', monospace" }}>{p.number}.</b>
-          {p.clue} <span style={{ opacity: 0.5 }}>({p.word.length})</span>
+          <b style={{ color: P.gold, marginRight: 5, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{p.number}.</b>
+          {p.clue} <span style={{ opacity: 0.45 }}>({p.word.length})</span>
         </li>
       ))}
     </ul>
@@ -355,29 +363,35 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
       {loading ? (
         <p style={{ color: T.textSoft, fontSize: 14 }}>Yüklənir...</p>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(260px,1fr) 280px", gap: 22, alignItems: "start" }}
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(240px,1fr) 260px", gap: 22, alignItems: "start" }}
              className="krossvord-board">
-          <div style={{ ...box, padding: 18, overflow: "auto" }}>
+          <div style={{
+            background: P.paper, borderRadius: 8, padding: 14,
+            boxShadow: "0 14px 30px -18px rgba(27,36,48,0.45)", overflow: "auto",
+          }}>
             <div style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${dims.cols || 1}, 32px)`,
-              gap: 2, width: "max-content", margin: "0 auto",
+              gridTemplateColumns: `repeat(${dims.cols || 1}, 28px)`,
+              gap: 0, width: "max-content", margin: "0 auto",
+              border: `2px solid ${P.ink}`,
             }}>
               {Array.from({ length: dims.rows }).map((_, r) =>
                 Array.from({ length: dims.cols }).map((_, c) => {
-                  if (!has(r, c)) return <div key={r + "-" + c} style={{ width: 32, height: 32 }} />;
+                  if (!has(r, c)) {
+                    return <div key={r + "-" + c} style={{ width: 28, height: 28, background: P.ink }} />;
+                  }
                   const key = r + "," + c;
                   const status = cellStatus[key];
                   const active = isCellActive(r, c);
                   const numAt = placedWords.find((p) => p.row === r && p.col === c && p.number)?.number;
                   return (
                     <div key={key} style={{
-                      width: 32, height: 32, position: "relative",
-                      background: status === "correct" ? T.goodBg : status === "incorrect" ? T.badBg : (active ? "#FDEBC8" : "#fff"),
-                      border: `1px solid ${T.cellLine}`, borderRadius: 3,
+                      width: 28, height: 28, position: "relative",
+                      background: status === "correct" ? P.goodBg : status === "incorrect" ? P.badBg : (active ? P.active : "#fff"),
+                      border: `1px solid ${P.paperLine}`, boxSizing: "border-box",
                     }}>
                       {numAt && (
-                        <span style={{ position: "absolute", top: 1, left: 2, fontSize: 7.5, color: "#8A7F63", fontFamily: "'IBM Plex Mono', monospace" }}>
+                        <span style={{ position: "absolute", top: 0, left: 1.5, fontSize: 7, color: P.numColor, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>
                           {numAt}
                         </span>
                       )}
@@ -391,9 +405,9 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
                         onKeyDown={(e) => onCellKeyDown(e, r, c)}
                         style={{
                           width: "100%", height: "100%", border: "none", background: "transparent",
-                          textAlign: "center", textTransform: "uppercase", outline: "none", borderRadius: 3,
-                          fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 15,
-                          color: status === "correct" ? T.goodText : status === "incorrect" ? T.badText : T.navy,
+                          textAlign: "center", textTransform: "uppercase", outline: "none",
+                          fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 13.5,
+                          color: status === "correct" ? P.goodText : status === "incorrect" ? P.badText : P.ink,
                         }}
                       />
                     </div>
@@ -403,13 +417,22 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: 20 }}>
+          <div style={{
+            display: "grid", gap: 16, background: P.paper, borderRadius: 8, padding: "14px 16px",
+            boxShadow: "0 14px 30px -18px rgba(27,36,48,0.45)",
+          }}>
             <div>
-              <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: 15, color: T.warm, margin: "0 0 8px" }}>Üfüqi</h4>
+              <h4 style={{
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
+                color: P.gold, margin: "0 0 6px", borderBottom: `1px solid ${P.paperLine}`, paddingBottom: 5,
+              }}>Üfüqi</h4>
               <ClueList items={hs} />
             </div>
             <div>
-              <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: 15, color: T.warm, margin: "0 0 8px" }}>Şaquli</h4>
+              <h4 style={{
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
+                color: P.gold, margin: "0 0 6px", borderBottom: `1px solid ${P.paperLine}`, paddingBottom: 5,
+              }}>Şaquli</h4>
               <ClueList items={vs} />
             </div>
           </div>
