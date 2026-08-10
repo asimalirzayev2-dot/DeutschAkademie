@@ -15,6 +15,7 @@ import LessonPathView from "./LessonPathView";
 import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
 import SozTapmacasi from "./SozTapmacasi";
+import Krossvord from "./Krossvord";
 import OxuAnlama from "./OxuAnlama";
 import Flashcards from "./Flashcards";
 import AdlerCup from "./AdlerCup";
@@ -1310,6 +1311,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "books",     label: "Kitablar",       sub: "PDF dərsliklər",  icon: "▦", color: "#7A5C3C" },
     { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
     { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
+    { key: "krossvord", label: "Krossvord",      sub: "kəsişən sözlər",  icon: "🔠", color: "#00A896" },
     { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
     { key: "flashcards", label: "Flashcards",    sub: "kartlarla təkrar et", icon: "🃏", color: "#C97B63" },
     { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
@@ -1644,6 +1646,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           </Reveal>
         )}
         {view === "sozoyunu" && <Reveal><SozTapmacasi session={session} /></Reveal>}
+        {view === "krossvord" && <Reveal><Krossvord portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal>}
         {view === "oxuanlama" && (
           <Reveal>
             {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
@@ -2138,6 +2141,7 @@ const SECTION_THEME = {
   contact: { color: "#E86C8C", soft: "rgba(232,108,140,0.14)", label: "Əlaqə" },
   quiz: { color: "#FF8C00", soft: "rgba(255,140,0,0.14)", label: "Özünü Yoxla" },
   premium: { color: "#003366", soft: "rgba(0,51,102,0.14)", label: "Profilim" },
+  krossvord: { color: "#00A896", soft: "rgba(0,168,150,0.14)", label: "Krossvord" },
 };
 
 function SectionIcon({ type, size = 24, color = "currentColor" }) {
@@ -2187,6 +2191,13 @@ function SectionIcon({ type, size = 24, color = "currentColor" }) {
           <circle cx="12" cy="12" r="9" />
           <path d="M9.2 9.5a2.8 2.8 0 1 1 3.9 2.6c-.9.4-1.1.9-1.1 1.7" />
           <circle cx="12" cy="17" r="0.15" fill={color} stroke="none" />
+        </svg>
+      );
+    case "krossvord":
+      return (
+        <svg viewBox="0 0 24 24" style={s} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
+          <path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17" />
         </svg>
       );
     default:
