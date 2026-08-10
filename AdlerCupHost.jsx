@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sb, sbInsertReturn, sbPatch } from "./supabase";
+import { sb, sbInsertReturn, sbAuthPatch } from "./supabase";
 import { shuffle } from "./utils";
 import { LEVELS } from "./constants";
 import { SHAPES, ShapeIcon } from "./shapes";
@@ -38,17 +38,12 @@ async function buildQuestions(mode, level) {
     }));
   }
   async function fromVocab() {
-    const lvl = level || "A1";
-    // Dəqiq etiketlənmiş (level) sözlərdən istifadə et; kifayət qədər olmasa, bütün lüğətə keç
-    let rows = await sb(`dictionary?direction=eq.de-az&level=eq.${lvl}&select=term,translation&limit=400`);
-    if (!rows || rows.length < 6) {
-      rows = await sb("dictionary?direction=eq.de-az&select=term,translation&limit=400");
-    }
+    const rows = await sb("dictionary?direction=eq.de-az&select=term,translation&limit=400");
     const pool = shuffle(rows).filter((r) => r.term && r.translation);
     return pool.slice(0, QUESTION_COUNT).map((r) => {
       const wrong = shuffle(pool.filter((x) => x.translation !== r.translation)).slice(0, 2).map((x) => x.translation);
       const opts = shuffle([r.translation, ...wrong]);
-      return { q: `"${r.term}" sozunun menasi?`, options: opts, correct: opts.indexOf(r.translation), tag: lvl };
+      return { q: `"${r.term}" sozunun menasi?`, options: opts, correct: opts.indexOf(r.translation), tag: "Luget" };
     });
   }
   if (mode === "lesson")  return await fromLessons();
@@ -58,7 +53,7 @@ async function buildQuestions(mode, level) {
   return shuffle([...a.slice(0, 4), ...b.slice(0, 4), ...c.slice(0, 4)]).slice(0, QUESTION_COUNT);
 }
 
-export default function AdlerCupHost({ profile, onExit }) {
+export default function AdlerCupHost({ session, profile, onExit }) {
   const [mode, setMode] = useState("mixed");
   const [level, setLevel] = useState("A1");
   const [game, setGame] = useState(null);
@@ -107,7 +102,7 @@ export default function AdlerCupHost({ profile, onExit }) {
       const qs = await buildQuestions(mode, level);
       if (!qs.length) { setErr("Bu rejim ucun sual tapilmadi."); setBusy(false); return; }
       const row = await sbInsertReturn("live_games", {
-        pin: makePin(), host_email: profile?.email || null, host_name: profile?.name || "Muellim",
+        pin: makePin(), host_email: profile?.email || session?.user?.email || null, host_name: profile?.name || "Muellim",
         mode, level: mode === "lesson" ? level : null,
         status: "waiting", current_index: -1, revealed: false, questions: qs,
       });
@@ -120,7 +115,7 @@ export default function AdlerCupHost({ profile, onExit }) {
     const nextIdx = game.current_index + 1;
     const total = (game.questions || []).length;
     if (nextIdx >= total) return finish();
-    await sbPatch(`live_games?id=eq.${game.id}`, {
+    await sbAuthPatch(`live_games?id=eq.${game.id}`, session.access_token, {
       status: "active", current_index: nextIdx, revealed: false,
       question_started_at: new Date().toISOString(),
     });
@@ -130,12 +125,12 @@ export default function AdlerCupHost({ profile, onExit }) {
 
   async function reveal() {
     if (!game || game.revealed) return;
-    await sbPatch(`live_games?id=eq.${game.id}`, { revealed: true });
+    await sbAuthPatch(`live_games?id=eq.${game.id}`, session.access_token, { revealed: true });
     setGame((g) => ({ ...g, revealed: true }));
   }
 
   async function finish() {
-    await sbPatch(`live_games?id=eq.${game.id}`, { status: "finished" });
+    await sbAuthPatch(`live_games?id=eq.${game.id}`, session.access_token, { status: "finished" });
     setGame({ ...game, status: "finished" });
   }
 
@@ -167,7 +162,7 @@ export default function AdlerCupHost({ profile, onExit }) {
             </button>
           ))}
         </div>
-        {(mode === "lesson" || mode === "vocab") && (
+        {mode === "lesson" && (
           <div style={{ display: "flex", gap: 7, marginBottom: 14, flexWrap: "wrap" }}>
             {LEVELS.map((l) => (
               <button key={l} onClick={() => setLevel(l)} style={{

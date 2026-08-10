@@ -73,7 +73,7 @@ export default function AdlerCup({ session, profile, isAdmin }) {
         </div>
       )}
 
-      {role === "host" && <AdlerCupHost profile={profile} onExit={() => setRole(null)} />}
+      {role === "host" && <AdlerCupHost session={session} profile={profile} onExit={() => setRole(null)} />}
       {role === "player" && <AdlerCupPlayer onExit={() => setRole(null)} />}
     </section>
   );
