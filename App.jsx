@@ -1307,13 +1307,30 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     { key: "more",       label: "Daha",    icon: "⋯" },
   ];
 
-  const MORE_ITEMS = [
-    { key: "books",     label: "Kitablar",       sub: "PDF dərsliklər",  icon: "▦", color: "#7A5C3C" },
-    { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
-    { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
-    { key: "krossvord", label: "Krossvord",      sub: "kəsişən sözlər",  icon: "🔠", color: "#00A896" },
-    { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
-    { key: "flashcards", label: "Flashcards",    sub: "kartlarla təkrar et", icon: "🃏", color: "#C97B63" },
+  const MORE_GROUPS = [
+    {
+      title: "Zəka Oyunları",
+      items: [
+        { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
+        { key: "krossvord", label: "Krossvord",      sub: "kəsişən sözlər",  icon: "🔠", color: "#00A896" },
+      ],
+    },
+    {
+      title: "Öyrənmə Alətləri",
+      items: [
+        { key: "flashcards", label: "Flashcards",    sub: "kartlarla təkrar et", icon: "🃏", color: "#C97B63" },
+        { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
+      ],
+    },
+    {
+      title: "Resurslar",
+      items: [
+        { key: "books",     label: "Kitablar",       sub: "PDF dərsliklər",  icon: "▦", color: "#7A5C3C" },
+        { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
+      ],
+    },
+  ];
+  const MORE_ITEMS_TAIL = [
     { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
     { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        icon: "✉", color: "#00A896" },
   ];
@@ -1417,8 +1434,30 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <div className="da-sheet" style={portalStyles.sheet}>
             <div style={portalStyles.sheetHandle} />
             <p style={portalStyles.sheetTitle}>Bölmələr</p>
+
+            {MORE_GROUPS.map((group) => (
+              <div key={group.title} style={{ marginBottom: 14 }}>
+                <p style={{
+                  fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                  color: "rgba(42,61,60,0.45)", margin: "0 0 8px 2px",
+                }}>{group.title}</p>
+                <div style={portalStyles.sheetGrid}>
+                  {group.items.map((m) => (
+                    <button key={m.key} onClick={() => { setMoreOpen(false); setView(m.key); }}
+                      style={{ ...portalStyles.sheetCard, ...(view === m.key ? portalStyles.sheetCardActive : {}) }}>
+                      <span style={{ ...portalStyles.sheetCardIcon, background: m.color }}>{m.icon}</span>
+                      <span style={portalStyles.sheetCardText}>
+                        <span style={portalStyles.sheetCardTitle}>{m.label}</span>
+                        <span style={portalStyles.sheetCardSub}>{m.sub}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
             <div style={portalStyles.sheetGrid}>
-              {MORE_ITEMS.map((m) => (
+              {MORE_ITEMS_TAIL.map((m) => (
                 <button key={m.key} onClick={() => { setMoreOpen(false); setView(m.key); }}
                   style={{ ...portalStyles.sheetCard, ...(view === m.key ? portalStyles.sheetCardActive : {}) }}>
                   <span style={{ ...portalStyles.sheetCardIcon, background: m.color }}>{m.icon}</span>
