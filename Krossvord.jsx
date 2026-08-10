@@ -319,8 +319,9 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
     border: `1px solid ${primary ? T.warm : T.border}`,
   });
 
-  const hs = placedWords.filter((p) => p.dir === "H").sort((a, b) => a.number - b.number);
-  const vs = placedWords.filter((p) => p.dir === "V").sort((a, b) => a.number - b.number);
+  const allClues = placedWords
+    .slice()
+    .sort((a, b) => a.number - b.number || (a.dir === "H" ? -1 : 1));
 
   const ClueList = ({ items }) => (
     <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
@@ -332,7 +333,9 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
             background: selected && selected.number === p.number && selected.dir === p.dir ? P.active : "transparent",
             color: P.ink,
           }}>
-          <b style={{ color: P.gold, marginRight: 5, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{p.number}.</b>
+          <b style={{ color: P.gold, marginRight: 4, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
+            {p.number}{p.dir === "H" ? "\u2192" : "\u2193"}
+          </b>
           {p.clue} <span style={{ opacity: 0.45 }}>({p.word.length})</span>
         </li>
       ))}
@@ -383,7 +386,10 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
                   const key = r + "," + c;
                   const status = cellStatus[key];
                   const active = isCellActive(r, c);
-                  const numAt = placedWords.find((p) => p.row === r && p.col === c && p.number)?.number;
+                  const startWords = placedWords.filter((p) => p.row === r && p.col === c && p.number);
+                  const numAt = startWords[0]?.number;
+                  const startsH = startWords.some((p) => p.dir === "H");
+                  const startsV = startWords.some((p) => p.dir === "V");
                   return (
                     <div key={key} style={{
                       width: 28, height: 28, position: "relative",
@@ -392,7 +398,7 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
                     }}>
                       {numAt && (
                         <span style={{ position: "absolute", top: 0, left: 1.5, fontSize: 7, color: P.numColor, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>
-                          {numAt}
+                          {numAt}{startsH ? "\u2192" : ""}{startsV ? "\u2193" : ""}
                         </span>
                       )}
                       <input
@@ -418,23 +424,14 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
           </div>
 
           <div style={{
-            display: "grid", gap: 16, background: P.paper, borderRadius: 8, padding: "14px 16px",
+            background: P.paper, borderRadius: 8, padding: "14px 16px",
             boxShadow: "0 14px 30px -18px rgba(27,36,48,0.45)",
           }}>
-            <div>
-              <h4 style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
-                color: P.gold, margin: "0 0 6px", borderBottom: `1px solid ${P.paperLine}`, paddingBottom: 5,
-              }}>Üfüqi</h4>
-              <ClueList items={hs} />
-            </div>
-            <div>
-              <h4 style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
-                color: P.gold, margin: "0 0 6px", borderBottom: `1px solid ${P.paperLine}`, paddingBottom: 5,
-              }}>Şaquli</h4>
-              <ClueList items={vs} />
-            </div>
+            <h4 style={{
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
+              color: P.gold, margin: "0 0 8px", borderBottom: `1px solid ${P.paperLine}`, paddingBottom: 5,
+            }}>İzahlar</h4>
+            <ClueList items={allClues} />
           </div>
         </div>
       )}
