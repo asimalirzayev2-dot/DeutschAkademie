@@ -136,6 +136,24 @@ export async function sbAuthRpc(fnName, accessToken, params = {}) {
   return res.json().catch(() => null);
 }
 
+// ---- Anon RPC (giriş etməmiş istifadəçilər üçün, məs. Adler Cup oyunçuları) ----
+export async function sbRpc(fnName, params = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Supabase RPC error: ${res.status}`);
+  }
+  return res.json().catch(() => null);
+}
+
 export async function signUp(email, password, name) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
