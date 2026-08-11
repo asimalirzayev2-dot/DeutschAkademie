@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sb, sbInsertReturn, sbPatch } from "./supabase";
+import { sb, sbInsertReturn, sbRpc } from "./supabase";
 import { SHAPES, ShapeIcon } from "./shapes";
 
 const T = {
@@ -84,8 +84,10 @@ export default function AdlerCupPlayer({ onExit }) {
         question_index: game.current_index, answer_index: i, is_correct: !!correct,
       });
       if (gain > 0) {
-        await sbPatch(`live_game_players?id=eq.${player.id}`, { score: (player.score || 0) + gain });
-        setPlayer((p) => ({ ...p, score: (p.score || 0) + gain }));
+        const newScore = await sbRpc("submit_player_score", {
+          p_player_id: player.id, p_token: player.player_token, p_gain: gain,
+        });
+        setPlayer((p) => ({ ...p, score: newScore }));
       }
     } catch {}
     setResult({ correct, gain, place });
@@ -160,8 +162,9 @@ export default function AdlerCupPlayer({ onExit }) {
 
   const q = (game.questions || [])[game.current_index];
   if (!q) return null;
+  const nOpts = (q.options || []).length;
 
-  // ---------- Sual + tam cavab mətni ----------
+  // ---------- Cavab ekrani: YALNIZ FIQURLAR ----------
   return (
     <div>
       <div style={{
@@ -172,36 +175,39 @@ export default function AdlerCupPlayer({ onExit }) {
         <span style={{ fontWeight: 800, color: T.accent, fontSize: 14 }}>{player.score} xal</span>
       </div>
 
-      <p style={{ fontSize: 16.5, fontWeight: 700, color: T.navy, lineHeight: 1.45, margin: "0 0 14px" }}>
-        {q.q}
+      <p style={{
+        textAlign: "center", fontSize: 13.5, color: T.textSoft,
+        margin: "0 0 12px", lineHeight: 1.5,
+      }}>
+        {game.revealed ? "Cavab acildi \u2014 ekrana bax" : "Muellimin ekranina bax, sonra fiquru sec"}
       </p>
 
-      <div style={{ display: "grid", gap: 9 }}>
-        {(q.options || []).map((o, i) => {
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {Array.from({ length: nOpts }).map((_, i) => {
           const sh = SHAPES[i];
           const isRight = i === q.correct;
           let opacity = 1, ring = "none";
           if (picked !== null || game.revealed) {
             if (game.revealed) {
-              opacity = isRight ? 1 : 0.35;
+              opacity = isRight ? 1 : 0.28;
               if (isRight) ring = "0 0 0 3px #D4AF37";
             } else {
-              opacity = i === picked ? 1 : 0.4;
+              opacity = i === picked ? 1 : 0.35;
             }
           }
+          const wide = nOpts === 3 && i === 2;
           return (
             <button key={i} onClick={() => answer(i)}
               disabled={picked !== null || game.revealed}
               style={{
-                display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%",
-                minHeight: 54, borderRadius: 12, border: "none", padding: "12px 14px",
+                gridColumn: wide ? "span 2" : "span 1",
+                minHeight: 108, borderRadius: 14, border: "none",
                 background: sh.color, opacity, boxShadow: ring,
+                display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: picked !== null || game.revealed ? "default" : "pointer",
-                transition: "opacity .25s",
+                transition: "opacity .25s, transform .1s",
               }}>
-              <ShapeIcon kind={sh.key} size={22} />
-              <span style={{ color: "#fff", fontSize: 14.5, fontWeight: 700 }}>{o}</span>
-              {game.revealed && isRight && <span style={{ marginLeft: "auto", color: "#fff", fontSize: 18 }}>&#10003;</span>}
+              <ShapeIcon kind={sh.key} size={46} />
             </button>
           );
         })}
