@@ -90,6 +90,23 @@ export async function sbAuth(path, accessToken) {
   return res.json();
 }
 
+// ---- Yalnız DƏQİQ SAYI qaytarır, sətirləri yükləmir (böyük cədvəllər üçün) ----
+export async function sbAuthCount(path, accessToken) {
+  const sep = path.includes("?") ? "&" : "?";
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}${sep}select=created_at&limit=1`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      Prefer: "count=exact",
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase count error: ${res.status}`);
+  const range = res.headers.get("content-range"); // "0-0/1234"
+  if (!range) return null;
+  const total = range.split("/")[1];
+  return total === "*" ? null : parseInt(total, 10);
+}
+
 export async function sbAuthPatch(path, accessToken, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     method: "PATCH",
