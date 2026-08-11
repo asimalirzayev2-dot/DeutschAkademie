@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { adminLogin, sbAuth, sbAuthRpc } from "./supabase";
+import { adminLogin, sbAuth, sbAuthRpc, sbAuthCount } from "./supabase";
 
 
 function AdminPanel() {
@@ -13,6 +13,7 @@ function AdminPanel() {
   const [registrations, setRegistrations] = useState(null);
   const [users, setUsers] = useState(null);
   const [visits, setVisits] = useState(null);
+  const [totalVisits, setTotalVisits] = useState(null);
   const [search, setSearch] = useState("");
   const [premiumBusy, setPremiumBusy] = useState(null); // id currently being toggled
 
@@ -65,6 +66,9 @@ function AdminPanel() {
     sbAuth("page_visits?select=created_at&order=created_at.desc&limit=2000", token)
       .then(setVisits)
       .catch(() => setVisits([]));
+    sbAuthCount("page_visits", token)
+      .then(setTotalVisits)
+      .catch(() => setTotalVisits(null));
   }, [token]);
 
   const styleA = {
@@ -228,8 +232,8 @@ function AdminPanel() {
                       <div style={{ fontSize: 12.5, opacity: 0.7 }}>Bugünkü qeydiyyat</div>
                     </div>
                     <div style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.15)", borderRadius: 10, padding: "16px 24px", minWidth: 140 }}>
-                      <div style={{ fontSize: 26, fontWeight: 700 }}>{visits ? visits.length : "..."}</div>
-                      <div style={{ fontSize: 12.5, opacity: 0.7 }}>Ümumi ziyarət (son 2000)</div>
+                      <div style={{ fontSize: 26, fontWeight: 700 }}>{totalVisits !== null ? totalVisits : "..."}</div>
+                      <div style={{ fontSize: 12.5, opacity: 0.7 }}>Ümumi ziyarət</div>
                     </div>
                   </div>
                   <h3 style={{ fontSize: 15, marginBottom: 12, opacity: 0.85 }}>Son 7 gün</h3>
