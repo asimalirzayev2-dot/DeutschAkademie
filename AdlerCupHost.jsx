@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sb, sbInsertReturn, sbAuthPatch } from "./supabase";
+import { sb, sbInsertReturn, sbAuthPatch, sbRpc } from "./supabase";
 import { shuffle } from "./utils";
 import { LEVELS } from "./constants";
 import { SHAPES, ShapeIcon } from "./shapes";
@@ -56,9 +56,12 @@ async function buildQuestions(mode, level) {
 export default function AdlerCupHost({ session, profile, onExit }) {
   const [mode, setMode] = useState("mixed");
   const [level, setLevel] = useState("A1");
+  const [teamMode, setTeamMode] = useState(false);
+  const [teamNames, setTeamNames] = useState(["Komanda A", "Komanda B"]);
   const [game, setGame] = useState(null);
   const [players, setPlayers] = useState([]);
   const [answers, setAnswers] = useState([]);
+  const [roundTeamResult, setRoundTeamResult] = useState(null);
   const [left, setLeft] = useState(TIME_LIMIT);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -72,8 +75,14 @@ export default function AdlerCupHost({ session, profile, onExit }) {
         const ps = await sb(`live_game_players?game_id=eq.${game.id}&select=*&order=score.desc`);
         setPlayers(ps || []);
         if (game.status === "active" && game.current_index >= 0) {
-          const as = await sb(`live_game_answers?game_id=eq.${game.id}&question_index=eq.${game.current_index}&select=player_id,is_correct`);
-          setAnswers(as || []);
+          if (game.revealed) {
+            const as = await sb(`live_game_answers?game_id=eq.${game.id}&question_index=eq.${game.current_index}&select=player_id,is_correct,created_at`);
+            setAnswers(as || []);
+          } else {
+            // Cavabların meznununu (dogru/yanlis) acmadan, yalniz sayi gorunur
+            const cnt = await sbRpc("count_current_answers", { p_game_id: game.id, p_question_index: game.current_index });
+            setAnswers(Array.from({ length: cnt || 0 }));
+          }
         }
       } catch {}
     }
@@ -96,15 +105,32 @@ export default function AdlerCupHost({ session, profile, onExit }) {
     return () => clearInterval(tickRef.current);
   }, [game && game.current_index, game && game.revealed, game && game.status]);
 
+  function updateTeamName(idx, val) {
+    setTeamNames((prev) => prev.map((t, i) => (i === idx ? val : t)));
+  }
+  function addTeam() {
+    if (teamNames.length >= 4) return;
+    setTeamNames((prev) => [...prev, `Komanda ${String.fromCharCode(65 + prev.length)}`]);
+  }
+  function removeTeam(idx) {
+    if (teamNames.length <= 2) return;
+    setTeamNames((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   async function createGame() {
     setBusy(true); setErr("");
     try {
       const qs = await buildQuestions(mode, level);
       if (!qs.length) { setErr("Bu rejim ucun sual tapilmadi."); setBusy(false); return; }
+      const cleanTeamNames = teamMode ? teamNames.map((t) => t.trim()).filter(Boolean) : [];
+      if (teamMode && cleanTeamNames.length < 2) { setErr("En az 2 komanda adi lazimdir."); setBusy(false); return; }
+      const initialScores = {};
+      cleanTeamNames.forEach((t) => { initialScores[t] = 0; });
       const row = await sbInsertReturn("live_games", {
         pin: makePin(), host_email: profile?.email || session?.user?.email || null, host_name: profile?.name || "Muellim",
         mode, level: mode === "lesson" ? level : null,
         status: "waiting", current_index: -1, revealed: false, questions: qs,
+        team_mode: teamMode, team_names: cleanTeamNames, team_scores: initialScores,
       });
       setGame(row);
     } catch { setErr("Oyun yaradila bilmedi."); }
@@ -115,6 +141,7 @@ export default function AdlerCupHost({ session, profile, onExit }) {
     const nextIdx = game.current_index + 1;
     const total = (game.questions || []).length;
     if (nextIdx >= total) return finish();
+    setRoundTeamResult(null);
     await sbAuthPatch(`live_games?id=eq.${game.id}`, session.access_token, {
       status: "active", current_index: nextIdx, revealed: false,
       question_started_at: new Date().toISOString(),
@@ -127,6 +154,38 @@ export default function AdlerCupHost({ session, profile, onExit }) {
     if (!game || game.revealed) return;
     await sbAuthPatch(`live_games?id=eq.${game.id}`, session.access_token, { revealed: true });
     setGame((g) => ({ ...g, revealed: true }));
+
+    if (game.team_mode && (game.team_names || []).length > 0) {
+      try {
+        const as = await sb(`live_game_answers?game_id=eq.${game.id}&question_index=eq.${game.current_index}&select=player_id,is_correct,created_at`);
+        const stats = {};
+        (game.team_names || []).forEach((tn) => { stats[tn] = { correct: 0, total: 0, firstCorrectAt: null }; });
+        players.forEach((p) => {
+          if (p.team_name && stats[p.team_name]) stats[p.team_name].total++;
+        });
+        (as || []).forEach((a) => {
+          const p = players.find((pp) => pp.id === a.player_id);
+          const tn = p?.team_name;
+          if (!tn || !stats[tn]) return;
+          if (a.is_correct) {
+            stats[tn].correct++;
+            const t = new Date(a.created_at).getTime();
+            if (stats[tn].firstCorrectAt === null || t < stats[tn].firstCorrectAt) stats[tn].firstCorrectAt = t;
+          }
+        });
+        let winner = null, bestPct = -1, bestTime = Infinity;
+        Object.entries(stats).forEach(([tn, s]) => {
+          const pct = s.total > 0 ? s.correct / s.total : 0;
+          const t = s.firstCorrectAt ?? Infinity;
+          if (pct > bestPct || (pct === bestPct && t < bestTime)) { bestPct = pct; bestTime = t; winner = tn; }
+        });
+        const newScores = { ...(game.team_scores || {}) };
+        if (winner) newScores[winner] = (newScores[winner] || 0) + 1;
+        await sbAuthPatch(`live_games?id=eq.${game.id}`, session.access_token, { team_scores: newScores });
+        setGame((g) => ({ ...g, team_scores: newScores }));
+        setRoundTeamResult({ winner, stats });
+      } catch {}
+    }
   }
 
   async function finish() {
@@ -174,6 +233,35 @@ export default function AdlerCupHost({ session, profile, onExit }) {
             ))}
           </div>
         )}
+
+        {/* Komanda rejimi */}
+        <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14, marginBottom: 14 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: teamMode ? 12 : 0 }}>
+            <input type="checkbox" checked={teamMode} onChange={(e) => setTeamMode(e.target.checked)}
+              style={{ width: 18, height: 18 }} />
+            <span style={{ fontWeight: 800, fontSize: 14, color: T.navy }}>&#127942; Komanda Yarışı</span>
+          </label>
+          {teamMode && (
+            <div style={{ display: "grid", gap: 8 }}>
+              {teamNames.map((tn, i) => (
+                <div key={i} style={{ display: "flex", gap: 8 }}>
+                  <input value={tn} onChange={(e) => updateTeamName(i, e.target.value)}
+                    style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13.5 }} />
+                  {teamNames.length > 2 && (
+                    <button onClick={() => removeTeam(i)} style={{ ...ghost, padding: "9px 12px" }}>✕</button>
+                  )}
+                </div>
+              ))}
+              {teamNames.length < 4 && (
+                <button onClick={addTeam} style={{ ...ghost, fontSize: 12.5, alignSelf: "flex-start" }}>+ Komanda əlavə et</button>
+              )}
+              <p style={{ fontSize: 11.5, color: T.textSoft, margin: "4px 0 0" }}>
+                Hər sualda üstünlük komandanın <b>faiz</b> uğuruna görə (say fərqi deyil), bərabərlikdə isə sürətə görə müəyyənləşir.
+              </p>
+            </div>
+          )}
+        </div>
+
         {err && <p style={{ color: "#C0392B", fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={createGame} disabled={busy} style={{ ...btn, flex: 1, opacity: busy ? 0.6 : 1 }}>
@@ -190,6 +278,15 @@ export default function AdlerCupHost({ session, profile, onExit }) {
 
   // ---------- Lobbi ----------
   if (game.status === "waiting") {
+    const grouped = {};
+    if (game.team_mode) {
+      (game.team_names || []).forEach((tn) => { grouped[tn] = []; });
+      grouped["_none"] = [];
+      players.forEach((p) => {
+        const key = p.team_name && grouped[p.team_name] ? p.team_name : "_none";
+        grouped[key].push(p);
+      });
+    }
     return (
       <div style={{ ...box, textAlign: "center" }}>
         <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: 1.6, color: T.warm }}>QOSULMA KODU</p>
@@ -202,14 +299,33 @@ export default function AdlerCupHost({ session, profile, onExit }) {
         <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14, textAlign: "left" }}>
           <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 800, color: T.navy }}>Qosulanlar ({players.length})</p>
           {players.length === 0 && <p style={{ fontSize: 12.5, color: T.textSoft, margin: 0 }}>Gozlenilir...</p>}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-            {players.map((p) => (
-              <span key={p.id} style={{
-                padding: "6px 12px", borderRadius: 16, fontSize: 12.5, fontWeight: 700,
-                background: "rgba(0,168,150,0.10)", color: T.navy, border: `1px solid ${T.border}`,
-              }}>{p.nickname}</span>
-            ))}
-          </div>
+          {!game.team_mode && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {players.map((p) => (
+                <span key={p.id} style={{
+                  padding: "6px 12px", borderRadius: 16, fontSize: 12.5, fontWeight: 700,
+                  background: "rgba(0,168,150,0.10)", color: T.navy, border: `1px solid ${T.border}`,
+                }}>{p.nickname}</span>
+              ))}
+            </div>
+          )}
+          {game.team_mode && (
+            <div style={{ display: "grid", gap: 10 }}>
+              {(game.team_names || []).map((tn) => (
+                <div key={tn}>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: T.warm, margin: "0 0 5px" }}>{tn} ({(grouped[tn] || []).length})</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {(grouped[tn] || []).map((p) => (
+                      <span key={p.id} style={{
+                        padding: "5px 10px", borderRadius: 14, fontSize: 12, fontWeight: 700,
+                        background: "rgba(0,168,150,0.10)", color: T.navy, border: `1px solid ${T.border}`,
+                      }}>{p.nickname}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <button onClick={startNext} disabled={players.length === 0}
           style={{ ...btn, width: "100%", marginTop: 18, opacity: players.length === 0 ? 0.5 : 1 }}>
@@ -227,6 +343,27 @@ export default function AdlerCupHost({ session, profile, onExit }) {
         <h3 style={{ margin: "0 0 14px", fontFamily: "'Fraunces', serif", fontSize: 21, color: T.navy, textAlign: "center" }}>
           Adler Cup yekunu
         </h3>
+
+        {game.team_mode && (
+          <div style={{ marginBottom: 18 }}>
+            <p style={{ fontSize: 12, fontWeight: 800, color: T.warm, margin: "0 0 8px" }}>KOMANDA NƏTİCƏSİ</p>
+            <div style={{ display: "grid", gap: 8 }}>
+              {Object.entries(game.team_scores || {}).sort((a, b) => b[1] - a[1]).map(([tn, sc], i) => (
+                <div key={tn} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 11,
+                  background: i === 0 ? "rgba(212,175,55,0.12)" : "transparent",
+                  border: `1px solid ${i === 0 ? T.gold : T.border}`,
+                }}>
+                  <span style={{ fontSize: 17 }}>{i === 0 ? "\u{1F3C6}" : "\u{1F3B4}"}</span>
+                  <span style={{ fontWeight: 800, color: T.navy, flex: 1 }}>{tn}</span>
+                  <span style={{ fontWeight: 800, color: T.accent }}>{sc} tur</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p style={{ fontSize: 12, fontWeight: 800, color: T.warm, margin: "0 0 8px" }}>FƏRDİ SIRALAMA</p>
         <div style={{ display: "grid", gap: 8 }}>
           {players.map((p, i) => (
             <div key={p.id} style={{
@@ -235,12 +372,14 @@ export default function AdlerCupHost({ session, profile, onExit }) {
               border: `1px solid ${i < 3 ? T.gold : T.border}`,
             }}>
               <span style={{ fontSize: 17, width: 26 }}>{medals[i] || i + 1}</span>
-              <span style={{ fontWeight: 700, color: T.navy, flex: 1 }}>{p.nickname}</span>
+              <span style={{ fontWeight: 700, color: T.navy, flex: 1 }}>
+                {p.nickname}{p.team_name ? ` · ${p.team_name}` : ""}
+              </span>
               <span style={{ fontWeight: 800, color: T.accent }}>{p.score}</span>
             </div>
           ))}
         </div>
-        <button onClick={() => { setGame(null); setPlayers([]); }} style={{ ...btn, width: "100%", marginTop: 16 }}>
+        <button onClick={() => { setGame(null); setPlayers([]); setRoundTeamResult(null); }} style={{ ...btn, width: "100%", marginTop: 16 }}>
           Yeni oyun
         </button>
       </div>
@@ -255,6 +394,17 @@ export default function AdlerCupHost({ session, profile, onExit }) {
         <span style={{ fontSize: 12, fontWeight: 800, color: T.warm }}>PIN {game.pin}</span>
         <span style={{ fontSize: 12, color: T.textSoft }}>Sual {game.current_index + 1}/{total}</span>
       </div>
+
+      {game.team_mode && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          {Object.entries(game.team_scores || {}).map(([tn, sc]) => (
+            <span key={tn} style={{
+              padding: "5px 12px", borderRadius: 14, fontSize: 12, fontWeight: 800,
+              background: "rgba(212,175,55,0.14)", color: T.navy, border: `1px solid ${T.gold}`,
+            }}>{tn}: {sc}</span>
+          ))}
+        </div>
+      )}
 
       {/* Taymer */}
       {!game.revealed && (
@@ -303,6 +453,23 @@ export default function AdlerCupHost({ session, profile, onExit }) {
           );
         })}
       </div>
+
+      {/* Komanda tur neticesi */}
+      {game.revealed && game.team_mode && roundTeamResult && (
+        <div style={{
+          marginTop: 14, padding: "12px 14px", borderRadius: 12,
+          background: "rgba(212,175,55,0.10)", border: `1px solid ${T.gold}`,
+        }}>
+          <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 800, color: T.navy }}>
+            {roundTeamResult.winner ? `\u{1F3C6} ${roundTeamResult.winner} bu suali qazandi` : "Bu sualda beraberlik"}
+          </p>
+          {Object.entries(roundTeamResult.stats).map(([tn, s]) => (
+            <p key={tn} style={{ margin: "2px 0", fontSize: 12, color: T.textSoft }}>
+              {tn}: {s.correct}/{s.total} ({s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0}%)
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Idareetme */}
       {!game.revealed ? (

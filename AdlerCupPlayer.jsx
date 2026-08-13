@@ -15,6 +15,8 @@ const STEP = 12;         // her novbeti duzgun cavab ucun azalma
 export default function AdlerCupPlayer({ onExit }) {
   const [pin, setPin] = useState("");
   const [nick, setNick] = useState("");
+  const [foundGame, setFoundGame] = useState(null); // PIN ile tapilan, hele qosulmamis oyun
+  const [teamChoice, setTeamChoice] = useState(null);
   const [player, setPlayer] = useState(null);
   const [game, setGame] = useState(null);
   const [picked, setPicked] = useState(null);
@@ -49,15 +51,28 @@ export default function AdlerCupPlayer({ onExit }) {
     return () => clearInterval(poll.current);
   }, [game && game.id, player]);
 
-  async function join() {
+  async function findGame() {
     setErr(""); setBusy(true);
     try {
       const rows = await sb(`live_games?pin=eq.${pin.trim()}&select=*`);
       const g = rows && rows[0];
       if (!g) { setErr("Bu kodla oyun tapilmadi."); setBusy(false); return; }
       if (g.status === "finished") { setErr("Bu oyun artiq bitib."); setBusy(false); return; }
+      if (g.team_mode && (g.team_names || []).length > 0) {
+        setFoundGame(g);
+      } else {
+        await finalJoin(g, null);
+      }
+    } catch { setErr("Qosulmaq alinmadi."); }
+    setBusy(false);
+  }
+
+  async function finalJoin(g, teamName) {
+    setErr(""); setBusy(true);
+    try {
       const p = await sbInsertReturn("live_game_players", {
         game_id: g.id, nickname: nick.trim().slice(0, 20) || "Telebe", score: 0,
+        team_name: teamName || null,
       });
       lastIdx.current = g.current_index;
       setGame(g); setPlayer(p);
@@ -99,6 +114,33 @@ export default function AdlerCupPlayer({ onExit }) {
 
   // ---------- Qosulma ----------
   if (!player) {
+    if (foundGame) {
+      return (
+        <div style={box}>
+          <h3 style={{ margin: "0 0 4px", fontFamily: "'Fraunces', serif", fontSize: 19, color: T.navy }}>Komandani sec</h3>
+          <p style={{ margin: "0 0 14px", fontSize: 13, color: T.textSoft }}>Bu oyun komanda yarışıdır.</p>
+          <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
+            {(foundGame.team_names || []).map((tn) => (
+              <button key={tn} onClick={() => setTeamChoice(tn)} style={{
+                padding: "13px 14px", borderRadius: 10, textAlign: "left", cursor: "pointer",
+                background: teamChoice === tn ? "rgba(0,168,150,0.10)" : "#fff",
+                border: `1px solid ${teamChoice === tn ? T.accent : T.border}`,
+                fontWeight: 800, fontSize: 14.5, color: T.navy,
+              }}>{tn}</button>
+            ))}
+          </div>
+          <input value={nick} onChange={(e) => setNick(e.target.value)} placeholder="Adin" style={input} />
+          {err && <p style={{ color: T.danger, fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => finalJoin(foundGame, teamChoice)} disabled={busy || !teamChoice}
+              style={{ ...btn, flex: 1, opacity: busy || !teamChoice ? 0.5 : 1 }}>
+              {busy ? "Qosulur..." : "Qosul"}
+            </button>
+            <button onClick={() => { setFoundGame(null); setTeamChoice(null); }} style={{ background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Geri</button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={box}>
         <h3 style={{ margin: "0 0 4px", fontFamily: "'Fraunces', serif", fontSize: 19, color: T.navy }}>Oyuna qosul</h3>
@@ -109,8 +151,8 @@ export default function AdlerCupPlayer({ onExit }) {
         <input value={nick} onChange={(e) => setNick(e.target.value)} placeholder="Adin" style={input} />
         {err && <p style={{ color: T.danger, fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={join} disabled={busy || pin.length < 6} style={{ ...btn, flex: 1, opacity: busy || pin.length < 6 ? 0.5 : 1 }}>
-            {busy ? "Qosulur..." : "Qosul"}
+          <button onClick={findGame} disabled={busy || pin.length < 6} style={{ ...btn, flex: 1, opacity: busy || pin.length < 6 ? 0.5 : 1 }}>
+            {busy ? "Yoxlanilir..." : "Davam et"}
           </button>
           {onExit && <button onClick={onExit} style={{ background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Bagla</button>}
         </div>
@@ -130,7 +172,26 @@ export default function AdlerCupPlayer({ onExit }) {
         </p>
         <p style={{ fontSize: 14, color: T.textSoft, margin: "0 0 16px" }}>
           {rank.total} istirakcidan &middot; <b style={{ color: T.accent }}>{player.score} xal</b>
+          {player.team_name && <> &middot; <b style={{ color: T.navy }}>{player.team_name}</b></>}
         </p>
+
+        {game.team_mode && (
+          <div style={{ textAlign: "left", marginBottom: 14 }}>
+            <p style={{ fontSize: 11.5, fontWeight: 800, color: T.warm, margin: "0 0 8px" }}>KOMANDA NƏTİCƏSİ</p>
+            {Object.entries(game.team_scores || {}).sort((a, b) => b[1] - a[1]).map(([tn, sc], i) => (
+              <div key={tn} style={{
+                display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 10px",
+                borderRadius: 8, marginBottom: 4,
+                background: i === 0 ? "rgba(212,175,55,0.12)" : "transparent",
+                fontWeight: tn === player.team_name ? 800 : 500,
+              }}>
+                <span>{i === 0 ? "\u{1F3C6} " : ""}{tn}</span>
+                <span style={{ color: T.accent, fontWeight: 700 }}>{sc} tur</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div style={{ textAlign: "left", borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
           {rank.list.slice(0, 5).map((p, i) => (
             <div key={p.id} style={{
