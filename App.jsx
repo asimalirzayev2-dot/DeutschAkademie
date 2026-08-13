@@ -17,6 +17,7 @@ import BilirdinizMi from "./BilirdinizMi";
 import SozTapmacasi from "./SozTapmacasi";
 import Krossvord from "./Krossvord";
 import Nailiyyetlerim from "./Nailiyyetlerim";
+import Hoerverstehen from "./Hoerverstehen";
 import OxuAnlama from "./OxuAnlama";
 import Flashcards from "./Flashcards";
 import AdlerCup from "./AdlerCup";
@@ -1321,6 +1322,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
       items: [
         { key: "flashcards", label: "Flashcards",    sub: "kartlarla təkrar et", icon: "🃏", color: "#C97B63" },
         { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
+        { key: "hoerverstehen", label: "Dinləmə",    sub: "TELC/Goethe hazırlıq", icon: "🎧", color: "#00A896" },
       ],
     },
     {
@@ -1689,6 +1691,12 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "sozoyunu" && <Reveal><SozTapmacasi session={session} /></Reveal>}
         {view === "krossvord" && <Reveal><Krossvord portalStyles={portalStyles} SectionHeader={SectionHeader} session={session} /></Reveal>}
         {view === "nailiyyetler" && <Reveal><Nailiyyetlerim session={session} /></Reveal>}
+        {view === "hoerverstehen" && (
+          <Reveal>
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1 fəsli dinləyə bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
+            <Hoerverstehen session={session} guestMode={!session} setAuthModal={setAuthModal} />
+          </Reveal>
+        )}
         {view === "oxuanlama" && (
           <Reveal>
             {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
