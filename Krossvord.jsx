@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { sb } from "./supabase";
+import { sb, sbAuthInsert } from "./supabase";
 
 /* ============ Söz yerləşdirmə mühərriki (DOM-dan asılı deyil) ============ */
 
@@ -134,7 +134,7 @@ const P = {
 const LEVELS = ["A1", "A2", "B1", "B2"];
 const COUNT_OPTIONS = [8, 12, 16, 20];
 
-export default function Krossvord({ portalStyles, SectionHeader }) {
+export default function Krossvord({ portalStyles, SectionHeader, session }) {
   const [level, setLevel] = useState("A1");
   const [count, setCount] = useState(12);
   const [dictWords, setDictWords] = useState([]);
@@ -147,6 +147,7 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
   const [cellValues, setCellValues] = useState({});
   const [cellStatus, setCellStatus] = useState({});
   const [selected, setSelected] = useState(null); // {cells:[[r,c]...], dir, number}
+  const [xpAwarded, setXpAwarded] = useState(false);
 
   const inputRefs = useRef({});
 
@@ -211,6 +212,7 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
     setCellValues({});
     setCellStatus({});
     setSelected(null);
+    setXpAwarded(false);
     inputRefs.current = {};
     setStatusMsg(`${placed.length} söz yerləşdirildi`);
   }, [dictWords, level, count]);
@@ -293,18 +295,30 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
 
   function checkAnswers() {
     const next = {};
+    let allCells = 0, correctCells = 0;
     placedWords.forEach((p) => {
       for (let i = 0; i < p.word.length; i++) {
         const r = p.dir === "H" ? p.row : p.row + i;
         const c = p.dir === "H" ? p.col + i : p.col;
         const key = r + "," + c;
+        allCells++;
         const typed = cellValues[key];
         if (!typed) continue;
         const correct = solutionGrid.get((r + dims.minR) + "," + (c + dims.minC));
-        next[key] = typed === correct ? "correct" : "incorrect";
+        const ok = typed === correct;
+        next[key] = ok ? "correct" : "incorrect";
+        if (ok) correctCells++;
       }
     });
     setCellStatus(next);
+
+    if (!xpAwarded && allCells > 0 && correctCells === allCells && session?.user?.id) {
+      setXpAwarded(true);
+      sbAuthInsert("xp_log", session.access_token, {
+        user_id: session.user.id, source: "krossvord", amount: 15,
+        meta: { level, count },
+      }).catch(() => {});
+    }
   }
 
   function clearAnswers() {

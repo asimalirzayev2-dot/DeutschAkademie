@@ -1685,7 +1685,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           </Reveal>
         )}
         {view === "sozoyunu" && <Reveal><SozTapmacasi session={session} /></Reveal>}
-        {view === "krossvord" && <Reveal><Krossvord portalStyles={portalStyles} SectionHeader={SectionHeader} /></Reveal>}
+        {view === "krossvord" && <Reveal><Krossvord portalStyles={portalStyles} SectionHeader={SectionHeader} session={session} /></Reveal>}
         {view === "oxuanlama" && (
           <Reveal>
             {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}

@@ -117,11 +117,22 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
   function handleSubmit() {
     setSubmitted(true);
     if (session?.user?.id && current) {
+      const wasAlreadyDone = !!progress[current.unit_number];
+      const { correct, total } = score();
+      const passed = total > 0 && correct / total >= 0.6;
+
       sbAuthInsert("reading_progress", session.access_token, {
         user_id: session.user.id, level: current.level, unit_number: current.unit_number,
       }).then(() => {
         setProgress((prev) => ({ ...prev, [current.unit_number]: true }));
       }).catch(() => {});
+
+      if (!wasAlreadyDone && passed) {
+        sbAuthInsert("xp_log", session.access_token, {
+          user_id: session.user.id, source: "oxu_anlama", amount: 20,
+          meta: { level: current.level, unit_number: current.unit_number },
+        }).catch(() => {});
+      }
     }
   }
 

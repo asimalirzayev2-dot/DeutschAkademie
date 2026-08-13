@@ -12,6 +12,7 @@ function AdminPanel() {
   const [results, setResults] = useState(null);
   const [registrations, setRegistrations] = useState(null);
   const [users, setUsers] = useState(null);
+  const [xpMap, setXpMap] = useState({});
   const [visits, setVisits] = useState(null);
   const [totalVisits, setTotalVisits] = useState(null);
   const [search, setSearch] = useState("");
@@ -63,6 +64,13 @@ function AdminPanel() {
     sbAuth("profiles?select=*&order=created_at.desc&limit=500", token)
       .then(setUsers)
       .catch(() => setUsers([]));
+    sbAuth("user_total_xp?select=*", token)
+      .then((rows) => {
+        const map = {};
+        (rows || []).forEach((r) => { map[r.user_id] = r.total_xp; });
+        setXpMap(map);
+      })
+      .catch(() => setXpMap({}));
     sbAuth("page_visits?select=created_at&order=created_at.desc&limit=2000", token)
       .then(setVisits)
       .catch(() => setVisits([]));
@@ -101,6 +109,18 @@ function AdminPanel() {
   const regFiltered = (registrations || []).filter((r) => !search || (r.name || "").toLowerCase().includes(search.toLowerCase()));
   const resFiltered = (results || []).filter((r) => !search || (r.user_name || "").toLowerCase().includes(search.toLowerCase()));
   const usersFiltered = (users || []).filter((u) => !search || (u.name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase()));
+
+  const RANKS = [
+    { min: 0,    label: "Başlanğıc Qartal", icon: "🥉" },
+    { min: 200,  label: "Uçan Qartal",      icon: "🥈" },
+    { min: 600,  label: "Qızıl Qartal",     icon: "🥇" },
+    { min: 1500, label: "Qartal Ustası",    icon: "💎" },
+  ];
+  function getRank(xp) {
+    let r = RANKS[0];
+    for (const item of RANKS) if (xp >= item.min) r = item;
+    return r;
+  }
 
   return (
     <div style={styleA.page}>
@@ -170,6 +190,7 @@ function AdminPanel() {
                 <tr>
                   <th style={styleA.th}>Ad</th>
                   <th style={styleA.th}>Email</th>
+                  <th style={styleA.th}>Xal / Dərəcə</th>
                   <th style={styleA.th}>Premium</th>
                   <th style={styleA.th}>Bugünkü testlər</th>
                   <th style={styleA.th}>Qeydiyyat tarixi</th>
@@ -177,10 +198,28 @@ function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {usersFiltered.map((u) => (
+                {usersFiltered.map((u) => {
+                  const xp = xpMap[u.id] || 0;
+                  const rank = getRank(xp);
+                  const isTopRank = rank.label === "Qartal Ustası";
+                  return (
                   <tr key={u.id}>
                     <td style={styleA.td}>{u.name || "—"}{u.is_admin ? " (Admin)" : ""}</td>
                     <td style={styleA.td}>{u.email}</td>
+                    <td style={styleA.td}>
+                      {!u.is_admin && (
+                        <>
+                          <span>{rank.icon} {rank.label} · {xp} xal</span>
+                          {isTopRank && !u.is_premium && (
+                            <span style={{
+                              display: "inline-block", marginLeft: 8, fontSize: 11, fontWeight: 700,
+                              padding: "2px 8px", borderRadius: 999,
+                              background: "rgba(212,175,55,0.18)", color: "#8A6D1A",
+                            }}>🎖️ Premium-a layiqdir</span>
+                          )}
+                        </>
+                      )}
+                    </td>
                     <td style={styleA.td}>{u.is_admin ? "—" : u.is_premium ? "✦ Bəli" : "Xeyr"}</td>
                     <td style={styleA.td}>{u.tests_count || 0}</td>
                     <td style={styleA.td}>{new Date(u.created_at).toLocaleString("az-AZ")}</td>
@@ -202,7 +241,8 @@ function AdminPanel() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           ) : (
