@@ -242,6 +242,14 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
     setSelected({ cells, dir: target.dir, number: target.number });
   }
 
+  function selectWord(p) {
+    const cells = [];
+    for (let i = 0; i < p.word.length; i++) {
+      cells.push(p.dir === "H" ? [p.row, p.col + i] : [p.row + i, p.col]);
+    }
+    setSelected({ cells, dir: p.dir, number: p.number });
+  }
+
   function isCellActive(r, c) {
     if (!selected) return false;
     return selected.cells.some(([rr, cc]) => rr === r && cc === c);
@@ -272,7 +280,14 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
       if (has(r + dr, c + dc)) focusCell(r + dr, c + dc);
     } else if (e.key === "Backspace" && !cellValues[r + "," + c] && selected) {
       const idx = selected.cells.findIndex(([rr, cc]) => rr === r && cc === c);
-      if (idx > 0) { const [pr, pc] = selected.cells[idx - 1]; focusCell(pr, pc); }
+      if (idx > 0) {
+        e.preventDefault();
+        const [pr, pc] = selected.cells[idx - 1];
+        const pKey = pr + "," + pc;
+        setCellValues((prev) => { const n = { ...prev }; delete n[pKey]; return n; });
+        setCellStatus((prev) => { const n = { ...prev }; delete n[pKey]; return n; });
+        focusCell(pr, pc);
+      }
     }
   }
 
@@ -290,6 +305,11 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
       }
     });
     setCellStatus(next);
+  }
+
+  function clearAnswers() {
+    setCellValues({});
+    setCellStatus({});
   }
 
   function revealAnswers() {
@@ -327,7 +347,7 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
     <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
       {items.map((p) => (
         <li key={p.dir + p.number}
-          onClick={() => { selectAt(p.row, p.col); focusCell(p.row, p.col); }}
+          onClick={() => { selectWord(p); focusCell(p.row, p.col); }}
           style={{
             fontSize: 12.5, lineHeight: 1.35, cursor: "pointer", padding: "3px 5px", borderRadius: 4,
             background: selected && selected.number === p.number && selected.dir === p.dir ? P.active : "transparent",
@@ -359,6 +379,7 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
         ))}
         <button onClick={buildPuzzle} style={actionBtn(true)}>🔄 Yeni krossvord</button>
         <button onClick={checkAnswers} style={actionBtn(false)}>Yoxla</button>
+        <button onClick={clearAnswers} style={actionBtn(false)}>Təmizlə</button>
         <button onClick={revealAnswers} style={actionBtn(false)}>Cavabları göstər</button>
         {statusMsg && <span style={{ fontSize: 12, color: T.textSoft, marginLeft: "auto" }}>{statusMsg}</span>}
       </div>
@@ -406,7 +427,6 @@ export default function Krossvord({ portalStyles, SectionHeader }) {
                         maxLength={1}
                         value={cellValues[key] || ""}
                         onChange={(e) => onCellChange(r, c, e.target.value)}
-                        onFocus={() => selectAt(r, c)}
                         onClick={() => selectAt(r, c, true)}
                         onKeyDown={(e) => onCellKeyDown(e, r, c)}
                         style={{
