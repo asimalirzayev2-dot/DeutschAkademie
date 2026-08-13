@@ -16,6 +16,7 @@ import CoursesView from "./CoursesView";
 import BilirdinizMi from "./BilirdinizMi";
 import SozTapmacasi from "./SozTapmacasi";
 import Krossvord from "./Krossvord";
+import Nailiyyetlerim from "./Nailiyyetlerim";
 import OxuAnlama from "./OxuAnlama";
 import Flashcards from "./Flashcards";
 import AdlerCup from "./AdlerCup";
@@ -1331,6 +1332,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     },
   ];
   const MORE_ITEMS_TAIL = [
+    { key: "nailiyyetler", label: "Nailiyyətlərim", sub: "xal və dərəcən", icon: "🏆", color: "#D4AF37" },
     { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
     { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        icon: "✉", color: "#00A896" },
   ];
@@ -1686,6 +1688,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         )}
         {view === "sozoyunu" && <Reveal><SozTapmacasi session={session} /></Reveal>}
         {view === "krossvord" && <Reveal><Krossvord portalStyles={portalStyles} SectionHeader={SectionHeader} session={session} /></Reveal>}
+        {view === "nailiyyetler" && <Reveal><Nailiyyetlerim session={session} /></Reveal>}
         {view === "oxuanlama" && (
           <Reveal>
             {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
