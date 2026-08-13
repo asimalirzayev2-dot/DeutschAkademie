@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Avatar from "./Avatar";
 import { shuffle } from "./utils";
-import { sb } from "./supabase";
+import { sb, sbAuthInsert } from "./supabase";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -244,6 +244,12 @@ export default function SozTapmacasi({ session }) {
     clearInterval(timerRef.current);
     setGameSession({ ...finalSession, _completedAll: completedAll });
     setScreen("result");
+    if (session?.user?.id && finalSession.solvedCount > 0) {
+      sbAuthInsert("xp_log", session.access_token, {
+        user_id: session.user.id, source: "soz_tapmacasi", amount: finalSession.solvedCount * 5,
+        meta: { level: finalSession.levelKey, mode: finalSession.mode, solvedCount: finalSession.solvedCount },
+      }).catch(() => {});
+    }
   }
 
   function restart() {
