@@ -19,20 +19,30 @@ function speakLong(text, { onEnd, rate = 0.92 } = {}) {
   return utter;
 }
 
-function AudioBlock({ text }) {
+function AudioBlock({ text, audioUrl }) {
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(false);
+  const audioRef = useRef(null);
 
   function toggle() {
+    if (audioUrl) {
+      if (playing) {
+        audioRef.current?.pause();
+        setPlaying(false);
+        return;
+      }
+      setPlaying(true);
+      audioRef.current?.play();
+      return;
+    }
+    // Hazır fayl yoxdursa, brauzerin öz səsi ilə oxu (ehtiyat variant)
     if (playing) {
       window.speechSynthesis.cancel();
       setPlaying(false);
       return;
     }
     setPlaying(true);
-    speakLong(text, {
-      onEnd: () => { setPlaying(false); setPlayed(true); },
-    });
+    speakLong(text, { onEnd: () => { setPlaying(false); setPlayed(true); } });
   }
 
   useEffect(() => () => window.speechSynthesis.cancel(), []);
@@ -43,6 +53,10 @@ function AudioBlock({ text }) {
       borderRadius: 12, background: "rgba(0,168,150,0.08)", border: `1px solid ${T.accent}`,
       marginBottom: 16,
     }}>
+      {audioUrl && (
+        <audio ref={audioRef} src={audioUrl}
+          onEnded={() => { setPlaying(false); setPlayed(true); }} style={{ display: "none" }} />
+      )}
       <button onClick={toggle} style={{
         width: 48, height: 48, borderRadius: "50%", border: "none", cursor: "pointer",
         background: T.accent, color: "#fff", fontSize: 20, flexShrink: 0,
@@ -53,7 +67,7 @@ function AudioBlock({ text }) {
           {playing ? "Dinlənilir..." : played ? "Yenidən dinlə" : "Dinləmək üçün bas"}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 12, color: T.textSoft }}>
-          Mətni istədiyin qədər təkrar dinləyə bilərsən
+          {audioUrl ? "Mətni istədiyin qədər təkrar dinləyə bilərsən" : "Mətni istədiyin qədər təkrar dinləyə bilərsən"}
         </p>
       </div>
     </div>
@@ -232,7 +246,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
         {/* Hisse 1 */}
         <div style={{ ...box, marginBottom: 18 }}>
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 1 — {current.part1_title}</p>
-          <AudioBlock text={current.part1_text} />
+          <AudioBlock text={current.part1_text} audioUrl={current.part1_audio_url} />
           <div style={{ display: "grid", gap: 10 }}>
             {(current.part1_questions || []).map((q, i) => (
               <div key={i}>
@@ -259,7 +273,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
         {/* Hisse 2 */}
         <div style={{ ...box, marginBottom: 18 }}>
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 2 — {current.part2_title}</p>
-          <AudioBlock text={current.part2_text} />
+          <AudioBlock text={current.part2_text} audioUrl={current.part2_audio_url} />
           <div style={{ display: "grid", gap: 14 }}>
             {(current.part2_questions || []).map((q, i) => (
               <div key={i}>
