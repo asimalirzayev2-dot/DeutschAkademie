@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://krtfwdhdxspljykdglzp.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtydGZ3ZGhkeHNwbGp5a2RnbHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzMTY5MDAsImV4cCI6MjA5OTg5MjkwMH0.iNwM5TLqXeuo5NCupYvo_vEO1uioY6CwPiVWGUbpBYE";
+export const SUPABASE_URL = "https://krtfwdhdxspljykdglzp.supabase.co";
+export const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtydGZ3ZGhkeHNwbGp5a2RnbHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzMTY5MDAsImV4cCI6MjA5OTg5MjkwMH0.iNwM5TLqXeuo5NCupYvo_vEO1uioY6CwPiVWGUbpBYE";
 
 export async function refreshSession(refreshToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
