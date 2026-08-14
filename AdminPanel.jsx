@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { adminLogin, sbAuth, sbAuthRpc, sbAuthCount } from "./supabase";
+import React, { useState, useEffect, useRef } from "react";
+import { adminLogin, sbAuth, sbAuthRpc, sbAuthCount, SUPABASE_URL, SUPABASE_KEY } from "./supabase";
 
 
 function AdminPanel() {
@@ -15,6 +15,48 @@ function AdminPanel() {
   const [xpMap, setXpMap] = useState({});
   const [visits, setVisits] = useState(null);
   const [totalVisits, setTotalVisits] = useState(null);
+  const [funcName, setFuncName] = useState("rapid-responder");
+  const [missingUnits, setMissingUnits] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [genLog, setGenLog] = useState([]);
+  const [genDone, setGenDone] = useState(0);
+  const stopRef = useRef(false);
+
+  function loadMissingUnits() {
+    setMissingUnits(null);
+    sbAuth(`listening_units?part1_audio_url=is.null&select=level,unit_number&order=level.asc,unit_number.asc`, token)
+      .then(setMissingUnits)
+      .catch(() => setMissingUnits([]));
+  }
+
+  async function generateAllAudio() {
+    if (!missingUnits || missingUnits.length === 0) return;
+    setGenerating(true); setGenLog([]); setGenDone(0);
+    stopRef.current = false;
+    for (const u of missingUnits) {
+      if (stopRef.current) { setGenLog((l) => [...l, `⏹ Dayandırıldı (${u.level} Fəsil ${u.unit_number}-də)`]); break; }
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/${funcName}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ level: u.level, unit_number: u.unit_number }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setGenLog((l) => [...l, `✓ ${u.level} Fəsil ${u.unit_number}`]);
+        } else {
+          setGenLog((l) => [...l, `✗ ${u.level} Fəsil ${u.unit_number} — ${data.error || "naməlum xəta"}`]);
+        }
+      } catch (e) {
+        setGenLog((l) => [...l, `✗ ${u.level} Fəsil ${u.unit_number} — ${e.message}`]);
+      }
+      setGenDone((d) => d + 1);
+    }
+    setGenerating(false);
+    loadMissingUnits();
+  }
+
+  function stopGeneration() { stopRef.current = true; }
   const [search, setSearch] = useState("");
   const [premiumBusy, setPremiumBusy] = useState(null); // id currently being toggled
 
@@ -52,6 +94,11 @@ function AdminPanel() {
     setResults(null);
     setRegistrations(null);
   }
+
+  useEffect(() => {
+    if (!token) return;
+    if (tab === "audio" && missingUnits === null) loadMissingUnits();
+  }, [token, tab]);
 
   useEffect(() => {
     if (!token) return;
@@ -135,6 +182,7 @@ function AdminPanel() {
           <button style={styleA.tabBtn(tab === "registrations")} onClick={() => setTab("registrations")}>Kurs Qeydiyyatları ({registrations ? registrations.length : "..."})</button>
           <button style={styleA.tabBtn(tab === "users")} onClick={() => setTab("users")}>İstifadəçilər ({users ? users.length : "..."})</button>
           <button style={styleA.tabBtn(tab === "analytics")} onClick={() => setTab("analytics")}>Analitika</button>
+          <button style={styleA.tabBtn(tab === "audio")} onClick={() => setTab("audio")}>Dinləmə Səsi</button>
         </div>
 
         <input placeholder="Ad üzrə axtar..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...styleA.input, maxWidth: 300 }} />
@@ -245,7 +293,7 @@ function AdminPanel() {
                 })}
               </tbody>
             </table>
-          ) : (
+          ) : tab === "analytics" ? (
             (() => {
               const todayStr = new Date().toISOString().slice(0, 10);
               const visitsToday = (visits || []).filter((v) => v.created_at?.slice(0, 10) === todayStr).length;
@@ -292,6 +340,51 @@ function AdminPanel() {
                 </div>
               );
             })()
+          ) : (
+            <div>
+              <div style={{ marginBottom: 18, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <label style={{ fontSize: 13 }}>Edge Function adı:</label>
+                <input value={funcName} onChange={(e) => setFuncName(e.target.value)} style={{ ...styleA.input, maxWidth: 220 }} />
+                <button onClick={loadMissingUnits} style={{ ...styleA.btn, background: "transparent", border: "1px solid rgba(42,61,60,0.3)", color: "#2A3D3C" }}>
+                  Siyahını yenilə
+                </button>
+              </div>
+
+              <p style={{ fontSize: 14, marginBottom: 14 }}>
+                Səsi olmayan fəsillər: <b>{missingUnits === null ? "yüklənir..." : missingUnits.length}</b>
+              </p>
+
+              {missingUnits && missingUnits.length > 0 && !generating && (
+                <button onClick={generateAllAudio} style={{ ...styleA.btn, background: "#FF8C00", marginBottom: 16 }}>
+                  🎧 Hamısının səsini yarat ({missingUnits.length} fəsil)
+                </button>
+              )}
+
+              {generating && (
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ fontSize: 13.5, marginBottom: 8 }}>
+                    Yaradılır: {genDone} / {missingUnits.length}
+                  </p>
+                  <div style={{ height: 8, borderRadius: 4, background: "rgba(42,61,60,0.10)", overflow: "hidden", marginBottom: 10, maxWidth: 400 }}>
+                    <div style={{ height: "100%", width: `${(genDone / missingUnits.length) * 100}%`, background: "#00A896", transition: "width .3s" }} />
+                  </div>
+                  <button onClick={stopGeneration} style={{ ...styleA.btn, background: "transparent", border: "1px solid #C0392B", color: "#C0392B" }}>
+                    Dayandır
+                  </button>
+                </div>
+              )}
+
+              {genLog.length > 0 && (
+                <div style={{
+                  background: "rgba(255,255,255,0.85)", border: "1px solid rgba(42,61,60,0.15)", borderRadius: 10,
+                  padding: "12px 14px", maxHeight: 320, overflowY: "auto", fontSize: 13, fontFamily: "monospace",
+                }}>
+                  {genLog.map((line, i) => (
+                    <div key={i} style={{ padding: "2px 0", color: line.startsWith("✗") ? "#C0392B" : "#2A3D3C" }}>{line}</div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
