@@ -80,6 +80,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   const [units, setUnits] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [current, setCurrent] = useState(null);
+  const [qLang, setQLang] = useState("az"); // az | de -- yalnnız B1 ucun anlamli, ancaq metnler ucun deyil
   const [answers1, setAnswers1] = useState({});
   const [answers2, setAnswers2] = useState({});
   const [answers3, setAnswers3] = useState({});
@@ -99,6 +100,27 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
       setProgress(map);
     }).catch(() => {});
   }, [level, session]);
+
+  function txt(azVal, deVal) {
+    return (qLang === "de" && deVal) ? deVal : azVal;
+  }
+
+  function LangToggle() {
+    return (
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button onClick={() => setQLang("az")} style={{
+          padding: "6px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+          background: qLang === "az" ? T.accent : "#fff", color: qLang === "az" ? "#fff" : T.text,
+          border: `1px solid ${qLang === "az" ? T.accent : T.border}`,
+        }}>Azərbaycanca suallar</button>
+        <button onClick={() => setQLang("de")} style={{
+          padding: "6px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+          background: qLang === "de" ? T.accent : "#fff", color: qLang === "de" ? "#fff" : T.text,
+          border: `1px solid ${qLang === "de" ? T.accent : T.border}`,
+        }}>Tam Almanca (B1+)</button>
+      </div>
+    );
+  }
 
   function openUnit(u) {
     if (guestMode && u.unit_number !== 1) {
@@ -256,6 +278,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
         <button onClick={() => setScreen("list")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← Geri</button>
+        {current.level === "B1" && <LangToggle />}
 
         {/* Hisse 1 */}
         <div style={{ ...box, marginBottom: 18 }}>
@@ -272,9 +295,9 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
                 {(current.part1_items || []).map((it, i) => (
                   <div key={i}>
                     <p style={{ fontSize: 12, fontWeight: 800, color: T.textSoft, margin: "0 0 4px", textTransform: "uppercase" }}>Mətn {i + 1}</p>
-                    <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{it.question}</p>
+                    <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{txt(it.question, it.question_de)}</p>
                     <div style={{ display: "grid", gap: 6 }}>
-                      {Object.entries(it.options || {}).map(([key, val]) => (
+                      {Object.entries(txt(it.options, it.options_de) || {}).map(([key, val]) => (
                         <button key={key} disabled={submitted}
                           onClick={() => setAnswers1((prev) => ({ ...prev, [i]: key }))}
                           style={{
@@ -325,7 +348,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
             {(current.part2_questions || []).map((q, i) => (
               current.level === "B1" ? (
                 <div key={i}>
-                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
+                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {txt(q.q, q.q_de)}</p>
                   <div style={{ display: "flex", gap: 8 }}>
                     {["R", "F"].map((opt) => (
                       <button key={opt} disabled={submitted}
@@ -370,7 +393,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
             <div style={{ display: "grid", gap: 14 }}>
               {(current.part3_questions || []).map((q, i) => (
                 <div key={i}>
-                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
+                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {txt(q.q, q.q_de)}</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {(current.part3_speakers || []).map((name) => (
                       <button key={name} disabled={submitted}
