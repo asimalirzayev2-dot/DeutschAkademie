@@ -82,6 +82,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   const [current, setCurrent] = useState(null);
   const [answers1, setAnswers1] = useState({});
   const [answers2, setAnswers2] = useState({});
+  const [answers3, setAnswers3] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [progress, setProgress] = useState({});
 
@@ -107,7 +108,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
     sb(`listening_units?id=eq.${u.id}&select=*`).then((rows) => {
       if (rows && rows[0]) {
         setCurrent(rows[0]);
-        setAnswers1({}); setAnswers2({}); setSubmitted(false);
+        setAnswers1({}); setAnswers2({}); setAnswers3({}); setSubmitted(false);
         setScreen("test");
       }
     });
@@ -116,14 +117,27 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   function score() {
     if (!current) return { correct: 0, total: 0 };
     let correct = 0, total = 0;
-    (current.part1_questions || []).forEach((q, i) => {
-      total++;
-      if (answers1[i] === q.a) correct++;
-    });
+    if (current.level === "B1") {
+      (current.part1_items || []).forEach((it, i) => {
+        total++;
+        if (answers1[i] === it.a) correct++;
+      });
+    } else {
+      (current.part1_questions || []).forEach((q, i) => {
+        total++;
+        if (answers1[i] === q.a) correct++;
+      });
+    }
     (current.part2_questions || []).forEach((q, i) => {
       total++;
       if (answers2[i] === q.a) correct++;
     });
+    if (current.level === "B1") {
+      (current.part3_questions || []).forEach((q, i) => {
+        total++;
+        if (answers3[i] === q.a) correct++;
+      });
+    }
     return { correct, total };
   }
 
@@ -245,29 +259,62 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
 
         {/* Hisse 1 */}
         <div style={{ ...box, marginBottom: 18 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 1 — {current.part1_title}</p>
-          <AudioBlock text={current.part1_text} audioUrl={current.part1_audio_url} />
-          <div style={{ display: "grid", gap: 10 }}>
-            {(current.part1_questions || []).map((q, i) => (
-              <div key={i}>
-                <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {["R", "F"].map((opt) => (
-                    <button key={opt} disabled={submitted}
-                      onClick={() => setAnswers1((prev) => ({ ...prev, [i]: opt }))}
-                      style={{
-                        flex: 1, padding: "9px 0", borderRadius: 8, cursor: submitted ? "default" : "pointer",
-                        fontWeight: 700, fontSize: 13,
-                        background: answers1[i] === opt ? T.accent : "#fff",
-                        color: answers1[i] === opt ? "#fff" : T.text,
-                        border: `1px solid ${answers1[i] === opt ? T.accent : T.border}`,
-                        ...(submitted && q.a === opt ? { borderColor: T.accent, borderWidth: 2 } : {}),
-                      }}>{opt === "R" ? "Doğru" : "Yanlış"}</button>
-                  ))}
-                </div>
+          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>
+            Hissə 1{current.level === "B1" ? " — 5 qısa mətn" : ` — ${current.part1_title}`}
+          </p>
+          {current.level === "B1" ? (
+            <>
+              <AudioBlock
+                text={(current.part1_items || []).map((it, i) => `Mətn ${i + 1}. ${it.text}`).join(" ")}
+                audioUrl={current.part1_audio_url}
+              />
+              <div style={{ display: "grid", gap: 16 }}>
+                {(current.part1_items || []).map((it, i) => (
+                  <div key={i}>
+                    <p style={{ fontSize: 12, fontWeight: 800, color: T.textSoft, margin: "0 0 4px", textTransform: "uppercase" }}>Mətn {i + 1}</p>
+                    <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{it.question}</p>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {Object.entries(it.options || {}).map(([key, val]) => (
+                        <button key={key} disabled={submitted}
+                          onClick={() => setAnswers1((prev) => ({ ...prev, [i]: key }))}
+                          style={{
+                            textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: submitted ? "default" : "pointer",
+                            fontSize: 13, background: answers1[i] === key ? "rgba(0,168,150,0.10)" : "#fff",
+                            border: `1px solid ${answers1[i] === key ? T.accent : T.border}`,
+                            ...(submitted && it.a === key ? { borderColor: T.accent, borderWidth: 2 } : {}),
+                          }}>{val}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <>
+              <AudioBlock text={current.part1_text} audioUrl={current.part1_audio_url} />
+              <div style={{ display: "grid", gap: 10 }}>
+                {(current.part1_questions || []).map((q, i) => (
+                  <div key={i}>
+                    <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {["R", "F"].map((opt) => (
+                        <button key={opt} disabled={submitted}
+                          onClick={() => setAnswers1((prev) => ({ ...prev, [i]: opt }))}
+                          style={{
+                            flex: 1, padding: "9px 0", borderRadius: 8, cursor: submitted ? "default" : "pointer",
+                            fontWeight: 700, fontSize: 13,
+                            background: answers1[i] === opt ? T.accent : "#fff",
+                            color: answers1[i] === opt ? "#fff" : T.text,
+                            border: `1px solid ${answers1[i] === opt ? T.accent : T.border}`,
+                            ...(submitted && q.a === opt ? { borderColor: T.accent, borderWidth: 2 } : {}),
+                          }}>{opt === "R" ? "Doğru" : "Yanlış"}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Hisse 2 */}
@@ -276,24 +323,73 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
           <AudioBlock text={current.part2_text} audioUrl={current.part2_audio_url} />
           <div style={{ display: "grid", gap: 14 }}>
             {(current.part2_questions || []).map((q, i) => (
-              <div key={i}>
-                <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
-                <div style={{ display: "grid", gap: 6 }}>
-                  {Object.entries(q.options || {}).map(([key, val]) => (
-                    <button key={key} disabled={submitted}
-                      onClick={() => setAnswers2((prev) => ({ ...prev, [i]: key }))}
-                      style={{
-                        textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: submitted ? "default" : "pointer",
-                        fontSize: 13, background: answers2[i] === key ? "rgba(0,168,150,0.10)" : "#fff",
-                        border: `1px solid ${answers2[i] === key ? T.accent : T.border}`,
-                        ...(submitted && q.a === key ? { borderColor: T.accent, borderWidth: 2 } : {}),
-                      }}>{val}</button>
-                  ))}
+              current.level === "B1" ? (
+                <div key={i}>
+                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {["R", "F"].map((opt) => (
+                      <button key={opt} disabled={submitted}
+                        onClick={() => setAnswers2((prev) => ({ ...prev, [i]: opt }))}
+                        style={{
+                          flex: 1, padding: "9px 0", borderRadius: 8, cursor: submitted ? "default" : "pointer",
+                          fontWeight: 700, fontSize: 13,
+                          background: answers2[i] === opt ? T.accent : "#fff",
+                          color: answers2[i] === opt ? "#fff" : T.text,
+                          border: `1px solid ${answers2[i] === opt ? T.accent : T.border}`,
+                          ...(submitted && q.a === opt ? { borderColor: T.accent, borderWidth: 2 } : {}),
+                        }}>{opt === "R" ? "Doğru" : "Yanlış"}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div key={i}>
+                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {Object.entries(q.options || {}).map(([key, val]) => (
+                      <button key={key} disabled={submitted}
+                        onClick={() => setAnswers2((prev) => ({ ...prev, [i]: key }))}
+                        style={{
+                          textAlign: "left", padding: "9px 12px", borderRadius: 8, cursor: submitted ? "default" : "pointer",
+                          fontSize: 13, background: answers2[i] === key ? "rgba(0,168,150,0.10)" : "#fff",
+                          border: `1px solid ${answers2[i] === key ? T.accent : T.border}`,
+                          ...(submitted && q.a === key ? { borderColor: T.accent, borderWidth: 2 } : {}),
+                        }}>{val}</button>
+                    ))}
+                  </div>
+                </div>
+              )
             ))}
           </div>
         </div>
+
+        {/* Hisse 3 — yalniz B1 */}
+        {current.level === "B1" && (
+          <div style={{ ...box, marginBottom: 18 }}>
+            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 3 — {current.part3_title}</p>
+            <AudioBlock text={current.part3_text} audioUrl={current.part3_audio_url} />
+            <div style={{ display: "grid", gap: 14 }}>
+              {(current.part3_questions || []).map((q, i) => (
+                <div key={i}>
+                  <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {q.q}</p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {(current.part3_speakers || []).map((name) => (
+                      <button key={name} disabled={submitted}
+                        onClick={() => setAnswers3((prev) => ({ ...prev, [i]: name }))}
+                        style={{
+                          padding: "7px 14px", borderRadius: 999, cursor: submitted ? "default" : "pointer",
+                          fontSize: 12.5, fontWeight: 700,
+                          background: answers3[i] === name ? T.accent : "#fff",
+                          color: answers3[i] === name ? "#fff" : T.text,
+                          border: `1px solid ${answers3[i] === name ? T.accent : T.border}`,
+                          ...(submitted && q.a === name ? { borderColor: T.accent, borderWidth: 2 } : {}),
+                        }}>{name}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!submitted ? (
           <button onClick={handleSubmit} style={{
