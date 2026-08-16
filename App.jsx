@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Crown, Bird } from "lucide-react";
+import { Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Crown, Bird, Headphones, Library, GraduationCap, Layers, Puzzle, Grid3x3, Trophy, Mail } from "lucide-react";
 import emailjs from "@emailjs/browser";
 import { sb, sbInsert, adminLogin, sbAuth, sbAuthPatch, sbAuthInsert, signUp, verifyGumroadLicense, pdfUrl, resetPasswordRequest, updatePasswordWithToken, fetchOAuthUser, getGoogleLoginUrl, refreshSession } from "./supabase";
 import AdminPanel from "./AdminPanel";
@@ -1311,32 +1311,27 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
   const MORE_GROUPS = [
     {
-      title: "Zəka Oyunları",
+      title: "İmtahan və Tədris",
       items: [
-        { key: "sozoyunu",  label: "Söz Tapmacası",  sub: "lüğət oyunu",     icon: "🐝", color: "#D4AF37" },
-        { key: "krossvord", label: "Krossvord",      sub: "kəsişən sözlər",  icon: "🔠", color: "#00A896" },
+        { key: "oxuanlama", label: "Oxu Anlama",  sub: "TELC/Goethe hazırlıq",  Icon: BookOpen },
+        { key: "hoerverstehen", label: "Dinləmə", sub: "TELC/Goethe hazırlıq",  Icon: Headphones },
+        { key: "books",     label: "Kitablar",    sub: "PDF dərsliklər",       Icon: Library },
+        { key: "courses",   label: "Kurslar",     sub: "müəllimlər",           Icon: GraduationCap },
       ],
     },
     {
-      title: "Öyrənmə Alətləri",
+      title: "Praktika və Oyunlar",
       items: [
-        { key: "flashcards", label: "Flashcards",    sub: "kartlarla təkrar et", icon: "🃏", color: "#C97B63" },
-        { key: "oxuanlama", label: "Oxu Anlama",     sub: "TELC/Goethe hazırlıq", icon: "📖", color: "#12B6C9" },
-        { key: "hoerverstehen", label: "Dinləmə",    sub: "TELC/Goethe hazırlıq", icon: "🎧", color: "#00A896" },
-      ],
-    },
-    {
-      title: "Resurslar",
-      items: [
-        { key: "books",     label: "Kitablar",       sub: "PDF dərsliklər",  icon: "▦", color: "#7A5C3C" },
-        { key: "courses",   label: "Kurslar",        sub: "müəllimlər",      icon: "✎", color: "#FF8C00" },
+        { key: "flashcards", label: "Flashcards",   sub: "kartlarla təkrar et", Icon: Layers },
+        { key: "sozoyunu",  label: "Söz Tapmacası", sub: "lüğət oyunu",        Icon: Puzzle },
+        { key: "krossvord", label: "Krossvord",     sub: "kəsişən sözlər",     Icon: Grid3x3 },
       ],
     },
   ];
   const MORE_ITEMS_TAIL = [
-    { key: "nailiyyetler", label: "Nailiyyətlərim", sub: "xal və dərəcən", icon: "🏆", color: "#D4AF37" },
-    { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  icon: "✦", color: "#D4AF37" },
-    { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        icon: "✉", color: "#00A896" },
+    { key: "nailiyyetler", label: "Nailiyyətlərim", sub: "xal və dərəcən", Icon: Trophy },
+    { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  Icon: Crown, premium: true },
+    { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        Icon: Mail },
   ];
 
   return (
@@ -1437,7 +1432,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <div style={portalStyles.sheetBackdrop} onClick={() => setMoreOpen(false)} />
           <div className="da-sheet" style={portalStyles.sheet}>
             <div style={portalStyles.sheetHandle} />
-            <p style={portalStyles.sheetTitle}>Bölmələr</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 14px" }}>
+              <p style={{ ...portalStyles.sheetTitle, margin: 0 }}>Bölmələr</p>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 999,
+                background: "rgba(0,168,150,0.1)", color: "#00A896",
+              }}>{MORE_GROUPS.reduce((n, g) => n + g.items.length, 0) + MORE_ITEMS_TAIL.length} Alət</span>
+            </div>
 
             {MORE_GROUPS.map((group) => (
               <div key={group.title} style={{ marginBottom: 14 }}>
@@ -1449,7 +1450,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                   {group.items.map((m) => (
                     <button key={m.key} onClick={() => { setMoreOpen(false); setView(m.key); }}
                       style={{ ...portalStyles.sheetCard, ...(view === m.key ? portalStyles.sheetCardActive : {}) }}>
-                      <span style={{ ...portalStyles.sheetCardIcon, background: m.color }}>{m.icon}</span>
+                      <span style={portalStyles.sheetCardIcon}><m.Icon size={18} strokeWidth={2} /></span>
                       <span style={portalStyles.sheetCardText}>
                         <span style={portalStyles.sheetCardTitle}>{m.label}</span>
                         <span style={portalStyles.sheetCardSub}>{m.sub}</span>
@@ -1460,13 +1461,23 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               </div>
             ))}
 
+            <p style={{
+              fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+              color: "rgba(42,61,60,0.45)", margin: "0 0 8px 2px",
+            }}>Profil və İmkanlar</p>
             <div style={portalStyles.sheetGrid}>
               {MORE_ITEMS_TAIL.map((m) => (
                 <button key={m.key} onClick={() => { setMoreOpen(false); setView(m.key); }}
-                  style={{ ...portalStyles.sheetCard, ...(view === m.key ? portalStyles.sheetCardActive : {}) }}>
-                  <span style={{ ...portalStyles.sheetCardIcon, background: m.color }}>{m.icon}</span>
+                  style={{
+                    ...portalStyles.sheetCard,
+                    ...(view === m.key ? portalStyles.sheetCardActive : {}),
+                    ...(m.premium ? portalStyles.sheetCardPremium : {}),
+                  }}>
+                  <span style={portalStyles.sheetCardIcon}><m.Icon size={18} strokeWidth={2} /></span>
                   <span style={portalStyles.sheetCardText}>
-                    <span style={portalStyles.sheetCardTitle}>{m.label}</span>
+                    <span style={portalStyles.sheetCardTitle}>
+                      {m.label}{m.premium && <span style={portalStyles.sheetCardProTag}> PRO</span>}
+                    </span>
                     <span style={portalStyles.sheetCardSub}>{m.sub}</span>
                   </span>
                 </button>
@@ -1860,10 +1871,12 @@ const portalStyles = {
     background: "#FFFFFF", border: "1px solid rgba(42,61,60,0.12)",
   },
   sheetCardActive: { borderColor: "#00A896", background: "rgba(0,168,150,0.07)" },
+  sheetCardPremium: { border: "2px solid rgba(212,175,55,0.5)" },
+  sheetCardProTag: { fontSize: 9.5, fontWeight: 800, color: "#D4AF37", letterSpacing: "0.03em" },
   sheetCardIcon: {
-    width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
-    color: "#fff", fontSize: 15, fontWeight: 700,
+    background: "rgba(0,168,150,0.1)", color: "#00A896",
   },
   sheetCardText: { display: "flex", flexDirection: "column", minWidth: 0 },
   sheetCardTitle: { fontSize: 13.5, fontWeight: 800, color: "#003366" },
