@@ -139,7 +139,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   function score() {
     if (!current) return { correct: 0, total: 0 };
     let correct = 0, total = 0;
-    if (current.level === "B1") {
+    if (current.part1_items) {
       (current.part1_items || []).forEach((it, i) => {
         total++;
         if (answers1[i] === it.a) correct++;
@@ -154,7 +154,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
       total++;
       if (answers2[i] === q.a) correct++;
     });
-    if (current.level === "B1") {
+    if (current.part3_questions) {
       (current.part3_questions || []).forEach((q, i) => {
         total++;
         if (answers3[i] === q.a) correct++;
@@ -278,14 +278,14 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
         <button onClick={() => setScreen("list")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← Geri</button>
-        {current.level === "B1" && <LangToggle />}
+        {current.level === "B1" && current.part2_questions?.[0]?.q_de && <LangToggle />}
 
         {/* Hisse 1 */}
         <div style={{ ...box, marginBottom: 18 }}>
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>
-            Hissə 1{current.level === "B1" ? " — 5 qısa mətn" : ` — ${current.part1_title}`}
+            Hissə 1{current.part1_items ? " — 5 qısa mətn" : ` — ${current.part1_title}`}
           </p>
-          {current.level === "B1" ? (
+          {current.part1_items ? (
             <>
               <AudioBlock
                 text={(current.part1_items || []).map((it, i) => `Mətn ${i + 1}. ${it.text}`).join(" ")}
@@ -346,7 +346,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
           <AudioBlock text={current.part2_text} audioUrl={current.part2_audio_url} />
           <div style={{ display: "grid", gap: 14 }}>
             {(current.part2_questions || []).map((q, i) => (
-              current.level === "B1" ? (
+              current.part1_items ? (
                 <div key={i}>
                   <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{i + 1}. {txt(q.q, q.q_de)}</p>
                   <div style={{ display: "flex", gap: 8 }}>
@@ -386,7 +386,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
         </div>
 
         {/* Hisse 3 — yalniz B1 */}
-        {current.level === "B1" && (
+        {current.part3_text && (
           <div style={{ ...box, marginBottom: 18 }}>
             <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 3 — {current.part3_title}</p>
             <AudioBlock text={current.part3_text} audioUrl={current.part3_audio_url} />
