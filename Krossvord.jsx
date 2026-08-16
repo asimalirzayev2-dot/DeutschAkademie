@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { sb, sbAuthInsert } from "./supabase";
 
-/* ============ Söz yerləşdirmə mühərriki (DOM-dan asılı deyil) ============ */
+/* ============ Söz yerləşdirmə mühərriki — skandinav üslubu (izah-xanaları şəbəkə daxilində) ============ */
 
-function canPlace(grid, word, r, c, dir) {
+function canPlaceClued(grid, reserved, word, r, c, dir) {
   for (let i = 0; i < word.length; i++) {
     const rr = dir === "H" ? r : r + i;
     const cc = dir === "H" ? c + i : c;
     const key = rr + "," + cc;
+    if (reserved.has(key)) return false; // izah-xanasının üstünə hərf qoyula bilməz
     const existing = grid.get(key);
     if (existing !== undefined) {
       if (existing !== word[i]) return false;
     } else {
       if (dir === "H") {
-        if (grid.get(rr - 1 + "," + cc) !== undefined) return false;
-        if (grid.get(rr + 1 + "," + cc) !== undefined) return false;
+        if (grid.get((rr - 1) + "," + cc) !== undefined) return false;
+        if (grid.get((rr + 1) + "," + cc) !== undefined) return false;
       } else {
         if (grid.get(rr + "," + (cc - 1)) !== undefined) return false;
         if (grid.get(rr + "," + (cc + 1)) !== undefined) return false;
@@ -25,18 +26,28 @@ function canPlace(grid, word, r, c, dir) {
     if (grid.get(r + "," + (c - 1)) !== undefined) return false;
     if (grid.get(r + "," + (c + word.length)) !== undefined) return false;
   } else {
-    if (grid.get(r - 1 + "," + c) !== undefined) return false;
-    if (grid.get(r + word.length + "," + c) !== undefined) return false;
+    if (grid.get((r - 1) + "," + c) !== undefined) return false;
+    if (grid.get((r + word.length) + "," + c) !== undefined) return false;
   }
+  // Bu sözün izah-xanası mövcud hərfin üstünə düşməməlidir (paylaşılan izah-xanası OK-dir)
+  const clueR = dir === "H" ? r : r - 1;
+  const clueC = dir === "H" ? c - 1 : c;
+  if (grid.get(clueR + "," + clueC) !== undefined) return false;
   return true;
 }
 
-function place(grid, word, r, c, dir) {
+function placeClued(grid, reserved, wordObj) {
+  const { word, row, col, dir } = wordObj;
   for (let i = 0; i < word.length; i++) {
-    const rr = dir === "H" ? r : r + i;
-    const cc = dir === "H" ? c + i : c;
+    const rr = dir === "H" ? row : row + i;
+    const cc = dir === "H" ? col + i : col;
     grid.set(rr + "," + cc, word[i]);
   }
+  const clueR = dir === "H" ? row : row - 1;
+  const clueC = dir === "H" ? col - 1 : col;
+  wordObj.clueRow = clueR;
+  wordObj.clueCol = clueC;
+  reserved.add(clueR + "," + clueC);
 }
 
 function generateLayout(wordPairs) {
@@ -44,11 +55,14 @@ function generateLayout(wordPairs) {
   words.sort((a, b) => b[0].length - a[0].length);
 
   const grid = new Map();
+  const reserved = new Set();
   const placedLocal = [];
 
   const [firstWord, firstClue] = words[0];
-  place(grid, firstWord, 0, 0, "H");
-  placedLocal.push({ word: firstWord, clue: firstClue, row: 0, col: 0, dir: "H" });
+  // Lövbər söz sütun 1-dən başlayır ki, sütun 0 onun öz izah-xanası olsun
+  const first = { word: firstWord, clue: firstClue, row: 0, col: 1, dir: "H" };
+  placeClued(grid, reserved, first);
+  placedLocal.push(first);
 
   let remaining = words.slice(1);
 
@@ -65,21 +79,22 @@ function generateLayout(wordPairs) {
             let r, c;
             if (dir === "V") { r = pw.row - j; c = pw.col + i; }
             else { r = pw.row + i; c = pw.col - j; }
-            if (canPlace(grid, word, r, c, dir)) candidates.push({ r, c, dir });
+            if (canPlaceClued(grid, reserved, word, r, c, dir)) candidates.push({ r, c, dir });
           }
         }
       }
       if (candidates.length > 0) {
         const pick = candidates[Math.floor(Math.random() * candidates.length)];
-        place(grid, word, pick.r, pick.c, pick.dir);
-        placedLocal.push({ word, clue, row: pick.r, col: pick.c, dir: pick.dir });
+        const wordObj = { word, clue, row: pick.r, col: pick.c, dir: pick.dir };
+        placeClued(grid, reserved, wordObj);
+        placedLocal.push(wordObj);
       } else {
         stillRemaining.push([word, clue]);
       }
     }
     remaining = stillRemaining;
   }
-  return { grid, placed: placedLocal };
+  return { grid, reserved, placed: placedLocal };
 }
 
 function pickWords(dictWords, n) {
@@ -88,6 +103,14 @@ function pickWords(dictWords, n) {
   shuffled.sort((a, b) => b[0].length - a[0].length);
   const top = shuffled.slice(0, Math.min(shuffled.length, n * 3)).sort(() => Math.random() - 0.5);
   return top.slice(0, n);
+}
+
+function cellsOf(p) {
+  const cells = [];
+  for (let i = 0; i < p.word.length; i++) {
+    cells.push(p.dir === "H" ? [p.row, p.col + i] : [p.row + i, p.col]);
+  }
+  return cells;
 }
 
 /* ============ Təkrarsızlıq — səviyyə üzrə yadda saxlanılır ============ */
@@ -105,17 +128,15 @@ function resetUsed(level) {
   try { localStorage.removeItem(usedKey(level)); } catch {}
 }
 
-/* ============ Panel rəngi — platforma ilə uyğun (dəyişməz) ============ */
+/* ============ Rənglər ============ */
 const T = {
-  card: "rgba(255,255,255,0.85)",
-  border: "rgba(0,168,150,0.28)",
   accent: "#00A896",
-  accentSoft: "rgba(0,168,150,0.14)",
   warm: "#FF8C00",
-  warmSoft: "rgba(255,140,0,0.14)",
+  warmSoft: "rgba(255,140,0,0.16)",
   navy: "#1B2430",
   text: "#2A3D3C",
   textSoft: "rgba(42,61,60,0.62)",
+  border: "rgba(0,168,150,0.28)",
 };
 
 /* ============ Krossvordun DAXİLİ görünüşü — köhnə kitab üslubu ============ */
@@ -123,9 +144,7 @@ const P = {
   paper: "#F2EBDD",
   paperLine: "#E1D6BE",
   ink: "#1B2430",
-  ink2: "#232F40",
   gold: "#C9A227",
-  numColor: "#8A7F63",
   active: "#FDEBC8",
   goodBg: "#DCEDE6", goodText: "#3F6E5A",
   badBg: "#F6DEDC", badText: "#8A3A34",
@@ -133,6 +152,7 @@ const P = {
 
 const LEVELS = ["A1", "A2", "B1", "B2"];
 const COUNT_OPTIONS = [8, 12, 16, 20];
+const CELL = 32;
 
 export default function Krossvord({ portalStyles, SectionHeader, session }) {
   const [level, setLevel] = useState("A1");
@@ -146,10 +166,9 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
   const [dims, setDims] = useState({ rows: 0, cols: 0, minR: 0, minC: 0 });
   const [cellValues, setCellValues] = useState({});
   const [cellStatus, setCellStatus] = useState({});
-  const [selected, setSelected] = useState(null); // {cells:[[r,c]...], dir, number}
+  const [activeWord, setActiveWord] = useState(null);   // hazırda açıq panelin sözü
+  const [chooserCell, setChooserCell] = useState(null);  // 2 sahibli izah-xanası basılanda seçim paneli
   const [xpAwarded, setXpAwarded] = useState(false);
-
-  const inputRefs = useRef({});
 
   useEffect(() => {
     setLoading(true);
@@ -184,26 +203,18 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     }
 
     let rMin = Infinity, rMax = -Infinity, cMin = Infinity, cMax = -Infinity;
-    for (const key of best.grid.keys()) {
+    const allKeys = [...best.grid.keys(), ...best.reserved];
+    for (const key of allKeys) {
       const [r, c] = key.split(",").map(Number);
       rMin = Math.min(rMin, r); rMax = Math.max(rMax, r);
       cMin = Math.min(cMin, c); cMax = Math.max(cMax, c);
     }
     const minR = rMin, minC = cMin, rows = rMax - rMin + 1, cols = cMax - cMin + 1;
-    const placed = best.placed.map((p) => ({ ...p, row: p.row - minR, col: p.col - minC }));
-
-    const has = (r, c) => best.grid.has((r + minR) + "," + (c + minC));
-    const numberOf = new Map();
-    let counter = 1;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (!has(r, c)) continue;
-        const startsH = !has(r, c - 1) && has(r, c + 1);
-        const startsV = !has(r - 1, c) && has(r + 1, c);
-        if (startsH || startsV) numberOf.set(r + "," + c, counter++);
-      }
-    }
-    placed.forEach((p) => { p.number = numberOf.get(p.row + "," + p.col); });
+    const placed = best.placed.map((p) => ({
+      ...p,
+      row: p.row - minR, col: p.col - minC,
+      clueRow: p.clueRow - minR, clueCol: p.clueCol - minC,
+    }));
 
     addUsed(level, placed.map((p) => p.word));
     setSolutionGrid(best.grid);
@@ -211,15 +222,25 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     setDims({ rows, cols, minR, minC });
     setCellValues({});
     setCellStatus({});
-    setSelected(null);
+    setActiveWord(null);
+    setChooserCell(null);
     setXpAwarded(false);
-    inputRefs.current = {};
     setStatusMsg(`${placed.length} söz yerləşdirildi`);
   }, [dictWords, level, count]);
 
   useEffect(() => { if (dictWords.length > 0) buildPuzzle(); }, [dictWords]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function has(r, c) { return solutionGrid.has((r + dims.minR) + "," + (c + dims.minC)); }
+
+  const clueOwnersMap = useMemo(() => {
+    const m = new Map();
+    placedWords.forEach((p) => {
+      const key = p.clueRow + "," + p.clueCol;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key).push(p);
+    });
+    return m;
+  }, [placedWords]);
 
   function wordAt(r, c, dir) {
     return placedWords.find((p) => {
@@ -229,86 +250,76 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     });
   }
 
-  function selectAt(r, c, toggle) {
+  function openWord(w) {
+    if (!w) return;
+    setChooserCell(null);
+    setActiveWord(w);
+  }
+
+  function closePanel() {
+    // Diqqət: cellValues-a toxunmuruq — yazılmış hərflər olduğu kimi qalır
+    setActiveWord(null);
+    setChooserCell(null);
+  }
+
+  function onLetterClick(r, c) {
     const h = wordAt(r, c, "H");
     const v = wordAt(r, c, "V");
-    let target;
-    if (selected && toggle && selected.dir === "H" && h && v) target = v;
-    else if (selected && toggle && selected.dir === "V" && h && v) target = h;
-    else target = h || v;
-    if (!target) return;
-    const cells = [];
-    for (let i = 0; i < target.word.length; i++) {
-      cells.push(target.dir === "H" ? [target.row, target.col + i] : [target.row + i, target.col]);
+    if (h && v) {
+      if (activeWord && activeWord === h) { openWord(v); return; }
+      if (activeWord && activeWord === v) { openWord(h); return; }
+      openWord(h);
+      return;
     }
-    setSelected({ cells, dir: target.dir, number: target.number });
+    openWord(h || v || null);
   }
 
-  function selectWord(p) {
-    const cells = [];
-    for (let i = 0; i < p.word.length; i++) {
-      cells.push(p.dir === "H" ? [p.row, p.col + i] : [p.row + i, p.col]);
-    }
-    setSelected({ cells, dir: p.dir, number: p.number });
+  function onClueClick(r, c) {
+    const owners = clueOwnersMap.get(r + "," + c);
+    if (!owners || owners.length === 0) return;
+    if (owners.length === 1) { openWord(owners[0]); return; }
+    setActiveWord(null);
+    setChooserCell({ key: r + "," + c, owners });
   }
 
-  function isCellActive(r, c) {
-    if (!selected) return false;
-    return selected.cells.some(([rr, cc]) => rr === r && cc === c);
+  function currentWordValue(w) {
+    return cellsOf(w).map(([r, c]) => cellValues[r + "," + c] || "").join("");
   }
 
-  function focusCell(r, c) {
-    const el = inputRefs.current[r + "," + c];
-    if (el) { el.focus(); el.select && el.select(); }
-  }
-
-  function onCellChange(r, c, val) {
-    const letter = val.slice(-1).toUpperCase();
-    setCellValues((prev) => ({ ...prev, [r + "," + c]: letter }));
-    setCellStatus((prev) => { const n = { ...prev }; delete n[r + "," + c]; return n; });
-    if (!letter || !selected) return;
-    const idx = selected.cells.findIndex(([rr, cc]) => rr === r && cc === c);
-    if (idx >= 0 && idx < selected.cells.length - 1) {
-      const [nr, nc] = selected.cells[idx + 1];
-      focusCell(nr, nc);
-    }
-  }
-
-  function onCellKeyDown(e, r, c) {
-    const dirs = { ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] };
-    if (dirs[e.key]) {
-      e.preventDefault();
-      const [dr, dc] = dirs[e.key];
-      if (has(r + dr, c + dc)) focusCell(r + dr, c + dc);
-    } else if (e.key === "Backspace" && !cellValues[r + "," + c] && selected) {
-      const idx = selected.cells.findIndex(([rr, cc]) => rr === r && cc === c);
-      if (idx > 0) {
-        e.preventDefault();
-        const [pr, pc] = selected.cells[idx - 1];
-        const pKey = pr + "," + pc;
-        setCellValues((prev) => { const n = { ...prev }; delete n[pKey]; return n; });
-        setCellStatus((prev) => { const n = { ...prev }; delete n[pKey]; return n; });
-        focusCell(pr, pc);
-      }
-    }
+  function handlePanelInputChange(e) {
+    if (!activeWord) return;
+    const raw = e.target.value.toUpperCase().replace(/[^A-ZÄÖÜß]/g, "").slice(0, activeWord.word.length);
+    const cells = cellsOf(activeWord);
+    setCellValues((prev) => {
+      const next = { ...prev };
+      cells.forEach(([r, c], i) => {
+        const key = r + "," + c;
+        const ch = raw[i];
+        if (ch) next[key] = ch; else delete next[key];
+      });
+      return next;
+    });
+    setCellStatus((prev) => {
+      const next = { ...prev };
+      cells.forEach(([r, c]) => delete next[r + "," + c]);
+      return next;
+    });
   }
 
   function checkAnswers() {
     const next = {};
     let allCells = 0, correctCells = 0;
     placedWords.forEach((p) => {
-      for (let i = 0; i < p.word.length; i++) {
-        const r = p.dir === "H" ? p.row : p.row + i;
-        const c = p.dir === "H" ? p.col + i : p.col;
+      cellsOf(p).forEach(([r, c]) => {
         const key = r + "," + c;
         allCells++;
         const typed = cellValues[key];
-        if (!typed) continue;
+        if (!typed) return;
         const correct = solutionGrid.get((r + dims.minR) + "," + (c + dims.minC));
         const ok = typed === correct;
         next[key] = ok ? "correct" : "incorrect";
         if (ok) correctCells++;
-      }
+      });
     });
     setCellStatus(next);
 
@@ -324,22 +335,24 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
   function clearAnswers() {
     setCellValues({});
     setCellStatus({});
+    setActiveWord(null);
+    setChooserCell(null);
   }
 
   function revealAnswers() {
     const nextVals = { ...cellValues };
     const nextStatus = { ...cellStatus };
     placedWords.forEach((p) => {
-      for (let i = 0; i < p.word.length; i++) {
-        const r = p.dir === "H" ? p.row : p.row + i;
-        const c = p.dir === "H" ? p.col + i : p.col;
+      cellsOf(p).forEach(([r, c]) => {
         const key = r + "," + c;
         nextVals[key] = solutionGrid.get((r + dims.minR) + "," + (c + dims.minC));
         nextStatus[key] = "correct";
-      }
+      });
     });
     setCellValues(nextVals);
     setCellStatus(nextStatus);
+    setActiveWord(null);
+    setChooserCell(null);
   }
 
   const pillBtn = (active) => ({
@@ -353,33 +366,13 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     border: `1px solid ${primary ? T.warm : T.border}`,
   });
 
-  const allClues = placedWords
-    .slice()
-    .sort((a, b) => a.number - b.number || (a.dir === "H" ? -1 : 1));
-
-  const ClueList = ({ items }) => (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
-      {items.map((p) => (
-        <li key={p.dir + p.number}
-          onClick={() => { selectWord(p); focusCell(p.row, p.col); }}
-          style={{
-            fontSize: 12.5, lineHeight: 1.35, cursor: "pointer", padding: "3px 5px", borderRadius: 4,
-            background: selected && selected.number === p.number && selected.dir === p.dir ? P.active : "transparent",
-            color: P.ink,
-          }}>
-          <b style={{ color: P.gold, marginRight: 4, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
-            {p.number}{p.dir === "H" ? "\u2192" : "\u2193"}
-          </b>
-          {p.clue} <span style={{ opacity: 0.45 }}>({p.word.length})</span>
-        </li>
-      ))}
-    </ul>
-  );
+  const totalWords = placedWords.length;
+  const filledWords = placedWords.filter((p) => cellsOf(p).every(([r, c]) => !!cellValues[r + "," + c])).length;
 
   return (
     <section style={portalStyles ? portalStyles.section : { maxWidth: 900, margin: "0 auto" }}>
       {SectionHeader
-        ? <SectionHeader type="krossvord" desc="Alman dili krossvordu — sözləri kəsişmə üzrə tap" />
+        ? <SectionHeader type="krossvord" desc="Alman dili krossvordu — skandinav üslubu, izahlar şəbəkə daxilində" />
         : <h2 style={{ fontFamily: "'Fraunces', serif", color: T.navy, marginBottom: 4 }}>Krossvord</h2>}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
@@ -387,7 +380,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
           <button key={lvl} onClick={() => setLevel(lvl)} style={pillBtn(level === lvl)}>{lvl}</button>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
         {COUNT_OPTIONS.map((n) => (
           <button key={n} onClick={() => setCount(n)} style={pillBtn(count === n)}>{n} söz</button>
         ))}
@@ -395,86 +388,141 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
         <button onClick={checkAnswers} style={actionBtn(false)}>Yoxla</button>
         <button onClick={clearAnswers} style={actionBtn(false)}>Təmizlə</button>
         <button onClick={revealAnswers} style={actionBtn(false)}>Cavabları göstər</button>
-        {statusMsg && <span style={{ fontSize: 12, color: T.textSoft, marginLeft: "auto" }}>{statusMsg}</span>}
       </div>
+
+      {totalWords > 0 && (
+        <p style={{ fontSize: 12.5, color: T.textSoft, margin: "0 0 10px", fontWeight: 600 }}>
+          {filledWords}/{totalWords} söz tapıldı{statusMsg ? ` · ${statusMsg}` : ""}
+        </p>
+      )}
 
       {loading ? (
         <p style={{ color: T.textSoft, fontSize: 14 }}>Yüklənir...</p>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(240px,1fr) 260px", gap: 22, alignItems: "start" }}
-             className="krossvord-board">
+        <div style={{
+          background: P.paper, borderRadius: 8, padding: 10,
+          boxShadow: "0 14px 30px -18px rgba(27,36,48,0.45)", overflow: "auto",
+          paddingBottom: activeWord || chooserCell ? 190 : 10,
+        }}>
           <div style={{
-            background: P.paper, borderRadius: 8, padding: 14,
-            boxShadow: "0 14px 30px -18px rgba(27,36,48,0.45)", overflow: "auto",
+            display: "grid",
+            gridTemplateColumns: `repeat(${dims.cols || 1}, ${CELL}px)`,
+            gap: 0, width: "max-content", margin: "0 auto",
+            border: `2px solid ${P.ink}`,
           }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${dims.cols || 1}, 28px)`,
-              gap: 0, width: "max-content", margin: "0 auto",
-              border: `2px solid ${P.ink}`,
-            }}>
-              {Array.from({ length: dims.rows }).map((_, r) =>
-                Array.from({ length: dims.cols }).map((_, c) => {
-                  if (!has(r, c)) {
-                    return <div key={r + "-" + c} style={{ width: 28, height: 28, background: P.ink }} />;
-                  }
-                  const key = r + "," + c;
-                  const status = cellStatus[key];
-                  const active = isCellActive(r, c);
-                  const startWords = placedWords.filter((p) => p.row === r && p.col === c && p.number);
-                  const numAt = startWords[0]?.number;
-                  const startsH = startWords.some((p) => p.dir === "H");
-                  const startsV = startWords.some((p) => p.dir === "V");
-                  return (
-                    <div key={key} style={{
-                      width: 28, height: 28, position: "relative",
-                      background: status === "correct" ? P.goodBg : status === "incorrect" ? P.badBg : (active ? P.active : "#fff"),
-                      border: `1px solid ${P.paperLine}`, boxSizing: "border-box",
-                    }}>
-                      {numAt && (
-                        <span style={{ position: "absolute", top: 0, left: 1.5, fontSize: 7, color: P.numColor, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>
-                          {numAt}{startsH ? "\u2192" : ""}{startsV ? "\u2193" : ""}
-                        </span>
-                      )}
-                      <input
-                        ref={(el) => { if (el) inputRefs.current[key] = el; }}
-                        maxLength={1}
-                        value={cellValues[key] || ""}
-                        onChange={(e) => onCellChange(r, c, e.target.value)}
-                        onClick={() => selectAt(r, c, true)}
-                        onKeyDown={(e) => onCellKeyDown(e, r, c)}
-                        style={{
-                          width: "100%", height: "100%", border: "none", background: "transparent",
-                          textAlign: "center", textTransform: "uppercase", outline: "none",
-                          fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 13.5,
-                          color: status === "correct" ? P.goodText : status === "incorrect" ? P.badText : P.ink,
-                        }}
-                      />
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+            {Array.from({ length: dims.rows }).map((_, r) =>
+              Array.from({ length: dims.cols }).map((_, c) => {
+                const key = r + "," + c;
 
-          <div style={{
-            background: P.paper, borderRadius: 8, padding: "14px 16px",
-            boxShadow: "0 14px 30px -18px rgba(27,36,48,0.45)",
-          }}>
-            <h4 style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
-              color: P.gold, margin: "0 0 8px", borderBottom: `1px solid ${P.paperLine}`, paddingBottom: 5,
-            }}>İzahlar</h4>
-            <ClueList items={allClues} />
+                if (has(r, c)) {
+                  const status = cellStatus[key];
+                  const isActive = activeWord && cellsOf(activeWord).some(([rr, cc]) => rr === r && cc === c);
+                  return (
+                    <button key={key} onClick={() => onLetterClick(r, c)}
+                      style={{
+                        width: CELL, height: CELL, border: `1px solid ${P.paperLine}`, boxSizing: "border-box",
+                        background: status === "correct" ? P.goodBg : status === "incorrect" ? P.badBg : (isActive ? P.active : "#fff"),
+                        fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 14, padding: 0,
+                        color: status === "correct" ? P.goodText : status === "incorrect" ? P.badText : P.ink,
+                        cursor: "pointer",
+                      }}>
+                      {cellValues[key] || ""}
+                    </button>
+                  );
+                }
+
+                const owners = clueOwnersMap.get(key);
+                if (owners && owners.length) {
+                  const hasH = owners.some((w) => w.dir === "H");
+                  const hasV = owners.some((w) => w.dir === "V");
+                  const isActiveClue = activeWord && (activeWord.clueRow === r && activeWord.clueCol === c);
+                  return (
+                    <button key={key} onClick={() => onClueClick(r, c)}
+                      style={{
+                        width: CELL, height: CELL, border: `1px solid ${P.paperLine}`, boxSizing: "border-box",
+                        background: isActiveClue ? T.warm : T.warmSoft,
+                        display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
+                        cursor: "pointer",
+                      }}>
+                      <span style={{ fontSize: 12, color: isActiveClue ? "#fff" : T.warm, fontWeight: 800, lineHeight: 1 }}>
+                        {hasH ? "\u2192" : ""}{hasV ? "\u2193" : ""}
+                      </span>
+                    </button>
+                  );
+                }
+
+                return <div key={key} style={{ width: CELL, height: CELL, background: P.ink }} />;
+              })
+            )}
           </div>
         </div>
       )}
 
-      <style>{`
-        @media (max-width: 760px) {
-          .krossvord-board { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+      {/* ---------- Aşağıda sabit panel: aktiv sözün izahı + giriş sahəsi ---------- */}
+      {activeWord && (
+        <div style={panelWrapStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.warm, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {activeWord.dir === "H" ? "→ Üfüqi" : "↓ Şaquli"} · {activeWord.word.length} hərf
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 14.5, color: P.ink, lineHeight: 1.35 }}>{activeWord.clue}</p>
+            </div>
+            <button onClick={closePanel} style={closeBtnStyle} aria-label="Bağla">×</button>
+          </div>
+          <input
+            key={activeWord.dir + activeWord.row + activeWord.col}
+            autoFocus
+            value={currentWordValue(activeWord)}
+            onChange={handlePanelInputChange}
+            maxLength={activeWord.word.length}
+            style={panelInputStyle}
+          />
+        </div>
+      )}
+
+      {/* ---------- Aşağıda sabit panel: 2 sahibli izah-xanası üçün seçim ---------- */}
+      {chooserCell && (
+        <div style={panelWrapStyle}>
+          <p style={{ margin: "0 0 10px", fontSize: 12.5, fontWeight: 700, color: T.textSoft }}>Hansı sözü açmaq istəyirsiniz?</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {chooserCell.owners.map((w) => (
+              <button key={w.dir} onClick={() => openWord(w)} style={chooserOptionStyle}>
+                <span style={{ fontWeight: 800, color: T.warm, marginRight: 6 }}>{w.dir === "H" ? "→" : "↓"}</span>
+                {w.clue.length > 34 ? w.clue.slice(0, 34) + "…" : w.clue}
+              </button>
+            ))}
+          </div>
+          <button onClick={closePanel} style={{ ...actionBtn(false), marginTop: 10, width: "100%" }}>Bağla</button>
+        </div>
+      )}
     </section>
   );
 }
+
+const panelWrapStyle = {
+  position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
+  background: "#fff", borderTop: "1px solid rgba(0,0,0,0.1)",
+  boxShadow: "0 -8px 24px rgba(0,0,0,0.12)",
+  padding: "14px 16px calc(14px + env(safe-area-inset-bottom))",
+};
+
+const closeBtnStyle = {
+  width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+  border: "none", background: "rgba(42,61,60,0.08)", color: T.text,
+  fontSize: 17, lineHeight: 1, cursor: "pointer",
+};
+
+const panelInputStyle = {
+  width: "100%", padding: "12px 14px", borderRadius: 10,
+  border: `2px solid ${T.accent}`, outline: "none",
+  fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 18,
+  textTransform: "uppercase", letterSpacing: "0.14em", color: P.ink,
+  boxSizing: "border-box",
+};
+
+const chooserOptionStyle = {
+  flex: 1, textAlign: "left", padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+  background: "rgba(255,140,0,0.08)", border: `1px solid ${T.warm}`,
+  fontSize: 12.5, color: T.text, lineHeight: 1.3,
+};
