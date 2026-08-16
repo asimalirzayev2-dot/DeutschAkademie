@@ -86,6 +86,31 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   const [answers3, setAnswers3] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [progress, setProgress] = useState({});
+  const [levelStats, setLevelStats] = useState({});
+
+  useEffect(() => {
+    sb(`listening_units?select=level`).then((rows) => {
+      const counts = {};
+      (rows || []).forEach((r) => { counts[r.level] = (counts[r.level] || 0) + 1; });
+      setLevelStats((prev) => {
+        const next = { ...prev };
+        LEVELS.forEach((l) => { next[l] = { ...(next[l] || {}), total: counts[l] || 0 }; });
+        return next;
+      });
+    }).catch(() => {});
+
+    if (session?.user?.id) {
+      sb(`listening_progress?user_id=eq.${session.user.id}&select=level`).then((rows) => {
+        const counts = {};
+        (rows || []).forEach((r) => { counts[r.level] = (counts[r.level] || 0) + 1; });
+        setLevelStats((prev) => {
+          const next = { ...prev };
+          LEVELS.forEach((l) => { next[l] = { ...(next[l] || {}), done: counts[l] || 0 }; });
+          return next;
+        });
+      }).catch(() => {});
+    }
+  }, [session]);
 
   useEffect(() => {
     if (!level) return;
@@ -189,9 +214,21 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
 
   // ---------- Seviyye ekrani ----------
   if (screen === "level") {
+    const LEVEL_META = {
+      A1: { title: "Başlanğıc Səviyyə" },
+      A2: { title: "Əsas Səviyyə" },
+      B1: { title: "Orta Səviyyə" },
+      B2: { title: "Yuxarı Səviyyə" },
+    };
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 18 }}>
+        <style>{`
+          .dl-level-card { transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease; }
+          .dl-level-card:hover { box-shadow: 0 14px 30px rgba(0,51,102,0.12); transform: translateY(-2px); border-color: rgba(0,168,150,0.45); }
+          .dl-level-arrow { transition: background .2s ease, color .2s ease, transform .2s ease; }
+          .dl-level-card:hover .dl-level-arrow { background: ${T.accent}; color: #fff; transform: translateX(2px); }
+        `}</style>
+        <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 9, padding: "7px 18px",
             borderRadius: 22, background: "rgba(0,168,150,0.14)", border: `1px solid ${T.accent}`,
@@ -205,17 +242,55 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
             TELC/Goethe formatında dinləmə hazırlığı
           </p>
         </div>
-        <div style={{ display: "grid", gap: 10 }}>
-          {LEVELS.map((l) => (
-            <button key={l} onClick={() => { setLevel(l); setScreen("groups"); }} style={{
-              ...box, textAlign: "left", cursor: "pointer", display: "flex",
-              justifyContent: "space-between", alignItems: "center",
-            }}>
-              <span style={{ fontWeight: 800, fontSize: 16, color: T.navy }}>{l}</span>
-              <span style={{ color: T.textSoft, fontSize: 13 }}>→</span>
-            </button>
-          ))}
-        </div>
+        <div style={{ display: "grid", gap: 12 }}>
+          {LEVELS.map((l) => {
+            const stat = levelStats[l] || {};
+            const total = stat.total || 0;
+            const done = stat.done || 0;
+            const pct = total > 0 && done > 0 ? Math.round((done / total) * 100) : 0;
+            const started = done > 0;
+            return (
+              <button key={l} className="dl-level-card" onClick={() => { setLevel(l); setScreen("groups"); }} style={{
+                position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "16px 16px 16px 20px", borderRadius: 18, cursor: "pointer", textAlign: "left",
+                background: "rgba(255,255,255,0.75)", backdropFilter: "blur(10px)",
+                border: `1px solid ${T.border}`, boxShadow: "0 1px 4px rgba(0,51,102,0.05)",
+                overflow: "hidden",
+              }}>
+                {started && (
+                  <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, background: T.accent }} />
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{
+                    width: 46, height: 46, borderRadius: 13, flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 900, fontSize: 16,
+                    background: started ? "rgba(0,168,150,0.12)" : "rgba(0,51,102,0.06)",
+                    color: started ? T.accent : T.navy,
+                  }}>{l}</div>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: T.navy }}>{LEVEL_META[l].title}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: T.textSoft }}>
+                      {total > 0 ? `${total} Fəsil` : "Tezliklə"}{started ? ` • ${done} tamamlandı` : ""}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  {started && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 999,
+                      background: "rgba(0,168,150,0.15)", color: T.accent,
+                    }}>{pct}%</span>
+                  )}
+                  <span className="dl-level-arrow" style={{
+                    width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "rgba(42,61,60,0.06)", color: T.textSoft, fontSize: 15,
+                  }}>→</span>
+                </div>
+              </button>
+            );
+          })}</div>
       </section>
     );
   }
