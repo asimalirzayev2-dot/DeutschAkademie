@@ -143,6 +143,7 @@ const T = {
 const P = {
   paper: "#F2EBDD",
   paperLine: "#E1D6BE",
+  wall: "#E7DCC2",
   ink: "#1B2430",
   gold: "#C9A227",
   active: "#FDEBC8",
@@ -163,7 +164,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
 
   const [solutionGrid, setSolutionGrid] = useState(new Map());
   const [placedWords, setPlacedWords] = useState([]);
-  const [dims, setDims] = useState({ rows: 0, cols: 0, minR: 0, minC: 0 });
+  const [dims, setDims] = useState({ rows: 0, cols: 0 });
   const [cellValues, setCellValues] = useState({});
   const [cellStatus, setCellStatus] = useState({});
   const [activeWord, setActiveWord] = useState(null);   // hazırda açıq panelin sözü
@@ -209,17 +210,41 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
       rMin = Math.min(rMin, r); rMax = Math.max(rMax, r);
       cMin = Math.min(cMin, c); cMax = Math.max(cMax, c);
     }
-    const minR = rMin, minC = cMin, rows = rMax - rMin + 1, cols = cMax - cMin + 1;
-    const placed = best.placed.map((p) => ({
+    const minR = rMin, minC = cMin;
+    const shifted = best.placed.map((p) => ({
       ...p,
       row: p.row - minR, col: p.col - minC,
       clueRow: p.clueRow - minR, clueCol: p.clueCol - minC,
     }));
 
+    // Tamamilə boş sətir/sütunları at — hər sözün özü toxunduğu sətir/sütunu "dolu" edir,
+    // ona görə heç bir sözün ortasından kəsmir, sadəcə əhatəli boşluqları sıxır
+    const occRows = new Set(), occCols = new Set();
+    shifted.forEach((p) => {
+      cellsOf(p).forEach(([r, c]) => { occRows.add(r); occCols.add(c); });
+      occRows.add(p.clueRow); occCols.add(p.clueCol);
+    });
+    const sortedRows = [...occRows].sort((a, b) => a - b);
+    const sortedCols = [...occCols].sort((a, b) => a - b);
+    const rowMap = new Map(sortedRows.map((old, i) => [old, i]));
+    const colMap = new Map(sortedCols.map((old, i) => [old, i]));
+
+    const placed = shifted.map((p) => ({
+      ...p,
+      row: rowMap.get(p.row), col: colMap.get(p.col),
+      clueRow: rowMap.get(p.clueRow), clueCol: colMap.get(p.clueCol),
+    }));
+    const rows = sortedRows.length, cols = sortedCols.length;
+
+    const compactSolution = new Map();
+    placed.forEach((p) => {
+      cellsOf(p).forEach(([r, c], i) => { compactSolution.set(r + "," + c, p.word[i]); });
+    });
+
     addUsed(level, placed.map((p) => p.word));
-    setSolutionGrid(best.grid);
+    setSolutionGrid(compactSolution);
     setPlacedWords(placed);
-    setDims({ rows, cols, minR, minC });
+    setDims({ rows, cols });
     setCellValues({});
     setCellStatus({});
     setActiveWord(null);
@@ -230,7 +255,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
 
   useEffect(() => { if (dictWords.length > 0) buildPuzzle(); }, [dictWords]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function has(r, c) { return solutionGrid.has((r + dims.minR) + "," + (c + dims.minC)); }
+  function has(r, c) { return solutionGrid.has(r + "," + c); }
 
   const clueOwnersMap = useMemo(() => {
     const m = new Map();
@@ -315,7 +340,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
         allCells++;
         const typed = cellValues[key];
         if (!typed) return;
-        const correct = solutionGrid.get((r + dims.minR) + "," + (c + dims.minC));
+        const correct = solutionGrid.get(r + "," + c);
         const ok = typed === correct;
         next[key] = ok ? "correct" : "incorrect";
         if (ok) correctCells++;
@@ -345,7 +370,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     placedWords.forEach((p) => {
       cellsOf(p).forEach(([r, c]) => {
         const key = r + "," + c;
-        nextVals[key] = solutionGrid.get((r + dims.minR) + "," + (c + dims.minC));
+        nextVals[key] = solutionGrid.get(r + "," + c);
         nextStatus[key] = "correct";
       });
     });
@@ -436,22 +461,31 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
                   const hasH = owners.some((w) => w.dir === "H");
                   const hasV = owners.some((w) => w.dir === "V");
                   const isActiveClue = activeWord && (activeWord.clueRow === r && activeWord.clueCol === c);
+                  const clueText = owners.length === 1 ? owners[0].clue : owners.map((w) => w.clue).join(" / ");
                   return (
                     <button key={key} onClick={() => onClueClick(r, c)}
                       style={{
                         width: CELL, height: CELL, border: `1px solid ${P.paperLine}`, boxSizing: "border-box",
                         background: isActiveClue ? T.warm : T.warmSoft,
-                        display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
-                        cursor: "pointer",
+                        display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start",
+                        padding: "1px 2px", cursor: "pointer", overflow: "hidden", textAlign: "left",
                       }}>
-                      <span style={{ fontSize: 12, color: isActiveClue ? "#fff" : T.warm, fontWeight: 800, lineHeight: 1 }}>
+                      <span style={{ fontSize: 6, color: isActiveClue ? "#fff" : T.warm, fontWeight: 800, lineHeight: 1 }}>
                         {hasH ? "\u2192" : ""}{hasV ? "\u2193" : ""}
                       </span>
+                      <span style={{
+                        fontSize: 5.2, lineHeight: 1.05, color: isActiveClue ? "#fff" : P.ink,
+                        display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical",
+                        overflow: "hidden", wordBreak: "break-word", fontFamily: "'IBM Plex Mono', monospace",
+                      }}>{clueText}</span>
                     </button>
                   );
                 }
 
-                return <div key={key} style={{ width: CELL, height: CELL, background: P.ink }} />;
+                return <div key={key} style={{
+                  width: CELL, height: CELL, background: P.wall,
+                  boxShadow: "inset 0 0 3px rgba(27,36,48,0.18)",
+                }} />;
               })
             )}
           </div>
@@ -502,8 +536,9 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
 
 const panelWrapStyle = {
   position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
-  background: "#fff", borderTop: "1px solid rgba(0,0,0,0.1)",
-  boxShadow: "0 -8px 24px rgba(0,0,0,0.12)",
+  background: "linear-gradient(180deg, #FFFFFF 0%, #FBF7ED 100%)",
+  borderTop: `3px solid ${T.accent}`,
+  boxShadow: "0 -10px 28px rgba(27,36,48,0.18)",
   padding: "14px 16px calc(14px + env(safe-area-inset-bottom))",
 };
 
