@@ -1907,7 +1907,7 @@ const portalStyles = {
   blob: { position: "absolute", width: 380, height: 380, borderRadius: "50%", filter: "blur(85px)", opacity: 0.45, pointerEvents: "none" },
   angular: { position: "absolute", width: 130, height: 130, opacity: 0.28, filter: "blur(1px)", pointerEvents: "none", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" },
   angularOutline: { position: "absolute", width: 80, height: 80, border: "2px solid rgba(0,168,150,0.4)", opacity: 0.6, pointerEvents: "none" },
-  content: { position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "8px 20px calc(96px + env(safe-area-inset-bottom))" },
+  content: { position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "calc(74px + env(safe-area-inset-top)) 20px calc(96px + env(safe-area-inset-bottom))" },
   hero: { textAlign: "center", padding: "48px 0 44px" },
   emblem: { display: "flex", justifyContent: "center", marginBottom: 18 },
   emblemRing: {
@@ -2036,8 +2036,9 @@ const portalStyles = {
   levelPillActive: { background: "#FF8C00", color: "#F5F5DC", fontWeight: 700, borderColor: "#FF8C00" },
   footer: { textAlign: "center", opacity: 0.4, fontSize: 12.5, marginTop: 20 },
   nav: {
-    position: "relative", zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "14px 20px", gap: 12, borderBottom: "1px solid rgba(42,61,60,0.10)", background: "#FFFFFF",
+    position: "fixed", top: 0, left: 0, right: 0, zIndex: 39, display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "calc(10px + env(safe-area-inset-top)) 20px 10px", gap: 12, borderBottom: "1px solid rgba(42,61,60,0.10)", background: "#FFFFFF",
+    boxShadow: "0 2px 10px rgba(0,51,102,0.05)",
   },
   navBrand: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer" },
   navEmblem: { width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 },
