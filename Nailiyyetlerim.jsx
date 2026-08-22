@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { sbAuth } from "./supabase";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -8,19 +9,19 @@ const T = {
 };
 
 const RANKS = [
-  { min: 0,    label: "Başlanğıc Qartal", icon: "🥉" },
-  { min: 200,  label: "Uçan Qartal",      icon: "🥈" },
-  { min: 600,  label: "Qızıl Qartal",     icon: "🥇" },
-  { min: 1500, label: "Qartal Ustası",    icon: "💎" },
+  { min: 0,    tKey: "rank_beginner", icon: "🥉" },
+  { min: 200,  tKey: "rank_flying",   icon: "🥈" },
+  { min: 600,  tKey: "rank_golden",   icon: "🥇" },
+  { min: 1500, tKey: "rank_master",   icon: "💎" },
 ];
 
 const SOURCE_LABELS = {
-  oxu_anlama: { label: "Oxu Anlama", icon: "📖" },
-  krossvord: { label: "Krossvord", icon: "🔠" },
-  soz_tapmacasi: { label: "Söz Tapmacası", icon: "🐝" },
+  oxu_anlama: { tKey: "reading", icon: "📖" },
+  krossvord: { tKey: "crossword", icon: "🔠" },
+  soz_tapmacasi: { tKey: "word_puzzle", icon: "🐝" },
   flashcards: { label: "Flashcards", icon: "🃏" },
   match: { label: "Match", icon: "🎯" },
-  sentence_game: { label: "Cümlə qur", icon: "🌀" },
+  sentence_game: { tKey: "sentence_builder", icon: "🌀" },
 };
 
 function getRank(xp) {
@@ -30,6 +31,8 @@ function getRank(xp) {
 }
 
 export default function Nailiyyetlerim({ session }) {
+  const { t } = useLanguage();
+  const labelOf = (meta) => meta.tKey ? t(meta.tKey) : meta.label;
   const [loading, setLoading] = useState(true);
   const [totalXp, setTotalXp] = useState(0);
   const [bySource, setBySource] = useState({});
@@ -57,7 +60,7 @@ export default function Nailiyyetlerim({ session }) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <div style={{ ...box, textAlign: "center" }}>
-          <p style={{ fontSize: 14, color: T.textSoft }}>Nailiyyətlərini görmək üçün daxil ol.</p>
+          <p style={{ fontSize: 14, color: T.textSoft }}>{t("login_to_see_achievements")}</p>
         </div>
       </section>
     );
@@ -66,7 +69,7 @@ export default function Nailiyyetlerim({ session }) {
   if (loading) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
-        <p style={{ color: T.textSoft }}>Yüklənir...</p>
+        <p style={{ color: T.textSoft }}>{t("loading")}</p>
       </section>
     );
   }
@@ -89,7 +92,7 @@ export default function Nailiyyetlerim({ session }) {
         }}>
           <span style={{ fontSize: 17 }}>🏆</span>
           <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy }}>
-            Nailiyyətlərim
+            {t("my_achievements")}
           </span>
         </div>
       </div>
@@ -98,10 +101,10 @@ export default function Nailiyyetlerim({ session }) {
       <div style={{ ...box, textAlign: "center", padding: "28px 20px", marginBottom: 16 }}>
         <div style={{ fontSize: 44, marginBottom: 6 }}>{rank.icon}</div>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-          {rank.label}
+          {t(rank.tKey)}
         </p>
         <p style={{ fontSize: 14, color: T.textSoft, margin: "0 0 18px" }}>
-          <b style={{ color: T.accent }}>{totalXp}</b> ümumi xal
+          <b style={{ color: T.accent }}>{totalXp}</b> {t("total_points_suffix")}
         </p>
 
         {next ? (
@@ -110,12 +113,12 @@ export default function Nailiyyetlerim({ session }) {
               <div style={{ height: "100%", width: `${progressPct}%`, background: T.accent, transition: "width .4s" }} />
             </div>
             <p style={{ fontSize: 12, color: T.textSoft, margin: 0 }}>
-              {next.label}-a çatmaq üçün <b style={{ color: T.warm }}>{next.min - totalXp} xal</b> qalıb
+              {t("next_rank_label")}: {t(next.tKey)} (<b style={{ color: T.warm }}>{next.min - totalXp} {t("points_unit")}</b> {t("remaining_word")})
             </p>
           </>
         ) : (
           <p style={{ fontSize: 12.5, color: T.gold, fontWeight: 700, margin: 0 }}>
-            🎉 Ən yüksək dərəcədəsən!
+            🎉 {t("top_rank_reached")}
           </p>
         )}
       </div>
@@ -123,11 +126,11 @@ export default function Nailiyyetlerim({ session }) {
       {/* Bölmə üzrə bölgü */}
       <div style={box}>
         <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1, color: T.textSoft, margin: "0 0 14px", textTransform: "uppercase" }}>
-          Bölmə üzrə xal
+          {t("points_by_section")}
         </p>
         {sources.length === 0 ? (
           <p style={{ fontSize: 13.5, color: T.textSoft, margin: 0 }}>
-            Hələ xal qazanmamısan — Oxu Anlama, Krossvord, Flashcards və ya Söz Tapmacasında məşq et.
+            {t("no_points_yet")}
           </p>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
@@ -137,8 +140,8 @@ export default function Nailiyyetlerim({ session }) {
               return (
                 <div key={src}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-                    <span style={{ color: T.text, fontWeight: 600 }}>{meta.icon} {meta.label}</span>
-                    <span style={{ color: T.accent, fontWeight: 700 }}>{amount} xal</span>
+                    <span style={{ color: T.text, fontWeight: 600 }}>{meta.icon} {labelOf(meta)}</span>
+                    <span style={{ color: T.accent, fontWeight: 700 }}>{amount} {t("points_unit")}</span>
                   </div>
                   <div style={{ height: 5, borderRadius: 3, background: "rgba(42,61,60,0.08)", overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${pct}%`, background: T.warm }} />
