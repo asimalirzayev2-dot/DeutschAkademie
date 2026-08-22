@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { sb } from "./supabase";
 import { speakGerman, exportAnki } from "./utils";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const GUEST_SEARCH_KEY = "da_guest_dict_searches";
 
@@ -20,6 +21,7 @@ function bumpGuestSearchCount() {
 }
 
 function DictionaryView({ portalStyles, SectionHeader, guestMode, guestDailyLimit = 10 }) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [direction, setDirection] = useState("de-az"); // de-az | az-de
   const [results, setResults] = useState([]);
@@ -46,26 +48,26 @@ function DictionaryView({ portalStyles, SectionHeader, guestMode, guestDailyLimi
 
   return (
     <section style={portalStyles.section}>
-      <SectionHeader type="dictionary" desc="İki istiqamətli söz axtarışı" />
+      <SectionHeader type="dictionary" desc={t("dict_desc")} />
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <button onClick={() => setDirection("de-az")} style={{ ...portalStyles.pill, ...(direction === "de-az" ? portalStyles.pillActive : {}) }}>Alman → Azərbaycan</button>
-        <button onClick={() => setDirection("az-de")} style={{ ...portalStyles.pill, ...(direction === "az-de" ? portalStyles.pillActive : {}) }}>Azərbaycan → Alman</button>
+        <button onClick={() => setDirection("de-az")} style={{ ...portalStyles.pill, ...(direction === "de-az" ? portalStyles.pillActive : {}) }}>{t("de_to_az")}</button>
+        <button onClick={() => setDirection("az-de")} style={{ ...portalStyles.pill, ...(direction === "az-de" ? portalStyles.pillActive : {}) }}>{t("az_to_de")}</button>
       </div>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={direction === "de-az" ? "Söz axtar... (məs. Arbeit)" : "Söz axtar... (məs. iş)"}
+        placeholder={direction === "de-az" ? t("search_placeholder_de") : t("search_placeholder_az")}
         style={portalStyles.input}
         disabled={guestLimitReached}
       />
       {guestMode && !guestLimitReached && (
         <p style={{ fontSize: 12.5, opacity: 0.55, marginTop: 8 }}>
-          Qonaq kimi bu gün {guestDailyLimit - guestSearchesUsed} axtarışın qalıb — minlərlə söz bu lüğətdə mövcuddur
+          {t("guest_searches_left_prefix")} {guestDailyLimit - guestSearchesUsed} {t("guest_searches_left_suffix")}
         </p>
       )}
       {!guestMode && (
         <p style={{ fontSize: 12.5, opacity: 0.55, marginTop: 8 }}>
-          Minlərlə söz bu lüğətdə mövcuddur — axtarmaq üçün ən azı 2 hərf yaz
+          {t("dict_hint_normal")}
         </p>
       )}
       {guestLimitReached && (
@@ -75,13 +77,13 @@ function DictionaryView({ portalStyles, SectionHeader, guestMode, guestDailyLimi
         }}>
           <div style={{ fontSize: 26, marginBottom: 6 }}>🔒</div>
           <p style={{ fontSize: 13.5, margin: 0, opacity: 0.85 }}>
-            Bu günlük {guestDailyLimit} qonaq axtarışını istifadə etdin. Limitsiz axtarış üçün qeydiyyatdan keç.
+            {t("guest_limit_prefix")} {guestDailyLimit} {t("guest_limit_suffix")}
           </p>
         </div>
       )}
       {results.length > 0 && (
         <button onClick={() => exportAnki(results, direction)} style={{ ...portalStyles.pill, marginTop: 10 }}>
-          📇 Bu nəticələri Anki üçün endir
+          📇 {t("export_anki_btn")}
         </button>
       )}
       <div style={{ display: "grid", gap: 8, marginTop: 16, maxHeight: 420, overflowY: "auto" }}>
@@ -91,11 +93,11 @@ function DictionaryView({ portalStyles, SectionHeader, guestMode, guestDailyLimi
               <div style={portalStyles.dictTerm}>{r.term}</div>
               <div style={portalStyles.dictTrans}>{r.translation}</div>
             </div>
-            <button onClick={() => speakGerman(direction === "de-az" ? r.term : r.translation)} style={portalStyles.speakBtn} title="Tələffüzü dinlə">🔊</button>
+            <button onClick={() => speakGerman(direction === "de-az" ? r.term : r.translation)} style={portalStyles.speakBtn} title={t("listen_pronunciation")}>🔊</button>
           </div>
         ))}
         {query.trim().length >= 2 && results.length === 0 && !guestLimitReached && (
-          <p style={{ opacity: 0.6, fontSize: 14 }}>Nəticə tapılmadı.</p>
+          <p style={{ opacity: 0.6, fontSize: 14 }}>{t("no_results")}</p>
         )}
       </div>
     </section>
