@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { sb, sbAuthInsert } from "./supabase";
+import { useLanguage } from "./i18n/LanguageContext";
 
 /* ============ Söz yerləşdirmə mühərriki — skandinav üslubu (izah-xanaları şəbəkə daxilində) ============ */
 
@@ -156,6 +157,7 @@ const COUNT_OPTIONS = [8, 12, 16, 20];
 const CELL = 32;
 
 export default function Krossvord({ portalStyles, SectionHeader, session }) {
+  const { t } = useLanguage();
   const [level, setLevel] = useState("A1");
   const [count, setCount] = useState(12);
   const [dictWords, setDictWords] = useState([]);
@@ -186,7 +188,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
 
   const buildPuzzle = useCallback(() => {
     if (dictWords.length < 4) {
-      setStatusMsg("Bu səviyyədə kifayət qədər söz yoxdur.");
+      setStatusMsg(t("no_enough_words_level"));
       return;
     }
     const used = getUsed(level);
@@ -194,7 +196,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     if (available.length < count) { resetUsed(level); available = dictWords; }
 
     const chosen = pickWords(available, count);
-    if (chosen.length < 4) { setStatusMsg("Kifayət qədər uyğun söz yoxdur."); return; }
+    if (chosen.length < 4) { setStatusMsg(t("no_enough_matching_words")); return; }
 
     let best = null;
     for (let attempt = 0; attempt < 6; attempt++) {
@@ -250,8 +252,8 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
     setActiveWord(null);
     setChooserCell(null);
     setXpAwarded(false);
-    setStatusMsg(`${placed.length} söz yerləşdirildi`);
-  }, [dictWords, level, count]);
+    setStatusMsg(`${placed.length} ${t("words_placed")}`);
+  }, [dictWords, level, count, t]);
 
   useEffect(() => { if (dictWords.length > 0) buildPuzzle(); }, [dictWords]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -397,8 +399,8 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
   return (
     <section style={portalStyles ? portalStyles.section : { maxWidth: 900, margin: "0 auto" }}>
       {SectionHeader
-        ? <SectionHeader type="krossvord" desc="Alman dili krossvordu — skandinav üslubu, izahlar şəbəkə daxilində" />
-        : <h2 style={{ fontFamily: "'Fraunces', serif", color: T.navy, marginBottom: 4 }}>Krossvord</h2>}
+        ? <SectionHeader type="krossvord" desc={t("kw_desc")} />
+        : <h2 style={{ fontFamily: "'Fraunces', serif", color: T.navy, marginBottom: 4 }}>{t("crossword")}</h2>}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
         {LEVELS.map((lvl) => (
@@ -407,22 +409,22 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
         {COUNT_OPTIONS.map((n) => (
-          <button key={n} onClick={() => setCount(n)} style={pillBtn(count === n)}>{n} söz</button>
+          <button key={n} onClick={() => setCount(n)} style={pillBtn(count === n)}>{n} {t("word_unit")}</button>
         ))}
-        <button onClick={buildPuzzle} style={actionBtn(true)}>🔄 Yeni krossvord</button>
-        <button onClick={checkAnswers} style={actionBtn(false)}>Yoxla</button>
-        <button onClick={clearAnswers} style={actionBtn(false)}>Təmizlə</button>
-        <button onClick={revealAnswers} style={actionBtn(false)}>Cavabları göstər</button>
+        <button onClick={buildPuzzle} style={actionBtn(true)}>🔄 {t("new_crossword")}</button>
+        <button onClick={checkAnswers} style={actionBtn(false)}>{t("check")}</button>
+        <button onClick={clearAnswers} style={actionBtn(false)}>{t("clear")}</button>
+        <button onClick={revealAnswers} style={actionBtn(false)}>{t("show_answers")}</button>
       </div>
 
       {totalWords > 0 && (
         <p style={{ fontSize: 12.5, color: T.textSoft, margin: "0 0 10px", fontWeight: 600 }}>
-          {filledWords}/{totalWords} söz tapıldı{statusMsg ? ` · ${statusMsg}` : ""}
+          {filledWords}/{totalWords} {t("words_found")}{statusMsg ? ` · ${statusMsg}` : ""}
         </p>
       )}
 
       {loading ? (
-        <p style={{ color: T.textSoft, fontSize: 14 }}>Yüklənir...</p>
+        <p style={{ color: T.textSoft, fontSize: 14 }}>{t("loading")}</p>
       ) : (
         <div style={{
           background: P.paper, borderRadius: 8, padding: 10,
@@ -498,11 +500,11 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.warm, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {activeWord.dir === "H" ? "→ Üfüqi" : "↓ Şaquli"} · {activeWord.word.length} hərf
+                {activeWord.dir === "H" ? `→ ${t("horizontal")}` : `↓ ${t("vertical")}`} · {activeWord.word.length} {t("letters_count")}
               </p>
               <p style={{ margin: "4px 0 0", fontSize: 14.5, color: P.ink, lineHeight: 1.35 }}>{activeWord.clue}</p>
             </div>
-            <button onClick={closePanel} style={closeBtnStyle} aria-label="Bağla">×</button>
+            <button onClick={closePanel} style={closeBtnStyle} aria-label={t("close")}>×</button>
           </div>
           <input
             key={activeWord.dir + activeWord.row + activeWord.col}
@@ -518,7 +520,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
       {/* ---------- Aşağıda sabit panel: 2 sahibli izah-xanası üçün seçim ---------- */}
       {chooserCell && (
         <div style={panelWrapStyle}>
-          <p style={{ margin: "0 0 10px", fontSize: 12.5, fontWeight: 700, color: T.textSoft }}>Hansı sözü açmaq istəyirsiniz?</p>
+          <p style={{ margin: "0 0 10px", fontSize: 12.5, fontWeight: 700, color: T.textSoft }}>{t("which_word_open")}</p>
           <div style={{ display: "flex", gap: 8 }}>
             {chooserCell.owners.map((w) => (
               <button key={w.dir} onClick={() => openWord(w)} style={chooserOptionStyle}>
@@ -527,7 +529,7 @@ export default function Krossvord({ portalStyles, SectionHeader, session }) {
               </button>
             ))}
           </div>
-          <button onClick={closePanel} style={{ ...actionBtn(false), marginTop: 10, width: "100%" }}>Bağla</button>
+          <button onClick={closePanel} style={{ ...actionBtn(false), marginTop: 10, width: "100%" }}>{t("close")}</button>
         </div>
       )}
     </section>
