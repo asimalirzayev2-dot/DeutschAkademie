@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Avatar from "./Avatar";
 import { shuffle } from "./utils";
 import { sb, sbAuthInsert } from "./supabase";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -17,10 +18,10 @@ const HINT_PENALTY = 100;
 
 // Hər səviyyənin öz "medalyon heyvanı" — hamıya açıq heyvanlardan (Avatar.jsx)
 const LEVELS = {
-  A1: { label: "A1 · Başlanğıc", medal: "dovsan" },
-  A2: { label: "A2 · Elementar", medal: "tulku" },
-  B1: { label: "B1 · Orta", medal: "qurd" },
-  B2: { label: "B2 · Yuxarı-orta", medal: "aslan" },
+  A1: { tierKey: "tier_beginner", medal: "dovsan" },
+  A2: { tierKey: "tier_elementary", medal: "tulku" },
+  B1: { tierKey: "tier_intermediate", medal: "qurd" },
+  B2: { tierKey: "tier_upper_intermediate", medal: "aslan" },
 };
 const LEVEL_ORDER = ["A1", "A2", "B1", "B2"];
 
@@ -72,6 +73,8 @@ async function fetchMixedWords(userId, n) {
 }
 
 export default function SozTapmacasi({ session }) {
+  const { t } = useLanguage();
+  const levelLabel = (key) => `${key} · ${t(LEVELS[key].tierKey)}`;
   const [screen, setScreen] = useState("select"); // select | loading | game | result
   const [pickedLevel, setPickedLevel] = useState(null);
   const [gameSession, setGameSession] = useState(null);
@@ -186,7 +189,7 @@ export default function SozTapmacasi({ session }) {
         ...prev, answer, hintedIdx, cursor,
         hintsTotal: prev.hintsTotal + 1,
         score: Math.max(0, prev.score - HINT_PENALTY),
-        feedback: "Hərf alındı — bu hərf üçün xal verilmir.", feedbackKind: "",
+        feedback: t("hint_feedback"), feedbackKind: "",
       };
     });
   }
@@ -208,7 +211,7 @@ export default function SozTapmacasi({ session }) {
       if (!prev || prev.solved) return prev;
       const w = currentWord(prev);
       if (prev.answer.some((v) => v === null)) {
-        return { ...prev, feedback: "Əvvəlcə bütün qutuları doldur.", feedbackKind: "err" };
+        return { ...prev, feedback: t("fill_all_boxes"), feedbackKind: "err" };
       }
       const guess = prev.answer.join("");
       if (guess === w.word) {
@@ -216,12 +219,12 @@ export default function SozTapmacasi({ session }) {
         const solvedState = {
           ...prev, solved: true, solvedCount: prev.solvedCount + 1,
           score: prev.score + earned,
-          feedback: `Doğru! "${w.word}"`, feedbackKind: "ok",
+          feedback: `${t("correct_feedback")} "${w.word}"`, feedbackKind: "ok",
         };
         setTimeout(() => advance(), 850);
         return solvedState;
       }
-      return { ...prev, feedback: "Səhv — yenidən cəhd et.", feedbackKind: "err" };
+      return { ...prev, feedback: t("wrong_feedback"), feedbackKind: "err" };
     });
   }
 
@@ -255,10 +258,9 @@ export default function SozTapmacasi({ session }) {
   function restart() {
     if (!gameSession) return;
     if (gameSession.levelKey === "MIXED") {
-      start("MIXED", "Bütün səviyyələr", "mixed");
+      start("MIXED", t("all_levels"), "mixed");
     } else {
-      const lv = LEVELS[gameSession.levelKey];
-      start(gameSession.levelKey, lv.label, gameSession.mode);
+      start(gameSession.levelKey, levelLabel(gameSession.levelKey), gameSession.mode);
     }
   }
 
@@ -276,7 +278,7 @@ export default function SozTapmacasi({ session }) {
   if (screen === "loading") {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
-        <p style={{ color: T.textSoft }}>Sözlər yüklənir...</p>
+        <p style={{ color: T.textSoft }}>{t("words_loading")}</p>
       </section>
     );
   }
@@ -291,11 +293,11 @@ export default function SozTapmacasi({ session }) {
           }}>
             <span style={{ fontSize: 17 }}>🐝</span>
             <span style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy }}>
-              Söz Tapmacası
+              {t("word_puzzle")}
             </span>
           </div>
           <p style={{ fontSize: 13.5, color: T.textSoft, margin: "10px 0 0", lineHeight: 1.55 }}>
-            Heç bir hərf əvvəlcədən görünmür — tərcüməyə görə sözü özün tap və klaviaturadan yaz.
+            {t("stw_subtitle")}
           </p>
         </div>
 
@@ -313,45 +315,45 @@ export default function SozTapmacasi({ session }) {
                   <Avatar avatarKey={lv.medal} size={30} />
                   <span style={{ fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 700, color: T.navy }}>{key}</span>
                 </div>
-                <p style={{ margin: 0, fontSize: 11.5, color: T.textSoft }}>{lv.label.split("·")[1].trim()}</p>
+                <p style={{ margin: 0, fontSize: 11.5, color: T.textSoft }}>{t(lv.tierKey)}</p>
               </button>
             );
           })}
         </div>
 
         <button
-          onClick={() => start("MIXED", "Bütün səviyyələr", "mixed")}
+          onClick={() => start("MIXED", t("all_levels"), "mixed")}
           style={{
             width: "100%", textAlign: "left", padding: "13px 16px", borderRadius: 12, cursor: "pointer",
             background: "transparent", border: `1px dashed ${T.border}`, color: T.text,
             fontSize: 13.5, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
-          <span>🎲 Bütün səviyyələr — Qarışıq (Karma) rejim</span>
+          <span>🎲 {t("mixed_mode_label")}</span>
           <span style={{ color: T.textSoft }}>→</span>
         </button>
 
         {pickedLevel && (
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 18 }}>
             <p style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft, margin: "0 0 12px" }}>
-              REJİM SEÇ
+              {t("mode_select_header")}
             </p>
             <div style={{ display: "grid", gap: 9 }}>
-              <button onClick={() => start(pickedLevel, LEVELS[pickedLevel].label, "sequential")}
+              <button onClick={() => start(pickedLevel, levelLabel(pickedLevel), "sequential")}
                 style={{ ...box, textAlign: "left", cursor: "pointer", border: `1px solid ${T.navy}` }}>
                 <p style={{ margin: "0 0 3px", fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 700, color: T.navy }}>
-                  Ardıcıl ({WORDS_PER_SESSION} söz)
+                  {t("sequential_mode_title")} ({WORDS_PER_SESSION} {t("word_unit")})
                 </p>
                 <p style={{ margin: 0, fontSize: 12, color: T.textSoft }}>
-                  Ümumi 4 dəqiqə, hamısını tamamlasan medalyon qazanırsan
+                  {t("sequential_mode_desc")}
                 </p>
               </button>
-              <button onClick={() => start(pickedLevel, LEVELS[pickedLevel].label, "mixed")}
+              <button onClick={() => start(pickedLevel, levelLabel(pickedLevel), "mixed")}
                 style={{ ...box, textAlign: "left", cursor: "pointer" }}>
                 <p style={{ margin: "0 0 3px", fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 700, color: T.navy }}>
-                  Karma / Sərbəst təkrar
+                  {t("mixed_mode_title")}
                 </p>
                 <p style={{ margin: 0, fontSize: 12, color: T.textSoft }}>
-                  Qarışıq sıra, vaxt sərhədi yox — sadəcə məşq
+                  {t("mixed_mode_desc")}
                 </p>
               </button>
             </div>
@@ -372,14 +374,14 @@ export default function SozTapmacasi({ session }) {
           autoCapitalize="none" autoCorrect="off" autoComplete="off" />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: T.textSoft, marginBottom: 14 }}>
-          <span>{gameSession.label} · {gameSession.mode === "sequential" ? "Ardıcıl" : "Karma"}</span>
+          <span>{gameSession.label} · {gameSession.mode === "sequential" ? t("mode_sequential_short") : t("mode_mixed_short")}</span>
           <span>{gameSession.idx + 1} / {gameSession.queue.length}</span>
         </div>
 
         <div style={box}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${T.border}` }}>
             <div style={{ flex: 1 }}>
-              <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft }}>TƏRCÜMƏ</p>
+              <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft }}>{t("translation_label")}</p>
               <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 600, color: T.navy, lineHeight: 1.45 }}>
                 {w.clue}
               </p>
@@ -389,17 +391,17 @@ export default function SozTapmacasi({ session }) {
                 <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: gameSession.mode === "sequential" ? (gameSession.timeLeft <= 30 ? T.danger : T.warm) : T.textSoft }}>
                   {gameSession.mode === "sequential" ? `${mm}:${ss}` : "∞"}
                 </p>
-                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, color: T.textSoft, textTransform: "uppercase" }}>Vaxt</p>
+                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, color: T.textSoft, textTransform: "uppercase" }}>{t("time_label")}</p>
               </div>
               <div style={{ textAlign: "center" }}>
                 <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.accent }}>{gameSession.score}</p>
-                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, color: T.textSoft, textTransform: "uppercase" }}>Xal</p>
+                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, color: T.textSoft, textTransform: "uppercase" }}>{t("score_label")}</p>
               </div>
             </div>
           </div>
 
           <p style={{ textAlign: "center", fontSize: 12, color: T.textSoft, margin: "0 0 14px" }}>
-            {w.word.length} hərfli söz
+            {w.word.length} {t("letter_word_count")}
           </p>
 
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
@@ -427,9 +429,9 @@ export default function SozTapmacasi({ session }) {
           </p>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={(e) => { e.stopPropagation(); hint(); }} style={btnGhost}>Hərf al (−100)</button>
-            <button onClick={(e) => { e.stopPropagation(); clearGuess(); }} style={btnGhost}>Təmizlə</button>
-            <button onClick={(e) => { e.stopPropagation(); check(); }} style={btnPrimary}>Yoxla</button>
+            <button onClick={(e) => { e.stopPropagation(); hint(); }} style={btnGhost}>{t("get_letter_btn")}</button>
+            <button onClick={(e) => { e.stopPropagation(); clearGuess(); }} style={btnGhost}>{t("clear")}</button>
+            <button onClick={(e) => { e.stopPropagation(); check(); }} style={btnPrimary}>{t("check")}</button>
           </div>
         </div>
       </section>
@@ -448,30 +450,30 @@ export default function SozTapmacasi({ session }) {
                 <Avatar avatarKey={lv.medal} size={72} ring />
               </div>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy, margin: "0 0 8px" }}>
-                {gameSession.levelKey} Söz Oyunu tamamlandı!
+                {gameSession.levelKey} {t("game_completed_title")}
               </p>
               <p style={{ fontSize: 13, color: T.textSoft, margin: "0 0 22px" }}>
-                Təbriklər — vaxt bitmədən bütün sözləri tapdın.
+                {t("medal_congrats")}
               </p>
             </>
           ) : gameSession.mode === "mixed" ? (
             <>
               <div style={{ fontSize: 40, marginBottom: 10 }}>✓</div>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 8px" }}>
-                Məşq tamamlandı
+                {t("practice_completed")}
               </p>
               <p style={{ fontSize: 13, color: T.textSoft, margin: "0 0 22px" }}>
-                Karma rejimdə medalyon verilmir — bu, sərbəst təkrar üçündür.
+                {t("mixed_no_medal")}
               </p>
             </>
           ) : (
             <>
               <div style={{ fontSize: 40, marginBottom: 10 }}>⏱</div>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 8px" }}>
-                Vaxt bitdi
+                {t("time_up_title")}
               </p>
               <p style={{ fontSize: 13, color: T.textSoft, margin: "0 0 22px" }}>
-                Medalyon üçün bütün sözləri vaxt bitmədən tapmalısan.
+                {t("time_up_desc")}
               </p>
             </>
           )}
@@ -479,21 +481,21 @@ export default function SozTapmacasi({ session }) {
           <div style={{ display: "flex", justifyContent: "center", gap: 28, marginBottom: 24 }}>
             <div style={{ textAlign: "center" }}>
               <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.accent }}>{gameSession.score}</p>
-              <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>Xal</p>
+              <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>{t("score_label")}</p>
             </div>
             <div style={{ textAlign: "center" }}>
               <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy }}>{gameSession.solvedCount}/{gameSession.queue.length}</p>
-              <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>Tapılan</p>
+              <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>{t("found_label")}</p>
             </div>
             <div style={{ textAlign: "center" }}>
               <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.warm }}>{gameSession.hintsTotal}</p>
-              <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>Alınan hərf</p>
+              <p style={{ margin: 0, fontSize: 10, color: T.textSoft, fontWeight: 700, textTransform: "uppercase" }}>{t("hints_used_label")}</p>
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-            <button onClick={restart} style={btnPrimary}>Yenidən başla</button>
-            <button onClick={backToSelect} style={btnGhost}>Səviyyə seçiminə qayıt</button>
+            <button onClick={restart} style={btnPrimary}>{t("restart_btn")}</button>
+            <button onClick={backToSelect} style={btnGhost}>{t("back_to_level_select")}</button>
           </div>
         </div>
       </section>
