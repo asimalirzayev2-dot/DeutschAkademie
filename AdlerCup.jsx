@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { sb } from "./supabase";
 import AdlerCupHost from "./AdlerCupHost";
 import AdlerCupPlayer from "./AdlerCupPlayer";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.68)",
@@ -10,6 +11,7 @@ const T = {
 };
 
 export default function AdlerCup({ session, profile, isAdmin }) {
+  const { t } = useLanguage();
   const [role, setRole] = useState(null);      // null | 'host' | 'player'
   const [canHost, setCanHost] = useState(false);
 
@@ -43,7 +45,7 @@ export default function AdlerCup({ session, profile, isAdmin }) {
           </span>
         </div>
         <p style={{ fontSize: 13.5, color: T.textSoft, margin: "10px 0 0", lineHeight: 1.55 }}>
-          Canli yaris — muellim oyun yaradir, telebeler kodla qosulur.
+          {t("ac_subtitle")}
         </p>
       </div>
 
@@ -52,9 +54,9 @@ export default function AdlerCup({ session, profile, isAdmin }) {
           <button onClick={() => setRole("player")} style={card}>
             <span style={{ fontSize: 26 }}>&#127918;</span>
             <span>
-              <span style={{ display: "block", fontWeight: 800, fontSize: 15, color: T.navy }}>Oyuna qosul</span>
+              <span style={{ display: "block", fontWeight: 800, fontSize: 15, color: T.navy }}>{t("join_game_title")}</span>
               <span style={{ display: "block", fontSize: 12.5, color: T.textSoft }}>
-                Muellimin verdiyi 6 reqemli kodla
+                {t("join_game_desc")}
               </span>
             </span>
           </button>
@@ -63,9 +65,9 @@ export default function AdlerCup({ session, profile, isAdmin }) {
             <button onClick={() => setRole("host")} style={{ ...card, borderColor: T.gold }}>
               <span style={{ fontSize: 26 }}>&#127919;</span>
               <span>
-                <span style={{ display: "block", fontWeight: 800, fontSize: 15, color: T.navy }}>Oyun yarat</span>
+                <span style={{ display: "block", fontWeight: 800, fontSize: 15, color: T.navy }}>{t("host_game_title")}</span>
                 <span style={{ display: "block", fontSize: 12.5, color: T.textSoft }}>
-                  Muellim rejimi — rejim sec, kodu paylas
+                  {t("host_game_desc")}
                 </span>
               </span>
             </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { sb, sbInsertReturn, sbRpc } from "./supabase";
 import { SHAPES, ShapeIcon } from "./shapes";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.68)",
@@ -13,6 +14,7 @@ const FIRST_BONUS = 75;  // ilk duzgun cavab verene
 const STEP = 12;         // her novbeti duzgun cavab ucun azalma
 
 export default function AdlerCupPlayer({ onExit }) {
+  const { t } = useLanguage();
   const [pin, setPin] = useState("");
   const [nick, setNick] = useState("");
   const [foundGame, setFoundGame] = useState(null); // PIN ile tapilan, hele qosulmamis oyun
@@ -56,14 +58,14 @@ export default function AdlerCupPlayer({ onExit }) {
     try {
       const rows = await sb(`live_games?pin=eq.${pin.trim()}&select=*`);
       const g = rows && rows[0];
-      if (!g) { setErr("Bu kodla oyun tapilmadi."); setBusy(false); return; }
-      if (g.status === "finished") { setErr("Bu oyun artiq bitib."); setBusy(false); return; }
+      if (!g) { setErr(t("game_not_found")); setBusy(false); return; }
+      if (g.status === "finished") { setErr(t("game_already_finished")); setBusy(false); return; }
       if (g.team_mode && (g.team_names || []).length > 0) {
         setFoundGame(g);
       } else {
         await finalJoin(g, null);
       }
-    } catch { setErr("Qosulmaq alinmadi."); }
+    } catch { setErr(t("join_failed")); }
     setBusy(false);
   }
 
@@ -71,12 +73,12 @@ export default function AdlerCupPlayer({ onExit }) {
     setErr(""); setBusy(true);
     try {
       const p = await sbInsertReturn("live_game_players", {
-        game_id: g.id, nickname: nick.trim().slice(0, 20) || "Telebe", score: 0,
+        game_id: g.id, nickname: nick.trim().slice(0, 20) || t("student_fallback"), score: 0,
         team_name: teamName || null,
       });
       lastIdx.current = g.current_index;
       setGame(g); setPlayer(p);
-    } catch { setErr("Qosulmaq alinmadi."); }
+    } catch { setErr(t("join_failed")); }
     setBusy(false);
   }
 
@@ -117,8 +119,8 @@ export default function AdlerCupPlayer({ onExit }) {
     if (foundGame) {
       return (
         <div style={box}>
-          <h3 style={{ margin: "0 0 4px", fontFamily: "'Fraunces', serif", fontSize: 19, color: T.navy }}>Komandani sec</h3>
-          <p style={{ margin: "0 0 14px", fontSize: 13, color: T.textSoft }}>Bu oyun komanda yarışıdır.</p>
+          <h3 style={{ margin: "0 0 4px", fontFamily: "'Fraunces', serif", fontSize: 19, color: T.navy }}>{t("choose_team_title")}</h3>
+          <p style={{ margin: "0 0 14px", fontSize: 13, color: T.textSoft }}>{t("team_game_desc")}</p>
           <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
             {(foundGame.team_names || []).map((tn) => (
               <button key={tn} onClick={() => setTeamChoice(tn)} style={{
@@ -129,32 +131,32 @@ export default function AdlerCupPlayer({ onExit }) {
               }}>{tn}</button>
             ))}
           </div>
-          <input value={nick} onChange={(e) => setNick(e.target.value)} placeholder="Adin" style={input} />
+          <input value={nick} onChange={(e) => setNick(e.target.value)} placeholder={t("name_placeholder")} style={input} />
           {err && <p style={{ color: T.danger, fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => finalJoin(foundGame, teamChoice)} disabled={busy || !teamChoice}
               style={{ ...btn, flex: 1, opacity: busy || !teamChoice ? 0.5 : 1 }}>
-              {busy ? "Qosulur..." : "Qosul"}
+              {busy ? t("joining") : t("join_btn")}
             </button>
-            <button onClick={() => { setFoundGame(null); setTeamChoice(null); }} style={{ background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Geri</button>
+            <button onClick={() => { setFoundGame(null); setTeamChoice(null); }} style={{ background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{t("back")}</button>
           </div>
         </div>
       );
     }
     return (
       <div style={box}>
-        <h3 style={{ margin: "0 0 4px", fontFamily: "'Fraunces', serif", fontSize: 19, color: T.navy }}>Oyuna qosul</h3>
-        <p style={{ margin: "0 0 14px", fontSize: 13, color: T.textSoft }}>Muellimin ekranindaki kodu yaz.</p>
+        <h3 style={{ margin: "0 0 4px", fontFamily: "'Fraunces', serif", fontSize: 19, color: T.navy }}>{t("join_game_title")}</h3>
+        <p style={{ margin: "0 0 14px", fontSize: 13, color: T.textSoft }}>{t("teacher_code_desc")}</p>
         <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
           placeholder="000000" inputMode="numeric"
           style={{ ...input, letterSpacing: 6, fontWeight: 800, textAlign: "center", fontSize: 22 }} />
-        <input value={nick} onChange={(e) => setNick(e.target.value)} placeholder="Adin" style={input} />
+        <input value={nick} onChange={(e) => setNick(e.target.value)} placeholder={t("name_placeholder")} style={input} />
         {err && <p style={{ color: T.danger, fontSize: 13, margin: "0 0 10px" }}>{err}</p>}
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={findGame} disabled={busy || pin.length < 6} style={{ ...btn, flex: 1, opacity: busy || pin.length < 6 ? 0.5 : 1 }}>
-            {busy ? "Yoxlanilir..." : "Davam et"}
+            {busy ? t("checking") : t("continue")}
           </button>
-          {onExit && <button onClick={onExit} style={{ background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Bagla</button>}
+          {onExit && <button onClick={onExit} style={{ background: "transparent", color: T.textSoft, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{t("close")}</button>}
         </div>
       </div>
     );
@@ -168,16 +170,16 @@ export default function AdlerCupPlayer({ onExit }) {
         <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.6, color: T.warm, margin: 0 }}>ADLER CUP</p>
         <div style={{ fontSize: 46, margin: "8px 0 2px" }}>{medals[rank.pos - 1] || "\u{1F3C5}"}</div>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 25, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-          {rank.pos}. yer
+          {rank.pos}. {t("place_suffix")}
         </p>
         <p style={{ fontSize: 14, color: T.textSoft, margin: "0 0 16px" }}>
-          {rank.total} istirakcidan &middot; <b style={{ color: T.accent }}>{player.score} xal</b>
+          {rank.total} {t("participants_of")} &middot; <b style={{ color: T.accent }}>{player.score} {t("points_unit")}</b>
           {player.team_name && <> &middot; <b style={{ color: T.navy }}>{player.team_name}</b></>}
         </p>
 
         {game.team_mode && (
           <div style={{ textAlign: "left", marginBottom: 14 }}>
-            <p style={{ fontSize: 11.5, fontWeight: 800, color: T.warm, margin: "0 0 8px" }}>KOMANDA NƏTİCƏSİ</p>
+            <p style={{ fontSize: 11.5, fontWeight: 800, color: T.warm, margin: "0 0 8px" }}>{t("team_result_header")}</p>
             {Object.entries(game.team_scores || {}).sort((a, b) => b[1] - a[1]).map(([tn, sc], i) => (
               <div key={tn} style={{
                 display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 10px",
@@ -186,7 +188,7 @@ export default function AdlerCupPlayer({ onExit }) {
                 fontWeight: tn === player.team_name ? 800 : 500,
               }}>
                 <span>{i === 0 ? "\u{1F3C6} " : ""}{tn}</span>
-                <span style={{ color: T.accent, fontWeight: 700 }}>{sc} tur</span>
+                <span style={{ color: T.accent, fontWeight: 700 }}>{sc} {t("round_unit")}</span>
               </div>
             ))}
           </div>
@@ -214,9 +216,9 @@ export default function AdlerCupPlayer({ onExit }) {
       <div style={{ ...box, textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>&#129413;</div>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: T.navy, margin: "0 0 4px" }}>
-          Salam, {player.nickname}!
+          {t("greeting_hi")}, {player.nickname}!
         </p>
-        <p style={{ fontSize: 13.5, color: T.textSoft, margin: 0 }}>Muellim oyunu baslayana qeder gozle...</p>
+        <p style={{ fontSize: 13.5, color: T.textSoft, margin: 0 }}>{t("waiting_teacher")}</p>
       </div>
     );
   }
@@ -232,15 +234,15 @@ export default function AdlerCupPlayer({ onExit }) {
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "0 2px 10px", fontSize: 12.5, color: T.textSoft,
       }}>
-        <span>Sual {game.current_index + 1}/{(game.questions || []).length}</span>
-        <span style={{ fontWeight: 800, color: T.accent, fontSize: 14 }}>{player.score} xal</span>
+        <span>{t("question_word")} {game.current_index + 1}/{(game.questions || []).length}</span>
+        <span style={{ fontWeight: 800, color: T.accent, fontSize: 14 }}>{player.score} {t("points_unit")}</span>
       </div>
 
       <p style={{
         textAlign: "center", fontSize: 13.5, color: T.textSoft,
         margin: "0 0 12px", lineHeight: 1.5,
       }}>
-        {game.revealed ? "Cavab acildi \u2014 ekrana bax" : "Muellimin ekranina bax, sonra fiquru sec"}
+        {game.revealed ? t("answer_revealed") : t("watch_teacher_screen")}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -281,21 +283,21 @@ export default function AdlerCupPlayer({ onExit }) {
           border: `1px solid ${result.correct ? T.accent : T.danger}`,
         }}>
           <span style={{ fontSize: 17, fontWeight: 800, color: result.correct ? T.accent : T.danger }}>
-            {result.correct ? `+${result.gain} xal` : "Duzgun deyil"}
+            {result.correct ? `+${result.gain} ${t("points_unit")}` : t("not_correct")}
           </span>
           {result.correct && result.place === 1 && (
             <span style={{ display: "block", fontSize: 12.5, color: T.warm, fontWeight: 700, marginTop: 4 }}>
-              &#9889; Ilk duzgun cavab!
+              &#9889; {t("first_correct")}
             </span>
           )}
           {result.correct && result.place > 1 && (
             <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 4 }}>
-              {result.place}. duzgun cavab
+              {result.place}. {t("nth_correct_suffix")}
             </span>
           )}
           {!result.correct && (
             <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 4 }}>
-              Novbeti suala hazirlas
+              {t("prepare_next")}
             </span>
           )}
         </div>
@@ -303,7 +305,7 @@ export default function AdlerCupPlayer({ onExit }) {
 
       {picked === null && !game.revealed && (
         <p style={{ textAlign: "center", fontSize: 11.5, color: T.textSoft, marginTop: 12 }}>
-          Tez cavab ver \u2014 ilk duzgun cavab {BASE + FIRST_BONUS} xal qazandirir
+          {t("quick_answer_prefix")} {BASE + FIRST_BONUS} {t("quick_answer_suffix")}
         </p>
       )}
     </div>
