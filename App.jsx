@@ -22,6 +22,8 @@ import OxuAnlama from "./OxuAnlama";
 import Flashcards from "./Flashcards";
 import AdlerCup from "./AdlerCup";
 import Avatar from "./Avatar";
+import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
+import LanguageSwitcher from "./i18n/LanguageSwitcher";
 
 
 
@@ -1301,37 +1303,39 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
     return () => { alive = false; };
   }, []);
 
+  const { t } = useLanguage();
+
   const TABS = [
-    { key: "home",       label: "Ana",     icon: "⌂" },
-    { key: "lessons",    label: "Dərslər", icon: "▤" },
-    { key: "dictionary", label: "Lüğət",   icon: "⌕" },
-    { key: "adlercup",   label: "Cup",     icon: "♛" },
-    { key: "more",       label: "Daha",    icon: "⋯" },
+    { key: "home",       label: t("nav_home"),       icon: "⌂" },
+    { key: "lessons",    label: t("nav_lessons"),    icon: "▤" },
+    { key: "dictionary", label: t("nav_dictionary"), icon: "⌕" },
+    { key: "adlercup",   label: t("nav_cup"),        icon: "♛" },
+    { key: "more",       label: t("nav_more"),       icon: "⋯" },
   ];
 
   const MORE_GROUPS = [
     {
-      title: "İmtahan və Tədris",
+      title: t("section_exam"),
       items: [
-        { key: "oxuanlama", label: "Oxu Anlama",  sub: "TELC/Goethe hazırlıq",  Icon: BookOpen },
-        { key: "hoerverstehen", label: "Dinləmə", sub: "TELC/Goethe hazırlıq",  Icon: Headphones },
-        { key: "books",     label: "Kitablar",    sub: "PDF dərsliklər",       Icon: Library },
-        { key: "courses",   label: "Kurslar",     sub: "müəllimlər",           Icon: GraduationCap },
+        { key: "oxuanlama", label: t("reading"),  sub: "TELC/Goethe hazırlıq",  Icon: BookOpen },
+        { key: "hoerverstehen", label: t("listening"), sub: "TELC/Goethe hazırlıq",  Icon: Headphones },
+        { key: "books",     label: t("books"),    sub: "PDF dərsliklər",       Icon: Library },
+        { key: "courses",   label: t("courses"),     sub: "müəllimlər",           Icon: GraduationCap },
       ],
     },
     {
-      title: "Praktika və Oyunlar",
+      title: t("section_practice"),
       items: [
-        { key: "flashcards", label: "Flashcards",   sub: "kartlarla təkrar et", Icon: Layers },
-        { key: "sozoyunu",  label: "Söz Tapmacası", sub: "lüğət oyunu",        Icon: Puzzle },
-        { key: "krossvord", label: "Krossvord",     sub: "kəsişən sözlər",     Icon: Grid3x3 },
+        { key: "flashcards", label: t("flashcards"),   sub: "kartlarla təkrar et", Icon: Layers },
+        { key: "sozoyunu",  label: t("word_puzzle"), sub: "lüğət oyunu",        Icon: Puzzle },
+        { key: "krossvord", label: t("crossword"),     sub: "kəsişən sözlər",     Icon: Grid3x3 },
       ],
     },
   ];
   const MORE_ITEMS_TAIL = [
-    { key: "nailiyyetler", label: "Nailiyyətlərim", sub: "xal və dərəcən", Icon: Trophy },
-    { key: "premium",   label: "Premium",        sub: "əlavə imkanlar",  Icon: Crown, premium: true },
-    { key: "contact",   label: "Əlaqə",          sub: "bizə yaz",        Icon: Mail },
+    { key: "nailiyyetler", label: t("my_achievements"), sub: "xal və dərəcən", Icon: Trophy },
+    { key: "premium",   label: t("premium"),        sub: "əlavə imkanlar",  Icon: Crown, premium: true },
+    { key: "contact",   label: t("contact"),          sub: "bizə yaz",        Icon: Mail },
   ];
 
   return (
@@ -1396,17 +1400,20 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <span style={portalStyles.navBrandText}>Deutsch Akademie</span>
         </div>
 
-        {session ? (
-          <button onClick={() => setView("profile")}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", position: "relative", lineHeight: 0 }}
-            title={profile?.name || "Hesab"}>
-            <Avatar avatarKey={profile?.avatar_bird} size={38}
-              fallbackLetter={(profile?.name || "?").trim().charAt(0).toUpperCase()}
-              ring={isPremium || isAdmin} />
-          </button>
-        ) : (
-          <button onClick={() => setAuthModal("login")} style={portalStyles.loginPill}>Daxil ol</button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LanguageSwitcher />
+          {session ? (
+            <button onClick={() => setView("profile")}
+              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", position: "relative", lineHeight: 0 }}
+              title={profile?.name || "Hesab"}>
+              <Avatar avatarKey={profile?.avatar_bird} size={38}
+                fallbackLetter={(profile?.name || "?").trim().charAt(0).toUpperCase()}
+                ring={isPremium || isAdmin} />
+            </button>
+          ) : (
+            <button onClick={() => setAuthModal("login")} style={portalStyles.loginPill}>{t("log_in")}</button>
+          )}
+        </div>
       </nav>
 
       {/* ---------- Alt tab paneli ---------- */}
@@ -1433,7 +1440,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
           <div className="da-sheet" style={portalStyles.sheet}>
             <div style={portalStyles.sheetHandle} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 14px" }}>
-              <p style={{ ...portalStyles.sheetTitle, margin: 0 }}>Bölmələr</p>
+              <p style={{ ...portalStyles.sheetTitle, margin: 0 }}>{t("sections")}</p>
               <span style={{
                 fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 999,
                 background: "rgba(0,168,150,0.1)", color: "#00A896",
@@ -2444,5 +2451,9 @@ export default function App() {
   const isKnownPath = path === "/" || path === "" || isAdmin;
   if (isAdmin) return <AdminPanel />;
   if (!isKnownPath) return <NotFoundPage />;
-  return <InnerApp />;
+  return (
+    <LanguageProvider>
+      <InnerApp />
+    </LanguageProvider>
+  );
 }
