@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { sb, sbAuthInsert } from "./supabase";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -20,6 +21,7 @@ function speakLong(text, { onEnd, rate = 0.92 } = {}) {
 }
 
 function AudioBlock({ text, audioUrl }) {
+  const { t } = useLanguage();
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(false);
   const audioRef = useRef(null);
@@ -64,10 +66,10 @@ function AudioBlock({ text, audioUrl }) {
       }}>{playing ? "⏸" : "▶"}</button>
       <div>
         <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: T.navy }}>
-          {playing ? "Dinlənilir..." : played ? "Yenidən dinlə" : "Dinləmək üçün bas"}
+          {playing ? t("audio_playing") : played ? t("audio_replay") : t("audio_play")}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 12, color: T.textSoft }}>
-          {audioUrl ? "Mətni istədiyin qədər təkrar dinləyə bilərsən" : "Mətni istədiyin qədər təkrar dinləyə bilərsən"}
+          {t("audio_hint")}
         </p>
       </div>
     </div>
@@ -75,6 +77,7 @@ function AudioBlock({ text, audioUrl }) {
 }
 
 export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
+  const { t } = useLanguage();
   const [screen, setScreen] = useState("level"); // level | groups | list | test
   const [level, setLevel] = useState(null);
   const [units, setUnits] = useState([]);
@@ -137,12 +140,12 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
           padding: "6px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
           background: qLang === "az" ? T.accent : "#fff", color: qLang === "az" ? "#fff" : T.text,
           border: `1px solid ${qLang === "az" ? T.accent : T.border}`,
-        }}>Azərbaycanca suallar</button>
+        }}>{t("lang_az_questions")}</button>
         <button onClick={() => setQLang("de")} style={{
           padding: "6px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
           background: qLang === "de" ? T.accent : "#fff", color: qLang === "de" ? "#fff" : T.text,
           border: `1px solid ${qLang === "de" ? T.accent : T.border}`,
-        }}>Tam Almanca (B1+)</button>
+        }}>{t("lang_de_full")}</button>
       </div>
     );
   }
@@ -215,10 +218,10 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   // ---------- Seviyye ekrani ----------
   if (screen === "level") {
     const LEVEL_META = {
-      A1: { title: "Başlanğıc Səviyyə" },
-      A2: { title: "Əsas Səviyyə" },
-      B1: { title: "Orta Səviyyə" },
-      B2: { title: "Yuxarı Səviyyə" },
+      A1: { title: t("level_beginner_title") },
+      A2: { title: t("level_basic_title") },
+      B1: { title: t("level_intermediate_title") },
+      B2: { title: t("level_upper_title") },
     };
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
@@ -235,11 +238,11 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
           }}>
             <span style={{ fontSize: 17 }}>🎧</span>
             <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.navy }}>
-              Dinləmə (Hörverstehen)
+              {t("listening")} (Hörverstehen)
             </span>
           </div>
           <p style={{ fontSize: 13.5, color: T.textSoft, margin: "10px 0 0" }}>
-            TELC/Goethe formatında dinləmə hazırlığı
+            {t("listening_subtitle")}
           </p>
         </div>
         <div style={{ display: "grid", gap: 12 }}>
@@ -271,7 +274,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
                   <div>
                     <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: T.navy }}>{LEVEL_META[l].title}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 12, color: T.textSoft }}>
-                      {total > 0 ? `${total} Fəsil` : "Tezliklə"}{started ? ` • ${done} tamamlandı` : ""}
+                      {total > 0 ? `${total} ${t("chapter_word")}` : t("soon")}{started ? ` • ${done} ${t("completed_count")}` : ""}
                     </p>
                   </div>
                 </div>
@@ -301,18 +304,18 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
     for (let i = 0; i < units.length; i += 5) groups.push(units.slice(i, i + 5));
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
-        <button onClick={() => setScreen("level")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← Səviyyələr</button>
-        <h3 style={{ fontFamily: "'Fraunces', serif", color: T.navy, marginBottom: 14 }}>{level} — Fəsillər</h3>
-        {groups.length === 0 && <p style={{ color: T.textSoft, fontSize: 14 }}>Bu səviyyədə hələ material yoxdur.</p>}
+        <button onClick={() => setScreen("level")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← {t("levels_back")}</button>
+        <h3 style={{ fontFamily: "'Fraunces', serif", color: T.navy, marginBottom: 14 }}>{level} — {t("chapters_suffix")}</h3>
+        {groups.length === 0 && <p style={{ color: T.textSoft, fontSize: 14 }}>{t("no_material_level")}</p>}
         <div style={{ display: "grid", gap: 9 }}>
           {groups.map((g, i) => (
             <button key={i} onClick={() => { setSelectedGroup(g); setScreen("list"); }} style={{
               ...box, textAlign: "left", cursor: "pointer", display: "flex",
               justifyContent: "space-between", alignItems: "center",
             }}>
-              <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {g[0].unit_number}-{g[g.length - 1].unit_number}</span>
+              <span style={{ fontWeight: 700, color: T.navy }}>{t("chapter_word")} {g[0].unit_number}-{g[g.length - 1].unit_number}</span>
               <span style={{ fontSize: 12, color: T.textSoft }}>
-                {g.filter((u) => progress[u.unit_number]).length}/{g.length} tamamlandı
+                {g.filter((u) => progress[u.unit_number]).length}/{g.length} {t("completed_count")}
               </span>
             </button>
           ))}
@@ -325,7 +328,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
   if (screen === "list") {
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
-        <button onClick={() => setScreen("groups")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← Qruplar</button>
+        <button onClick={() => setScreen("groups")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← {t("groups_back")}</button>
         <div style={{ display: "grid", gap: 9 }}>
           {selectedGroup.map((u) => {
             const locked = guestMode && u.unit_number !== 1;
@@ -335,9 +338,9 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
                 justifyContent: "space-between", alignItems: "center",
                 ...(locked ? { opacity: 0.55 } : {}),
               }}>
-                <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {u.unit_number}</span>
+                <span style={{ fontWeight: 700, color: T.navy }}>{t("chapter_word")} {u.unit_number}</span>
                 <span style={{ color: locked ? T.textSoft : (progress[u.unit_number] ? T.accent : T.textSoft), fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400 }}>
-                  {locked ? "🔒 Qeydiyyat lazımdır" : (progress[u.unit_number] ? "✓ Tamamlandı" : "→")}
+                  {locked ? `🔒 ${t("registration_required")}` : (progress[u.unit_number] ? `✓ ${t("completed_check")}` : "→")}
                 </span>
               </button>
             );
@@ -352,24 +355,24 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
     const { correct, total } = submitted ? score() : { correct: 0, total: 0 };
     return (
       <section style={{ maxWidth: 620, margin: "0 auto" }}>
-        <button onClick={() => setScreen("list")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← Geri</button>
+        <button onClick={() => setScreen("list")} style={{ background: "none", border: "none", color: T.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}>← {t("back")}</button>
         {current.level === "B1" && current.part2_questions?.[0]?.q_de && <LangToggle />}
 
         {/* Hisse 1 */}
         <div style={{ ...box, marginBottom: 18 }}>
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>
-            Hissə 1{current.part1_items ? " — 5 qısa mətn" : ` — ${current.part1_title}`}
+            {t("part_word")} 1{current.part1_items ? ` — ${t("short_texts_5")}` : ` — ${current.part1_title}`}
           </p>
           {current.part1_items ? (
             <>
               <AudioBlock
-                text={(current.part1_items || []).map((it, i) => `Mətn ${i + 1}. ${it.text}`).join(" ")}
+                text={(current.part1_items || []).map((it, i) => `${t("text_word")} ${i + 1}. ${it.text}`).join(" ")}
                 audioUrl={current.part1_audio_url}
               />
               <div style={{ display: "grid", gap: 16 }}>
                 {(current.part1_items || []).map((it, i) => (
                   <div key={i}>
-                    <p style={{ fontSize: 12, fontWeight: 800, color: T.textSoft, margin: "0 0 4px", textTransform: "uppercase" }}>Mətn {i + 1}</p>
+                    <p style={{ fontSize: 12, fontWeight: 800, color: T.textSoft, margin: "0 0 4px", textTransform: "uppercase" }}>{t("text_word")} {i + 1}</p>
                     <p style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 6 }}>{txt(it.question, it.question_de)}</p>
                     <div style={{ display: "grid", gap: 6 }}>
                       {Object.entries(txt(it.options, it.options_de) || {}).map(([key, val]) => (
@@ -405,7 +408,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
                             color: answers1[i] === opt ? "#fff" : T.text,
                             border: `1px solid ${answers1[i] === opt ? T.accent : T.border}`,
                             ...(submitted && q.a === opt ? { borderColor: T.accent, borderWidth: 2 } : {}),
-                          }}>{opt === "R" ? "Doğru" : "Yanlış"}</button>
+                          }}>{opt === "R" ? t("correct") : t("incorrect")}</button>
                       ))}
                     </div>
                   </div>
@@ -417,7 +420,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
 
         {/* Hisse 2 */}
         <div style={{ ...box, marginBottom: 18 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 2 — {current.part2_title}</p>
+          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>{t("part_word")} 2 — {current.part2_title}</p>
           <AudioBlock text={current.part2_text} audioUrl={current.part2_audio_url} />
           <div style={{ display: "grid", gap: 14 }}>
             {(current.part2_questions || []).map((q, i) => (
@@ -435,7 +438,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
                           color: answers2[i] === opt ? "#fff" : T.text,
                           border: `1px solid ${answers2[i] === opt ? T.accent : T.border}`,
                           ...(submitted && q.a === opt ? { borderColor: T.accent, borderWidth: 2 } : {}),
-                        }}>{opt === "R" ? "Doğru" : "Yanlış"}</button>
+                        }}>{opt === "R" ? t("correct") : t("incorrect")}</button>
                     ))}
                   </div>
                 </div>
@@ -463,7 +466,7 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
         {/* Hisse 3 — yalniz B1 */}
         {current.part3_text && (
           <div style={{ ...box, marginBottom: 18 }}>
-            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>Hissə 3 — {current.part3_title}</p>
+            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: T.warm, margin: "0 0 8px", textTransform: "uppercase" }}>{t("part_word")} 3 — {current.part3_title}</p>
             <AudioBlock text={current.part3_text} audioUrl={current.part3_audio_url} />
             <div style={{ display: "grid", gap: 14 }}>
               {(current.part3_questions || []).map((q, i) => (
@@ -493,14 +496,14 @@ export default function Hoerverstehen({ session, guestMode, setAuthModal }) {
           <button onClick={handleSubmit} style={{
             width: "100%", padding: "14px 0", borderRadius: 10, border: "none", cursor: "pointer",
             background: T.warm, color: "#fff", fontWeight: 800, fontSize: 15,
-          }}>Yoxla</button>
+          }}>{t("check")}</button>
         ) : (
           <div style={{ ...box, textAlign: "center" }}>
             <p style={{ fontSize: 22, fontWeight: 800, color: correct / total >= 0.6 ? T.accent : "#C0392B", margin: "0 0 6px" }}>
               {correct} / {total}
             </p>
             <p style={{ fontSize: 13, color: T.textSoft, margin: 0 }}>
-              {correct / total >= 0.6 ? "Təbriklər, keçdin!" : "Bir daha cəhd et"}
+              {correct / total >= 0.6 ? t("passed_msg") : t("retry_msg")}
             </p>
           </div>
         )}
