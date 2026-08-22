@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { sb, sbInsert, sbAuthPatch } from "./supabase";
 import { LEVELS } from "./constants";
 import { notifyTeacher } from "./utils";
+import { useLanguage } from "./i18n/LanguageContext";
 
 function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegForm, regSent, setRegSent, onStartPlacementTest, session, refreshProfile }) {
+  const { t } = useLanguage();
   const [teachers, setTeachers] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
@@ -13,20 +15,20 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
 
   return (
     <section style={portalStyles.section}>
-      <SectionHeader type="courses" desc="Müəllim rəhbərliyi ilə qrup dərsləri" />
+      <SectionHeader type="courses" desc={t("courses_desc")} />
 
       <div style={portalStyles.teacherGrid}>
-        {(teachers || []).map((t) => (
-          <button key={t.id} onClick={() => setSelectedTeacher(t)} style={portalStyles.teacherTile}>
+        {(teachers || []).map((t2) => (
+          <button key={t2.id} onClick={() => setSelectedTeacher(t2)} style={portalStyles.teacherTile}>
             <div style={{ ...portalStyles.teacherAvatarWrap, margin: "0 auto 14px" }}>
               <div style={portalStyles.teacherAvatarDiamond} />
-              <div style={portalStyles.teacherAvatar}>{t.name?.[0] || "👤"}</div>
+              <div style={portalStyles.teacherAvatar}>{t2.name?.[0] || "👤"}</div>
             </div>
-            <div style={portalStyles.teacherEliteName}>{t.name}</div>
-            <div style={portalStyles.teacherHint}>Profilə bax</div>
+            <div style={portalStyles.teacherEliteName}>{t2.name}</div>
+            <div style={portalStyles.teacherHint}>{t("view_profile")}</div>
           </button>
         ))}
-        {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>Hələ müəllim əlavə olunmayıb.</p>}
+        {teachers && teachers.length === 0 && <p style={{ ...portalStyles.body, opacity: 0.6 }}>{t("no_teachers_yet")}</p>}
       </div>
 
       {selectedTeacher && (
@@ -59,7 +61,7 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
 
             {selectedTeacher.bio && (
               <div style={portalStyles.teacherAboutBox}>
-                <div style={portalStyles.teacherAboutLabel}>Haqqında</div>
+                <div style={portalStyles.teacherAboutLabel}>{t("about_label")}</div>
                 <p style={portalStyles.teacherAboutText}>{selectedTeacher.bio}</p>
               </div>
             )}
@@ -67,16 +69,16 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, marginBottom: 6 }}>
               <tbody>
                 <tr>
-                  <td style={portalStyles.teacherTableLabel}>Səviyyələr</td>
+                  <td style={portalStyles.teacherTableLabel}>{t("levels_label")}</td>
                   <td style={portalStyles.teacherTableVal}>{selectedTeacher.levels || "—"}</td>
                 </tr>
                 <tr>
-                  <td style={portalStyles.teacherTableLabel}>Dərs Forması</td>
+                  <td style={portalStyles.teacherTableLabel}>{t("lesson_format_label")}</td>
                   <td style={portalStyles.teacherTableVal}>{selectedTeacher.format || "—"}</td>
                 </tr>
                 {selectedTeacher.schedule && (
                   <tr>
-                    <td style={portalStyles.teacherTableLabel}>Cədvəl</td>
+                    <td style={portalStyles.teacherTableLabel}>{t("schedule_label")}</td>
                     <td style={portalStyles.teacherTableVal}>{selectedTeacher.schedule}</td>
                   </tr>
                 )}
@@ -87,28 +89,28 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
               onClick={() => { setSelectedTeacher(null); setRegForm({ ...regForm, teacher: selectedTeacher.name, teacherEmail: selectedTeacher.email }); }}
               style={{ ...portalStyles.primaryBtn, width: "100%", marginTop: 20 }}
             >
-              Bu müəllimlə qeydiyyatdan keç
+              {t("register_with_teacher")}
             </button>
           </div>
         </div>
       )}
 
-      <h2 style={{ ...portalStyles.h2, marginTop: 32 }}>Qeydiyyat</h2>
+      <h2 style={{ ...portalStyles.h2, marginTop: 32 }}>{t("registration_title")}</h2>
       {regSent ? (
-        <p style={{ ...portalStyles.body, color: "#00A896" }}>Təşəkkürlər, {regForm.name}! Qeydiyyatın qeydə alındı, tezliklə əlaqə saxlanılacaq.</p>
+        <p style={{ ...portalStyles.body, color: "#00A896" }}>{t("registration_thanks_prefix")} {regForm.name}! {t("registration_thanks_suffix")}</p>
       ) : (
         <div style={{ display: "grid", gap: 12, maxWidth: 400 }}>
-          <input placeholder="Adın" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
-          <input placeholder="Telefon" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} style={portalStyles.input} />
+          <input placeholder={t("name_placeholder")} value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} style={portalStyles.input} />
+          <input placeholder={t("phone_placeholder")} value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} style={portalStyles.input} />
           <select value={regForm.teacher || ""} onChange={(e) => {
-            const t = (teachers || []).find((x) => x.name === e.target.value);
-            setRegForm({ ...regForm, teacher: e.target.value, teacherEmail: t?.email || "" });
+            const t2 = (teachers || []).find((x) => x.name === e.target.value);
+            setRegForm({ ...regForm, teacher: e.target.value, teacherEmail: t2?.email || "" });
           }} style={portalStyles.input}>
-            <option value="">Müəllim seç...</option>
-            {(teachers || []).map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+            <option value="">{t("choose_teacher_option")}</option>
+            {(teachers || []).map((t2) => <option key={t2.id} value={t2.name}>{t2.name}</option>)}
           </select>
           <div>
-            <p style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>Səviyyə</p>
+            <p style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>{t("level_label")}</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {LEVELS.map((l) => (
                 <button
@@ -141,12 +143,12 @@ function CoursesView({ portalStyles, SectionHeader, LevelIcon,  regForm, setRegF
             } else {
               setRegSent(true);
             }
-          }} style={portalStyles.primaryBtn}>Qeydiyyatdan keç</button>
+          }} style={portalStyles.primaryBtn}>{t("sign_up")}</button>
         </div>
       )}
       {regForm.course !== "A1" && !regSent && (
         <p style={{ fontSize: 12.5, opacity: 0.6, marginTop: 10, maxWidth: 400 }}>
-          Qeyd: A1-dən yuxarı səviyyələr üçün qeydiyyatdan sonra hansı mövzuları bildiyini yoxlamaq üçün qısa bir testə yönləndiriləcəksən — nəticə birbaşa müəllimə göndəriləcək.
+          {t("placement_test_note")}
         </p>
       )}
     </section>
