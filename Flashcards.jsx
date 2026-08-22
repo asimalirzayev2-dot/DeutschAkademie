@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Flame } from "lucide-react";
 import { sb, sbAuthInsert, sbInsert } from "./supabase";
 import { speakGerman } from "./utils";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -71,6 +72,7 @@ function tierBoxStyle(tier) {
 }
 
 export default function Flashcards({ session, guestMode, setAuthModal }) {
+  const { t } = useLanguage();
   const [screen, setScreen] = useState("level"); // level | mode | flashcards | match | summary
   const [level, setLevel] = useState("A1");
   const [count, setCount] = useState(15);
@@ -133,7 +135,7 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
             </span>
           </div>
           <p style={{ fontSize: 13.5, color: T.textSoft, margin: "10px 0 0" }}>
-            Lüğətimizdən kartlarla təkrar et — bazamız daim yeni sözlərlə böyüyür.
+            {t("fc_subtitle")}
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -171,7 +173,7 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
                   <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 800, fontSize: 32, color: tier === 0 ? T.navy : ink, letterSpacing: 0.5 }}>{l}</span>
                     <span style={{ fontSize: 10.5, color: T.textSoft, marginTop: 6, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
-                      {tier === 0 ? "Başlanğıc" : tier === 1 ? "Elementar" : tier === 2 ? "Orta" : "Yuxarı-orta"}
+                      {tier === 0 ? t("tier_beginner") : tier === 1 ? t("tier_elementary") : tier === 2 ? t("tier_intermediate") : t("tier_upper_intermediate")}
                     </span>
                   </div>
                 </div>
@@ -188,14 +190,14 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <style>{MICRO_CSS}</style>
-        <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← Səviyyələr</button>
+        <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← {t("levels_back")}</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
           {level} · Flashcards
         </p>
 
         {!guestMode && (
           <>
-            <p style={{ fontSize: 13, color: T.textSoft, marginBottom: 8 }}>Neçə söz istəyirsən?</p>
+            <p style={{ fontSize: 13, color: T.textSoft, marginBottom: 8 }}>{t("how_many_words")}</p>
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
               {[10, 15, 20, 30].map((n) => (
                 <button key={n} onClick={() => setCount(n)} className="fc-opt" style={{
@@ -203,14 +205,14 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
                   background: count === n ? T.card : "transparent",
                   color: count === n ? "#fff" : T.text,
                   border: `1px solid ${count === n ? T.card : T.border}`,
-                }}>{n} söz</button>
+                }}>{n} {t("word_unit")}</button>
               ))}
             </div>
           </>
         )}
         {guestMode && (
           <p style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 16 }}>
-            Qonaq kimi 1 nümunə kartla tanış ola bilərsən — tam təcrübə üçün qeydiyyatdan keç.
+            {t("guest_flashcard_notice")}
           </p>
         )}
 
@@ -221,7 +223,7 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
             <span style={{ fontSize: 26 }}>🔄</span>
             <span>
               <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>Flashcards</span>
-              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>Kartı çevir, sözü öyrən</span>
+              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{t("flip_learn")}</span>
             </span>
           </button>
           <button className="fc-card" onClick={async () => {
@@ -234,7 +236,7 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
             <span style={{ fontSize: 26 }}>{guestMode ? "🔒" : "🎯"}</span>
             <span>
               <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>Match</span>
-              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{guestMode ? "Qeydiyyat lazımdır" : "Sözü tərcüməsi ilə uyğunlaşdır"}</span>
+              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{guestMode ? t("registration_required") : t("match_desc")}</span>
             </span>
           </button>
           <button className="fc-card" onClick={async () => {
@@ -246,8 +248,8 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
           }}>
             <span style={{ fontSize: 26 }}>{guestMode ? "🔒" : "🌀"}</span>
             <span>
-              <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>Cümlə qur</span>
-              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{guestMode ? "Qeydiyyat lazımdır" : "Boşluq doldur, sözləri sırala"}</span>
+              <span style={{ display: "block", fontWeight: 800, color: T.navy, fontSize: 15 }}>{t("sentence_builder")}</span>
+              <span style={{ display: "block", fontSize: 12.5, color: T.textSoft, marginTop: 2 }}>{guestMode ? t("registration_required") : t("sentence_desc")}</span>
             </span>
           </button>
         </div>
@@ -283,6 +285,7 @@ export default function Flashcards({ session, guestMode, setAuthModal }) {
 }
 
 function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimary, btnGhost, guestMode, setAuthModal }) {
+  const { t } = useLanguage();
   const [queue, setQueue] = useState([]);
   const [learnedIds, setLearnedIds] = useState(new Set());
   const [missedIds, setMissedIds] = useState(new Set());
@@ -307,15 +310,15 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
   if (words === null || !ready) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
-        <p style={{ color: T.textSoft }}>Yüklənir...</p>
+        <p style={{ color: T.textSoft }}>{t("loading")}</p>
       </section>
     );
   }
   if (words.length === 0) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
-        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← Geri</button>
-        <p style={{ color: T.textSoft, textAlign: "center" }}>Bu səviyyədə hələ söz yoxdur.</p>
+        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← {t("back")}</button>
+        <p style={{ color: T.textSoft, textAlign: "center" }}>{t("no_words_level")}</p>
       </section>
     );
   }
@@ -334,11 +337,11 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
         <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
           <p style={{ fontSize: 30, margin: "0 0 6px" }}>🎉</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-            Hamısını öyrəndin!
+            {t("learned_all")}
           </p>
           <p style={{ fontSize: 13, color: T.textSoft, margin: 0 }}>
-            <span style={{ color: T.accent, fontWeight: 700 }}>{firstTry} söz ilk dəfədən</span>
-            {missedIds.size > 0 && <> · <span style={{ color: T.warm, fontWeight: 700 }}>{missedIds.size} söz təkrarla</span></>} öyrənildi
+            <span style={{ color: T.accent, fontWeight: 700 }}>{firstTry} {t("first_try_words")}</span>
+            {missedIds.size > 0 && <> · <span style={{ color: T.warm, fontWeight: 700 }}>{missedIds.size} {t("repeat_words")}</span></>} {t("learned_suffix")}
           </p>
         </div>
         {guestMode ? (
@@ -347,14 +350,14 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
             borderRadius: 10, padding: "14px 16px", marginTop: 16, textAlign: "center",
           }}>
             <p style={{ fontSize: 13.5, margin: "0 0 10px", color: T.text }}>
-              Bu qonaq nümunəsi idi — tam kart dəstinə, Match və Cümlə qur rejimlərinə çıxış üçün qeydiyyatdan keç.
+              {t("guest_summary_notice")}
             </p>
-            <button onClick={() => setAuthModal && setAuthModal("signup")} style={{ ...btnPrimary, width: "100%" }}>Qeydiyyatdan keç</button>
+            <button onClick={() => setAuthModal && setAuthModal("signup")} style={{ ...btnPrimary, width: "100%" }}>{t("sign_up")}</button>
           </div>
         ) : (
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>Rejimlərə qayıt</button>
-            <button onClick={() => setPhase("quiz")} style={{ ...btnPrimary, flex: 1.4 }}>Öyrəndiklərini sına →</button>
+            <button onClick={onExit} style={{ ...btnGhost, flex: 1 }}>{t("back_to_modes")}</button>
+            <button onClick={() => setPhase("quiz")} style={{ ...btnPrimary, flex: 1.4 }}>{t("try_learned")} →</button>
           </div>
         )}
       </section>
@@ -416,14 +419,14 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
     <section style={{ maxWidth: 560, margin: "0 auto" }}>
       <style>{MICRO_CSS}</style>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <button onClick={onExit} style={btnGhost}>← Çıx</button>
-        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{level} · {learnedIds.size}/{words.length} öyrənildi</span>
+        <button onClick={onExit} style={btnGhost}>← {t("exit")}</button>
+        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{level} · {learnedIds.size}/{words.length} {t("learned_suffix")}</span>
       </div>
       <div style={{ height: 3, background: T.border, borderRadius: 4, marginBottom: 20 }}>
         <div style={{ height: 3, width: `${(learnedIds.size / words.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
       </div>
       {missedIds.has(w.id) && (
-        <p style={{ fontSize: 11.5, color: T.warm, fontWeight: 700, margin: "0 0 8px", textAlign: "center" }}>↻ təkrar — bu sözü daha əvvəl bilmədin</p>
+        <p style={{ fontSize: 11.5, color: T.warm, fontWeight: 700, margin: "0 0 8px", textAlign: "center" }}>↻ {t("repeat_hint")}</p>
       )}
 
       <div
@@ -439,14 +442,14 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
             position: "absolute", top: 14, left: 14, zIndex: 2, padding: "5px 12px", borderRadius: 8,
             background: T.accent, color: "#fff", fontWeight: 800, fontSize: 12.5,
             opacity: Math.min(1, dragX / SWIPE_THRESHOLD), transform: `rotate(-8deg)`,
-          }}>BİLİRƏM</div>
+          }}>{t("i_know")}</div>
         )}
         {dragX < -20 && (
           <div style={{
             position: "absolute", top: 14, right: 14, zIndex: 2, padding: "5px 12px", borderRadius: 8,
             background: T.danger, color: "#fff", fontWeight: 800, fontSize: 12.5,
             opacity: Math.min(1, -dragX / SWIPE_THRESHOLD), transform: `rotate(8deg)`,
-          }}>BİLMİRƏM</div>
+          }}>{t("i_dont_know")}</div>
         )}
         <div className={`fc-flipinner${flipped ? " flipped" : ""}${dragging ? " dragging" : ""}`} style={{
           cursor: "grab",
@@ -458,7 +461,7 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
           }}>
             <button className="fc-speak-btn" onClick={speak} style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}>🔊</button>
             <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: "#fff", textAlign: "center", margin: 0 }}>{w.term}</p>
-            <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginTop: 10 }}>toxun/çevir, ya da sürüşdür</p>
+            <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginTop: 10 }}>{t("tap_flip_or_swipe")}</p>
           </div>
           <div className="fc-face fc-face-back" style={{
             background: T.surface, border: `2px solid ${T.card}`, borderRadius: 16, padding: 24,
@@ -470,24 +473,25 @@ function FlashcardSession({ words, level, onExit, onLog, onXp, T, box, btnPrimar
       </div>
 
       <p style={{ textAlign: "center", fontSize: 11, color: T.textSoft, margin: "-12px 0 14px" }}>
-        ← sürüşdür: bilmirdim &nbsp;·&nbsp; sürüşdür: bilirdim →
+        ← {t("swipe_hint_left")} &nbsp;·&nbsp; {t("swipe_hint_right")} →
       </p>
 
       <div style={{ display: "flex", gap: 10 }}>
         <button className="fc-opt" onClick={() => mark("unknown")} style={{
           flex: 1, padding: "13px 0", borderRadius: 10, fontWeight: 700, fontSize: 14,
           background: "rgba(192,57,43,0.08)", border: `1px solid ${T.danger}`, color: T.danger, cursor: "pointer",
-        }}>Bilmirdim</button>
+        }}>{t("didnt_know_btn")}</button>
         <button className="fc-opt" onClick={() => mark("known")} style={{
           flex: 1, padding: "13px 0", borderRadius: 10, fontWeight: 700, fontSize: 14,
           background: "rgba(0,168,150,0.10)", border: `1px solid ${T.accent}`, color: T.accent, cursor: "pointer",
-        }}>Bilirdim</button>
+        }}>{t("knew_btn")}</button>
       </div>
     </section>
   );
 }
 
 function MatchSession({ words, level, onExit, onXp, T, box, btnGhost }) {
+  const { t } = useLanguage();
   const [pairs, setPairs] = useState(null);
   const [selTerm, setSelTerm] = useState(null);
   const [selDef, setSelDef] = useState(null);
@@ -518,15 +522,15 @@ function MatchSession({ words, level, onExit, onXp, T, box, btnGhost }) {
   if (words === null || pairs === null) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
-        <p style={{ color: T.textSoft }}>Yüklənir...</p>
+        <p style={{ color: T.textSoft }}>{t("loading")}</p>
       </section>
     );
   }
   if (words.length === 0) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
-        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← Geri</button>
-        <p style={{ color: T.textSoft, textAlign: "center" }}>Bu səviyyədə hələ söz yoxdur.</p>
+        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← {t("back")}</button>
+        <p style={{ color: T.textSoft, textAlign: "center" }}>{t("no_words_level")}</p>
       </section>
     );
   }
@@ -564,12 +568,12 @@ function MatchSession({ words, level, onExit, onXp, T, box, btnGhost }) {
         <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
           <p style={{ fontSize: 30, margin: "0 0 6px" }}>🏆</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-            Tamamlandı!
+            {t("completed")}
           </p>
-          <p style={{ fontSize: 13, color: T.textSoft, margin: 0 }}>Vaxt: <span style={{ color: T.card, fontWeight: 700 }}>{fmtTime(seconds)}</span></p>
+          <p style={{ fontSize: 13, color: T.textSoft, margin: 0 }}>{t("time_label")}: <span style={{ color: T.card, fontWeight: 700 }}>{fmtTime(seconds)}</span></p>
           <p style={{ fontSize: 12, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{pairs.terms.length * 5} XP</p>
         </div>
-        <button onClick={onExit} style={{ ...btnGhost, width: "100%", marginTop: 16 }}>Rejimlərə qayıt</button>
+        <button onClick={onExit} style={{ ...btnGhost, width: "100%", marginTop: 16 }}>{t("back_to_modes")}</button>
       </section>
     );
   }
@@ -578,7 +582,7 @@ function MatchSession({ words, level, onExit, onXp, T, box, btnGhost }) {
     <section style={{ maxWidth: 560, margin: "0 auto" }}>
       <style>{MICRO_CSS}</style>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <button onClick={onExit} style={btnGhost}>← Çıx</button>
+        <button onClick={onExit} style={btnGhost}>← {t("exit")}</button>
         <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{level} · {fmtTime(seconds)}</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -618,6 +622,7 @@ function MatchSession({ words, level, onExit, onXp, T, box, btnGhost }) {
 }
 
 function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost }) {
+  const { t } = useLanguage();
   const [questions, setQuestions] = useState(null);
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState(null);
@@ -656,7 +661,7 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
   if (questions === null) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
-        <p style={{ color: T.textSoft }}>Test hazırlanır...</p>
+        <p style={{ color: T.textSoft }}>{t("quiz_preparing")}</p>
       </section>
     );
   }
@@ -670,13 +675,13 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
         <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px", marginBottom: 16 }}>
           <p style={{ fontSize: 30, margin: "0 0 6px" }}>{pct >= 80 ? "🏅" : pct >= 50 ? "👍" : "💪"}</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-            {correctCount} / {questions.length} doğru
+            {correctCount} / {questions.length} {t("correct_word")}
           </p>
           <p style={{ fontSize: 13, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{xp} XP</p>
         </div>
 
         <p style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 1, color: T.textSoft, margin: "0 0 10px" }}>
-          BU DƏFƏ NƏ ÖYRƏNDİN
+          {t("what_learned_now")}
         </p>
         <div style={{ display: "grid", gap: 7, marginBottom: 18 }}>
           {reviewList.map((r, i) => (
@@ -694,7 +699,7 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
           ))}
         </div>
 
-        <button onClick={onExit} style={{ ...btnPrimary, width: "100%" }}>Rejimlərə qayıt</button>
+        <button onClick={onExit} style={{ ...btnPrimary, width: "100%" }}>{t("back_to_modes")}</button>
       </section>
     );
   }
@@ -717,15 +722,15 @@ function QuizSession({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost 
     <section style={{ maxWidth: 560, margin: "0 auto" }}>
       <style>{MICRO_CSS}</style>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <button onClick={onExit} style={btnGhost}>← Çıx</button>
-        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>Sına · {idx + 1}/{questions.length}</span>
+        <button onClick={onExit} style={btnGhost}>← {t("exit")}</button>
+        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{t("quiz_label")} · {idx + 1}/{questions.length}</span>
       </div>
       <div style={{ height: 3, background: T.border, borderRadius: 4, marginBottom: 20 }}>
         <div style={{ height: 3, width: `${(idx / questions.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
       </div>
 
       <div style={{ ...box, marginBottom: 18, textAlign: "center" }}>
-        <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>BU SÖZÜN MƏNASI NƏDİR?</p>
+        <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>{t("what_does_word_mean")}</p>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: T.navy, margin: 0 }}>{q.term}</p>
       </div>
 
@@ -789,6 +794,7 @@ async function fetchWordSentences(word, level) {
 }
 
 function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost }) {
+  const { t } = useLanguage();
   const [rounds, setRounds] = useState(null); // [{ word, target:{sentence,translation}, alternates:[...] }]
   const [idx, setIdx] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -837,16 +843,16 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
   if (rounds === null) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "60px 0" }}>
-        <p style={{ color: T.textSoft }}>Cümlələr hazırlanır...</p>
+        <p style={{ color: T.textSoft }}>{t("sentences_preparing")}</p>
       </section>
     );
   }
   if (rounds.length === 0) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
-        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← Geri</button>
+        <button onClick={onExit} style={{ ...btnGhost, marginBottom: 14 }}>← {t("back")}</button>
         <p style={{ color: T.textSoft, textAlign: "center" }}>
-          Hazırda tərcüməli cümlə tapılmadı, bir az sonra yenidən sına.
+          {t("no_translated_sentences")}
         </p>
       </section>
     );
@@ -860,11 +866,11 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
         <div className="fc-pop" style={{ ...box, textAlign: "center", padding: "32px 20px" }}>
           <p style={{ fontSize: 30, margin: "0 0 6px" }}>✍️</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: T.navy, margin: "0 0 4px" }}>
-            {correctCount} / {rounds.length} doğru
+            {correctCount} / {rounds.length} {t("correct_word")}
           </p>
           <p style={{ fontSize: 13, color: T.warm, fontWeight: 700, margin: "6px 0 0" }}>+{xp} XP</p>
         </div>
-        <button onClick={onExit} style={{ ...btnPrimary, width: "100%", marginTop: 16 }}>Rejimlərə qayıt</button>
+        <button onClick={onExit} style={{ ...btnPrimary, width: "100%", marginTop: 16 }}>{t("back_to_modes")}</button>
       </section>
     );
   }
@@ -897,8 +903,8 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
     <section style={{ maxWidth: 560, margin: "0 auto" }}>
       <style>{MICRO_CSS}</style>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <button onClick={onExit} style={btnGhost}>← Çıx</button>
-        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>Cümlə qur · {idx + 1}/{rounds.length}</span>
+        <button onClick={onExit} style={btnGhost}>← {t("exit")}</button>
+        <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{t("sentence_builder")} · {idx + 1}/{rounds.length}</span>
       </div>
       <div style={{ height: 3, background: T.border, borderRadius: 4, marginBottom: 20 }}>
         <div style={{ height: 3, width: `${(idx / rounds.length) * 100}%`, background: T.card, borderRadius: 4, transition: "width .3s" }} />
@@ -907,7 +913,7 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
       {!showAlternates ? (
         <>
           <div style={{ ...box, marginBottom: 16 }}>
-            <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>BU CÜMLƏNİ ALMANCA YAZ</p>
+            <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>{t("write_this_sentence")}</p>
             <p style={{ fontSize: 17, lineHeight: 1.5, color: T.navy, margin: 0, fontWeight: 600 }}>{r.target.translation}</p>
           </div>
 
@@ -916,7 +922,7 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
             onChange={(e) => { setTyped(e.target.value); if (result === "err") setResult(null); }}
             disabled={result === "ok"}
             rows={2}
-            placeholder="Cümləni bura yaz..."
+            placeholder={t("sentence_placeholder")}
             className={result === "err" ? "fc-wrong" : result === "ok" ? "fc-right" : ""}
             style={{
               width: "100%", padding: "12px 14px", borderRadius: 10, resize: "none", boxSizing: "border-box",
@@ -928,41 +934,41 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
 
           {result === "err" && (
             <p style={{ fontSize: 12.5, color: T.danger, fontWeight: 700, margin: "0 0 10px" }}>
-              Düzgün deyil, yenidən cəhd et.
+              {t("wrong_try_again")}
             </p>
           )}
 
           {!revealed ? (
             <>
               <button onClick={checkAnswer} disabled={!typed.trim()} style={{ ...btnPrimary, width: "100%", opacity: typed.trim() ? 1 : 0.5 }}>
-                Yoxla
+                {t("check")}
               </button>
               {attempts >= 3 && (
                 <button onClick={revealAndContinue} style={{ ...btnGhost, width: "100%", marginTop: 10, fontSize: 12.5 }}>
-                  Cavabı göstər
+                  {t("show_answers")}
                 </button>
               )}
             </>
           ) : (
             <>
               <div style={{ ...box, marginBottom: 12, background: "rgba(0,168,150,0.06)" }}>
-                <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 6px", fontWeight: 700 }}>DOĞRU CAVAB</p>
+                <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 6px", fontWeight: 700 }}>{t("correct_answer_label")}</p>
                 <p style={{ fontSize: 15.5, color: T.navy, margin: 0, fontWeight: 600 }}>{r.target.sentence}</p>
               </div>
-              <button onClick={goNext} style={{ ...btnPrimary, width: "100%" }}>Davam et →</button>
+              <button onClick={goNext} style={{ ...btnPrimary, width: "100%" }}>{t("continue")} →</button>
             </>
           )}
         </>
       ) : (
         <>
           <div className="fc-pop" style={{ ...box, marginBottom: 14, borderColor: T.accent, background: "rgba(0,168,150,0.08)" }}>
-            <p style={{ fontSize: 12.5, color: T.accent, fontWeight: 800, margin: "0 0 8px" }}>✓ DOĞRU!</p>
+            <p style={{ fontSize: 12.5, color: T.accent, fontWeight: 800, margin: "0 0 8px" }}>✓ {t("correct_exclaim")}</p>
             <p style={{ fontSize: 16, color: T.navy, margin: 0, fontWeight: 600 }}>{r.target.sentence}</p>
           </div>
 
           {r.alternates.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>DİGƏR NÜMUNƏLƏR</p>
+              <p style={{ fontSize: 11.5, color: T.textSoft, margin: "0 0 8px", fontWeight: 700 }}>{t("other_examples")}</p>
               <div style={{ display: "grid", gap: 8 }}>
                 {r.alternates.map((alt, i) => (
                   <div key={i} style={{ ...box, padding: "10px 12px" }}>
@@ -974,7 +980,7 @@ function SentenceGame({ words, level, onExit, onXp, T, box, btnPrimary, btnGhost
             </div>
           )}
 
-          <button onClick={goNext} style={{ ...btnPrimary, width: "100%" }}>Növbəti →</button>
+          <button onClick={goNext} style={{ ...btnPrimary, width: "100%" }}>{t("next")} →</button>
         </>
       )}
     </section>
