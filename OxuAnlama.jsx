@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { sb, sbAuthInsert } from "./supabase";
 import { Flame, Award } from "lucide-react";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366", text: "#2A3D3C", textSoft: "rgba(42,61,60,0.66)",
@@ -57,6 +58,7 @@ const MICRO_CSS = `
 `;
 
 export default function OxuAnlama({ session, guestMode, setAuthModal }) {
+  const { t } = useLanguage();
   const [screen, setScreen] = useState("level"); // level | groups | list | test
   const [level, setLevel] = useState("A1");
   const [allUnits, setAllUnits] = useState(null);
@@ -152,11 +154,11 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
           }}>
             <span style={{ fontSize: 17 }}>📖</span>
             <span style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy }}>
-              Oxu Anlama
+              {t("reading")}
             </span>
           </div>
           <p style={{ fontSize: 13.5, color: T.textSoft, margin: "10px 0 0" }}>
-            TELC/Goethe formatında mətn və suallar — real imtahana hazırlaş.
+            {t("ra_subtitle")}
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -200,13 +202,13 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <style>{MICRO_CSS}</style>
-        <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← Səviyyələr</button>
+        <button onClick={() => setScreen("level")} style={{ ...btnGhost, marginBottom: 14 }}>← {t("levels_back")}</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
-          {level} · Oxu Anlama
+          {level} · {t("reading")}
         </p>
-        {allUnits === null && <p style={{ color: T.textSoft, textAlign: "center" }}>Yüklənir...</p>}
+        {allUnits === null && <p style={{ color: T.textSoft, textAlign: "center" }}>{t("loading")}</p>}
         {allUnits && groups.length === 0 && (
-          <p style={{ color: T.textSoft, textAlign: "center" }}>Bu səviyyədə hələ vahid yoxdur.</p>
+          <p style={{ color: T.textSoft, textAlign: "center" }}>{t("no_units_level")}</p>
         )}
         <div style={{ display: "grid", gap: 9 }}>
           {groups.map((g, gi) => {
@@ -226,14 +228,14 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
                     </span>
                   )}
                   <span>
-                    <span style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.navy, letterSpacing: tier === 3 ? 0.3 : 0 }}>{roman} Qrup</span>
+                    <span style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.navy, letterSpacing: tier === 3 ? 0.3 : 0 }}>{roman} {t("group_label")}</span>
                     <span style={{ display: "block", fontSize: 12, color: T.textSoft, marginTop: 2 }}>
-                      Fəsil {g[0].unit_number}-{g[g.length - 1].unit_number}
+                      {t("chapter_word")} {g[0].unit_number}-{g[g.length - 1].unit_number}
                     </span>
                   </span>
                 </span>
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: done === g.length ? T.accent : (tier > 0 ? accent : T.textSoft) }}>
-                  {done > 0 ? `${done}/${g.length} tamamlandı` : `${g.length} vahid →`}
+                  {done > 0 ? `${done}/${g.length} ${t("completed_count")}` : `${g.length} ${t("units_count")} →`}
                 </span>
               </button>
             );
@@ -250,9 +252,9 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
     return (
       <section style={{ maxWidth: 560, margin: "0 auto" }}>
         <style>{MICRO_CSS}</style>
-        <button onClick={() => setScreen("groups")} style={{ ...btnGhost, marginBottom: 14 }}>← Qruplar</button>
+        <button onClick={() => setScreen("groups")} style={{ ...btnGhost, marginBottom: 14 }}>← {t("groups_back")}</button>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: T.navy, margin: "0 0 14px" }}>
-          {level} · Fəsil {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
+          {level} · {t("chapter_word")} {selectedGroup[0].unit_number}-{selectedGroup[selectedGroup.length - 1].unit_number}
         </p>
         <div style={{ display: "grid", gap: 9 }}>
           {selectedGroup.map((u) => {
@@ -264,12 +266,12 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
                 ...(locked ? { opacity: 0.55 } : {}),
               }}>
                 {tier === 3 && <DiamondWatermark />}
-                <span style={{ fontWeight: 700, color: T.navy }}>Fəsil {u.unit_number}</span>
+                <span style={{ fontWeight: 700, color: T.navy }}>{t("chapter_word")} {u.unit_number}</span>
                 <span style={{
                   color: locked ? T.textSoft : (progress[u.unit_number] ? T.accent : (tier > 0 ? accent : T.textSoft)),
                   fontSize: 12, fontWeight: progress[u.unit_number] ? 700 : 400,
                 }}>
-                  {locked ? "🔒 Qeydiyyat lazımdır" : (progress[u.unit_number] ? "✓ Tamamlandı" : "→")}
+                  {locked ? `🔒 ${t("registration_required")}` : (progress[u.unit_number] ? `✓ ${t("completed_check")}` : "→")}
                 </span>
               </button>
             );
@@ -291,8 +293,8 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
       <section style={{ maxWidth: 640, margin: "0 auto" }}>
         <style>{MICRO_CSS}</style>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <button onClick={() => setScreen("list")} style={btnGhost}>← Geri</button>
-          <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{u.level} · Fəsil {u.unit_number}</span>
+          <button onClick={() => setScreen("list")} style={btnGhost}>← {t("back")}</button>
+          <span style={{ fontSize: 12.5, color: T.textSoft, fontWeight: 700 }}>{u.level} · {t("chapter_word")} {u.unit_number}</span>
         </div>
 
         {submitted && (
@@ -303,12 +305,12 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
             <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 700, color: T.navy }}>
               {sc.correct} / {sc.total}
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: 12.5, color: T.textSoft }}>doğru cavab</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12.5, color: T.textSoft }}>{t("correct_answer_count")}</p>
           </div>
         )}
 
         {/* ---- Aufgabe 1 ---- */}
-        <TaskHeader n={1} title={isB2 ? "Mətni oxuyun və düzgün cavabı seçin" : "Mesajı oxuyun. Cümlələr doğru, yoxsa yanlışdır?"} />
+        <TaskHeader n={1} title={isB2 ? t("task_read_choose") : t("task_read_msg_tf")} />
         <div style={{ ...box, marginBottom: 16 }}>
           <p style={{ whiteSpace: "pre-line", fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px", fontStyle: "italic" }}>
             {u.msg_text}
@@ -329,7 +331,7 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
         {(isB1 || isB2) && (
           <>
             {/* ---- Teil 2: qəzet məqaləsi ---- */}
-            <TaskHeader n={2} title="Məqaləni oxuyun və düzgün cavabı seçin" />
+            <TaskHeader n={2} title={t("task_article_choose")} />
             <div style={{ ...box, marginBottom: 16 }}>
               {u.article_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.article_title}</p>}
               <p style={{ whiteSpace: "pre-line", fontSize: 14, lineHeight: 1.65, color: T.text, margin: "0 0 16px" }}>{u.article_text}</p>
@@ -341,7 +343,7 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
             </div>
 
             {/* ---- Teil 3: fikirlər ---- */}
-            <TaskHeader n={3} title="Fikirləri oxuyun — kim nə deyir?" />
+            <TaskHeader n={3} title={t("task_opinions_who")} />
             <div style={{ ...box, marginBottom: 16 }}>
               <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
                 {u.task3_speakers.map((s, i) => (
@@ -361,7 +363,7 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
             {isB1 && (
               <>
                 {/* ---- Teil 4 (B1): elanlar ---- */}
-                <TaskHeader n={4} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
+                <TaskHeader n={4} title={t("task_ads_match")} />
                 <div style={{ ...box, marginBottom: 18 }}>
                   <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
                     {adLetters.map((l) => (
@@ -384,7 +386,7 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
             {isB2 && (
               <>
                 {/* ---- Teil 4 (B2): Lückentext ---- */}
-                <TaskHeader n={4} title="Boşluqları uyğun hissə ilə doldurun (hamısı istifadə olunmaya bilər)" />
+                <TaskHeader n={4} title={t("task_gap_fill")} />
                 <div style={{ ...box, marginBottom: 18 }}>
                   {u.gap_title && <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 800, color: T.navy }}>{u.gap_title}</p>}
                   <GapTextDisplay text={u.gap_text} T={T} />
@@ -399,7 +401,7 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
                   </div>
                   <div style={{ height: 1, background: T.border, margin: "0 0 16px" }} />
                   {(u.gap_questions || []).map((q, i) => (
-                    <MatchQuestion key={i} num={i + 16} person={`Boşluq (${q.gap}) üçün uyğun hissəni seç`}
+                    <MatchQuestion key={i} num={i + 16} person={`${t("gap_choose_prefix")} (${q.gap}) ${t("gap_choose_suffix")}`}
                       letters={(u.gap_options || []).map((o) => o.label)}
                       value={answers[`gap_${i}`]} correct={q.a} submitted={submitted}
                       onChange={(v) => setAns(`gap_${i}`, v)} />
@@ -413,7 +415,7 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
         {(!isB1 && !isB2) && (
           <>
             {/* ---- Aufgabe 2 ---- */}
-            <TaskHeader n={2} title="Hər şəxsə uyğun elanı seçin (hamısı istifadə olunmaya bilər)" />
+            <TaskHeader n={2} title={t("task_ads_match")} />
             <div style={{ ...box, marginBottom: 16 }}>
               <div style={{ display: "grid", gap: 7, marginBottom: 16 }}>
                 {adLetters.map((l) => (
@@ -433,9 +435,9 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
 
             {/* ---- Aufgabe 3 ---- */}
             <TaskHeader n={3} title={
-              u.task3_type === "mc" ? "Mətni oxuyun və düzgün cavabı seçin"
-              : u.task3_type === "opinion" ? "Fikirləri oxuyun — kim nə deyir?"
-              : "Mətni oxuyun. Cümlələr doğru, yoxsa yanlışdır?"
+              u.task3_type === "mc" ? t("task_read_choose")
+              : u.task3_type === "opinion" ? t("task_opinions_who")
+              : t("task_read_text_tf")
             } />
             <div style={{ ...box, marginBottom: 18 }}>
               {u.task3_type !== "opinion" && (
@@ -478,9 +480,9 @@ export default function OxuAnlama({ session, guestMode, setAuthModal }) {
         )}
 
         {!submitted ? (
-          <button onClick={handleSubmit} style={{ ...btnPrimary, width: "100%" }}>Yoxla</button>
+          <button onClick={handleSubmit} style={{ ...btnPrimary, width: "100%" }}>{t("check")}</button>
         ) : (
-          <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>Fəsillərə qayıt</button>
+          <button onClick={() => setScreen("list")} style={{ ...btnPrimary, width: "100%" }}>{t("back_to_chapters")}</button>
         )}
       </section>
     );
@@ -528,6 +530,7 @@ function optStyle(active, isRight, isWrongPick, submitted) {
 }
 
 function RFQuestion({ num, question, value, correct, submitted, onChange }) {
+  const { t } = useLanguage();
   return (
     <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
       <p style={{ margin: "0 0 8px", fontSize: 13.5, color: T.text, lineHeight: 1.4 }}>
@@ -541,7 +544,7 @@ function RFQuestion({ num, question, value, correct, submitted, onChange }) {
               flex: 1, padding: "9px 0", borderRadius: 8, fontWeight: 700, fontSize: 13,
               background: s.bg, border: `1px solid ${s.bd}`, color: s.col, cursor: submitted ? "default" : "pointer",
             }}>
-              {opt === "R" ? "Doğru" : "Yanlış"}
+              {opt === "R" ? t("correct") : t("incorrect")}
             </button>
           );
         })}
