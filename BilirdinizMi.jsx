@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { sb } from "./supabase";
+import { useLanguage } from "./i18n/LanguageContext";
 
 const T = {
   navy: "#003366",
@@ -30,6 +31,7 @@ function dayNumber() {
 }
 
 export default function BilirdinizMi() {
+  const { t, lang } = useLanguage();
   const [item, setItem] = useState(null);
   const [flipped, setFlipped] = useState(false);
 
@@ -46,6 +48,10 @@ export default function BilirdinizMi() {
   }, []);
 
   if (!item) return null;
+
+  const localizedTitle = (lang !== "az" && item[`title_${lang}`]) || item.title;
+  const localizedFact = (lang !== "az" && item[`fact_${lang}`]) || item.fact;
+  const localizedCategory = (lang !== "az" && item[`category_${lang}`]) || item.category;
 
   const face = {
     position: "absolute", inset: 0,
@@ -98,21 +104,21 @@ export default function BilirdinizMi() {
             </svg>
 
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2.4, color: T.warm, marginBottom: 7 }}>
-              QARTAL GÖZÜ
+              {t("qartal_gozu")}
             </div>
 
             <div style={{
               fontFamily: "'Fraunces', serif", fontSize: 27, fontWeight: 700,
               color: "#F5F5DC", lineHeight: 1.18, marginBottom: 12,
             }}>
-              BİLİRDİNİZ Mİ?
+              {t("bilirdiniz_mi")}
             </div>
 
             <p style={{
               margin: 0, fontSize: 15, lineHeight: 1.5, fontWeight: 600,
               color: "rgba(245,245,220,0.92)", maxWidth: 340,
             }}>
-              {item.title}
+              {localizedTitle}
             </p>
 
             <div style={{
@@ -126,7 +132,7 @@ export default function BilirdinizMi() {
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                 fontSize: 11,
               }}>&#8635;</span>
-              Kartı çevir
+              {t("flip_card")}
             </div>
           </div>
 
@@ -137,15 +143,15 @@ export default function BilirdinizMi() {
             border: `1px solid ${T.border}`,
           }}>
             <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 1.6, color: T.warm, marginBottom: 10 }}>
-              &#129413; {(item.category || "FAKT").toUpperCase()}
+              &#129413; {(localizedCategory || t("fact_fallback_category")).toUpperCase()}
             </div>
 
             <p style={{ margin: "0 0 10px", fontSize: 15, fontWeight: 700, color: T.navy, lineHeight: 1.4 }}>
-              {item.title}
+              {localizedTitle}
             </p>
 
             <p style={{ margin: 0, fontSize: 13.5, color: T.text, lineHeight: 1.68, maxHeight: 130, overflow: "auto" }}>
-              {item.fact}
+              {localizedFact}
             </p>
 
             <div style={{
@@ -153,7 +159,7 @@ export default function BilirdinizMi() {
               fontSize: 11.5, color: T.textSoft, display: "flex", alignItems: "center", gap: 6,
             }}>
               <span style={{ color: T.accent, fontWeight: 700 }}>&#9679;</span>
-              Növbəti fakt sabah səni gözləyir
+              {t("next_fact_tomorrow")}
             </div>
           </div>
         </div>
