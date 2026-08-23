@@ -17,6 +17,11 @@
 
 export const translations = {
   az: {
+    qartal_gozu: "QARTAL GÖZÜ",
+    bilirdiniz_mi: "BİLİRDİNİZ Mİ?",
+    flip_card: "Kartı çevir",
+    fact_fallback_category: "FAKT",
+    next_fact_tomorrow: "Növbəti fakt sabah səni gözləyir",
     nav_home: "Ana",
     nav_lessons: "Dərslər",
     nav_dictionary: "Lüğət",
@@ -368,6 +373,11 @@ export const translations = {
   },
 
   ru: {
+    qartal_gozu: "ОРЛИНЫЙ ГЛАЗ",
+    bilirdiniz_mi: "ЗНАЛИ ЛИ ВЫ?",
+    flip_card: "Переверни карточку",
+    fact_fallback_category: "ФАКТ",
+    next_fact_tomorrow: "Следующий факт ждёт тебя завтра",
     nav_home: "Главная",
     nav_lessons: "Уроки",
     nav_dictionary: "Словарь",
@@ -719,6 +729,11 @@ export const translations = {
   },
 
   en: {
+    qartal_gozu: "EAGLE EYE",
+    bilirdiniz_mi: "DID YOU KNOW?",
+    flip_card: "Flip the card",
+    fact_fallback_category: "FACT",
+    next_fact_tomorrow: "The next fact awaits you tomorrow",
     nav_home: "Home",
     nav_lessons: "Lessons",
     nav_dictionary: "Dictionary",
@@ -1070,6 +1085,11 @@ export const translations = {
   },
 
   tr: {
+    qartal_gozu: "KARTAL GÖZÜ",
+    bilirdiniz_mi: "BİLİYOR MUYDUNUZ?",
+    flip_card: "Kartı çevir",
+    fact_fallback_category: "GERÇEK",
+    next_fact_tomorrow: "Sıradaki gerçek yarın seni bekliyor",
     nav_home: "Ana Sayfa",
     nav_lessons: "Dersler",
     nav_dictionary: "Sözlük",
@@ -1425,6 +1445,11 @@ export const translations = {
   },
 
   ky: {
+    qartal_gozu: "БҮРКҮТ КӨЗҮ",
+    bilirdiniz_mi: "БИЛЧҮҢҮЗБҮ?",
+    flip_card: "Карточканы бур",
+    fact_fallback_category: "БАЯН",
+    next_fact_tomorrow: "Кийинки баян сени эртең күтөт",
     nav_home: "Башкы",
     nav_lessons: "Сабактар",
     nav_dictionary: "Сөздүк",
