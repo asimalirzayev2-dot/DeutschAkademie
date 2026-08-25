@@ -5,8 +5,18 @@ import { LEVELS } from "./constants";
 import { shuffle, shuffleOptions, notifyTeacher } from "./utils";
 import { useLanguage } from "./i18n/LanguageContext";
 
+// Seçilmiş dilə görə dərsin başlığını/mətnini qaytarır; həmin dildə tərcümə
+// yoxdursa (və ya dil Azərbaycancadırsa) Azərbaycan mətninə geri qayıdır.
+function localizeLesson(l, lang) {
+  if (!l) return { title: "", content: "" };
+  if (!lang || lang === "az") return { title: l.title, content: l.content };
+  return {
+    title: l[`title_${lang}`] || l.title,
+    content: l[`content_${lang}`] || l.content,
+  };
+}
+
 function GrowingTree({ progress, completedDays, totalDays, T }) {
-  const { t } = useLanguage();
   const trunkH = 40 + progress * 90;
   const branches = Math.max(2, Math.round(progress * 9) + 2);
   const baseX = 140, baseY = 190;
@@ -34,13 +44,12 @@ function GrowingTree({ progress, completedDays, totalDays, T }) {
           </g>
         ))}
       </svg>
-      <p style={{ fontSize: 12.5, color: T.textSoft, margin: "4px 0 0" }}>{completedDays} / {totalDays} {t("days_completed_suffix")}</p>
+      <p style={{ fontSize: 12.5, color: T.textSoft, margin: "4px 0 0" }}>{completedDays} / {totalDays} gün tamamlandı</p>
     </div>
   );
 }
 
 function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMode, setAuthModal }) {
-  const { t } = useLanguage();
   const [level, setLevel] = useState("A1");
   const [lessons, setLessons] = useState([]);
   const [progress, setProgress] = useState({});
@@ -51,6 +60,7 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizResult, setQuizResult] = useState(null);
   const [shared, setShared] = useState(false);
+  const { lang } = useLanguage();
 
   const today = new Date().toISOString().slice(0, 10);
   const T = {
@@ -61,7 +71,7 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
   };
 
   useEffect(() => {
-    sb(`lessons?level=eq.${level}&select=level,num,title,content,day_number`)
+    sb(`lessons?level=eq.${level}&select=level,num,title,content,title_ru,content_ru,title_en,content_en,title_tr,content_tr,title_ky,content_ky,day_number`)
       .then((rows) => setLessons(rows.sort((a, b) => parseInt(a.num) - parseInt(b.num))))
       .catch(() => setLessons([]));
     if (!session) { setProgress({}); setDailyAdvances(0); return; }
@@ -159,9 +169,9 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
   function shareWithTeacher() {
     if (!profile?.assigned_teacher_email || !quizResult) return;
     notifyTeacher({
-      teacherEmail: profile.assigned_teacher_email, teacherName: profile.assigned_teacher_name || t("teacher_fallback"),
-      studentName: profile?.name || t("student_fallback"), studentPhone: "—",
-      studentLevel: `${t("lesson_result_prefix")} ${quizResult.lessonNum} ${t("lesson_result_suffix")}: ${quizResult.pct}%`,
+      teacherEmail: profile.assigned_teacher_email, teacherName: profile.assigned_teacher_name || "Müəllim",
+      studentName: profile?.name || "Tələbə", studentPhone: "—",
+      studentLevel: `Dərs ${quizResult.lessonNum} nəticəsi: ${quizResult.pct}%`,
     });
     setShared(true);
   }
@@ -184,7 +194,7 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
     const q = quizQs.questions[quizIdx];
     return (
       <div style={wrapStyle}>
-        <p style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 8 }}>{t("question_word")} {quizIdx + 1}/{quizQs.questions.length}</p>
+        <p style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 8 }}>Sual {quizIdx + 1}/{quizQs.questions.length}</p>
         <p style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 16 }}>{q.q}</p>
         <div style={{ display: "grid", gap: 8 }}>
           {q.options.map((opt, i) => (
@@ -200,11 +210,11 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
           ))}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-          <button onClick={() => setQuizIdx(Math.max(0, quizIdx - 1))} disabled={quizIdx === 0} style={btnSecondary}>← {t("back")}</button>
+          <button onClick={() => setQuizIdx(Math.max(0, quizIdx - 1))} disabled={quizIdx === 0} style={btnSecondary}>← Geri</button>
           {quizIdx < quizQs.questions.length - 1 ? (
-            <button onClick={() => setQuizIdx(quizIdx + 1)} style={btnPrimary}>{t("next_btn")} →</button>
+            <button onClick={() => setQuizIdx(quizIdx + 1)} style={btnPrimary}>İrəli →</button>
           ) : (
-            <button onClick={finishQuiz} style={btnPrimary}>{t("finish_btn")}</button>
+            <button onClick={finishQuiz} style={btnPrimary}>Bitir</button>
           )}
         </div>
       </div>
@@ -215,17 +225,17 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
   if (quizResult) {
     return (
       <div style={wrapStyle}>
-        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: T.text, marginTop: 0 }}>{quizResult.passed ? `✓ ${t("quiz_passed_title")}` : t("quiz_retry_title")}</h3>
+        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: T.text, marginTop: 0 }}>{quizResult.passed ? "✓ Keçdin!" : "Təkrar Lazımdır"}</h3>
         <p style={{ fontSize: 30, fontWeight: 800, color: quizResult.passed ? T.accent : "#C0392B" }}>{quizResult.pct}%</p>
         <p style={{ fontSize: 13.5, color: T.textSoft, marginBottom: 14 }}>
-          {quizResult.passed ? t("quiz_passed_desc") : t("quiz_retry_desc")}
+          {quizResult.passed ? "Növbəti dərsə keçə bilərsən." : "75% və yuxarı lazımdır — dərsi bir daha nəzərdən keçirib yenidən sına."}
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => { setQuizQs(null); setQuizResult(null); }} style={btnPrimary}>{t("continue")}</button>
+          <button onClick={() => { setQuizQs(null); setQuizResult(null); }} style={btnPrimary}>Davam Et</button>
           {profile?.assigned_teacher_email && !shared && (
-            <button onClick={shareWithTeacher} style={btnSecondary}>{t("share_with_teacher_btn")}</button>
+            <button onClick={shareWithTeacher} style={btnSecondary}>Müəlliminlə Paylaş</button>
           )}
-          {shared && <span style={{ fontSize: 12.5, color: T.accent, alignSelf: "center" }}>✓ {t("shared_confirmation")}</span>}
+          {shared && <span style={{ fontSize: 12.5, color: T.accent, alignSelf: "center" }}>✓ Paylaşıldı</span>}
         </div>
       </div>
     );
@@ -270,18 +280,18 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
                 width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                 background: fullyPassed ? T.accent : T.warmSoft, color: fullyPassed ? "#fff" : T.warm, fontSize: 13, fontWeight: 700,
               }}>{fullyPassed ? "✓" : dayGroup.day}</div>
-              <h4 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, color: T.text }}>{t("day_word")} {dayGroup.day}</h4>
+              <h4 style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: 15, color: T.text }}>Gün {dayGroup.day}</h4>
               {!unlocked && guestMode && (
                 <button onClick={() => setAuthModal && setAuthModal("signup")} style={{ fontSize: 12, color: T.warm, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  🔒 {t("registration_required")}
+                  🔒 Qeydiyyat lazımdır
                 </button>
               )}
-              {!unlocked && !guestMode && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 {t("locked_finish_previous_day")}</span>}
+              {!unlocked && !guestMode && <span style={{ fontSize: 12, color: T.textSoft }}>🔒 əvvəlki günü bitir</span>}
             </div>
 
             {unlocked && !fullyPassed && dayIdx > 0 && dailyAdvances >= 1 && !isDayFullyPassed(days[dayIdx - 1]?.lessons || []) === false && dailyAdvances >= 1 && dayGroup.lessons.every((l) => !progress[l.num]) && (
               <div style={{ ...wrapStyle, background: T.warmSoft, marginBottom: 10, padding: "12px 16px" }}>
-                <p style={{ margin: 0, fontSize: 13.5, color: T.text }}>🌙 {t("daily_goal_done_msg")}</p>
+                <p style={{ margin: 0, fontSize: 13.5, color: T.text }}>🌙 Bugünkü günlük məqsədin bitib, sabah davam et 🙂</p>
               </div>
             )}
 
@@ -289,6 +299,7 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
               {dayGroup.lessons.map((l) => {
                 const lessonProgress = progress[l.num];
                 const isOpen = openLesson === l.num;
+                const loc = localizeLesson(l, lang);
                 return (
                   <div key={l.num} style={{
                     background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, opacity: unlocked ? 1 : 0.4,
@@ -302,17 +313,17 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
                       }}
                       disabled={!unlocked}
                     >
-                      <span>{lessonProgress?.passed ? "✓ " : ""}{l.title}</span>
+                      <span>{lessonProgress?.passed ? "✓ " : ""}{loc.title}</span>
                       {unlocked && <ChevronRight size={15} color={T.accent} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }} />}
                     </button>
                     {isOpen && unlocked && (
                       <div style={{ padding: "0 16px 16px" }}>
-                        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, color: T.textSoft, lineHeight: 1.6 }}>{l.content}</pre>
+                        <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, color: T.textSoft, lineHeight: 1.6 }}>{loc.content}</pre>
                         {lessonProgress?.best_score != null && (
-                          <p style={{ fontSize: 12, color: T.textSoft, margin: "0 0 10px" }}>{t("best_score_label")}: {lessonProgress.best_score}%</p>
+                          <p style={{ fontSize: 12, color: T.textSoft, margin: "0 0 10px" }}>Ən yaxşı nəticən: {lessonProgress.best_score}%</p>
                         )}
                         <button onClick={() => startQuiz(l.num)} style={btnPrimary}>
-                          {lessonProgress?.passed ? t("retry_quiz_btn") : t("ready_test_btn")}
+                          {lessonProgress?.passed ? "Yenidən Sına" : "Hazıram, Test Et"}
                         </button>
                       </div>
                     )}
