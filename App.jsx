@@ -1000,14 +1000,25 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView,
   const [level, setLevel] = useState("A1");
   const [openTopic, setOpenTopic] = useState(null);
   const [lessons, setLessons] = useState([]);
+  const { lang } = useLanguage();
   useEffect(() => {
     let alive = true;
-    sb(`lessons?level=eq.${level}&select=level,num,title,content`)
+    sb(`lessons?level=eq.${level}&select=level,num,title,content,title_ru,content_ru,title_en,content_en,title_tr,content_tr,title_ky,content_ky`)
       .then((rows) => { if (alive) setLessons(rows.sort((a, b) => parseInt(a.num) - parseInt(b.num))); })
       .catch(() => { if (alive) setLessons([]); });
     return () => { alive = false; };
   }, [level]);
   const hasContent = lessons.length > 0;
+  // Seçilmiş dilə görə dərsin başlığını/mətnini qaytarır; həmin dildə tərcümə
+  // yoxdursa (və ya dil Azərbaycancadırsa) Azərbaycan mətninə geri qayıdır.
+  function localizeLesson(l) {
+    if (!l) return { title: "", content: "" };
+    if (!lang || lang === "az") return { title: l.title, content: l.content };
+    return {
+      title: l[`title_${lang}`] || l.title,
+      content: l[`content_${lang}`] || l.content,
+    };
+  }
 
   return (
     <section style={portalStyles.section}>
@@ -1033,15 +1044,16 @@ function LessonsView({ topicsByLevel, isPremium, isAdmin, setAuthModal, setView,
         <div style={{ display: "grid", gap: 10 }}>
           {lessons.map((l) => {
             const isOpen = openTopic === l.num;
+            const loc = localizeLesson(l);
             return (
               <div key={l.num} style={portalStyles.lessonCard}>
                 <button onClick={() => setOpenTopic(isOpen ? null : l.num)} style={portalStyles.lessonHeader}>
-                  <span>{l.num}. {l.title}</span>
+                  <span>{l.num}. {loc.title}</span>
                   <ChevronRight size={16} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }} />
                 </button>
                 {isOpen && (
                   <div style={portalStyles.lessonBodyWrap}>
-                    <pre style={portalStyles.lessonBody}>{l.content}</pre>
+                    <pre style={portalStyles.lessonBody}>{loc.content}</pre>
                     {(isPremium || isAdmin) ? (
                       <a href={pdfUrl(level, l.num)} target="_blank" rel="noopener noreferrer" style={portalStyles.pdfLink}>
                         ✦ Genişləndirilmiş izahı PDF olaraq endir
@@ -1218,7 +1230,6 @@ function AuthRequired({ setAuthModal }) {
 
 // Qonaq (giriş etməmiş) istifadəçilər üçün — bölməni bağlamır, sadəcə yuxarıda incə xatırlatma göstərir.
 function GuestBanner({ setAuthModal, text }) {
-  const { t } = useLanguage();
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
@@ -1226,10 +1237,10 @@ function GuestBanner({ setAuthModal, text }) {
       borderRadius: 10, padding: "10px 14px", marginBottom: 16, flexWrap: "wrap",
     }}>
       <span style={{ fontSize: 13, color: "#2A3D3C", opacity: 0.85 }}>
-        {text || t("guest_default_banner")}
+        {text || "Qonaq kimi baxırsan — tam giriş üçün qeydiyyatdan keç."}
       </span>
       <button onClick={() => setAuthModal("signup")} style={{ ...portalStyles.primaryBtn, padding: "7px 14px", fontSize: 13 }}>
-        {t("sign_up")}
+        Qeydiyyatdan keç
       </button>
     </div>
   );
@@ -1591,9 +1602,9 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
                 </h1>
                 <div style={portalStyles.titleRule} />
                 <p style={portalStyles.tagline}>
-                  {profile?.name ? `${t("hero_welcome_prefix")} ${profile.name}!` : t("hero_tagline_guest")}
+                  {profile?.name ? `Xoş gəldin, ${profile.name}!` : "Alman dilini Azərbaycan dilində öyrənənlər üçün"}
                 </p>
-                {streak > 0 && <div style={portalStyles.streakBadge}>🔥 {streak} {t("streak_badge_suffix")}</div>}
+                {streak > 0 && <div style={portalStyles.streakBadge}>🔥 {streak} gündür ardıcıl buradasan</div>}
                 <div style={{ marginTop: 22 }}><WordOfDay /></div>
               </div>
             </Reveal>
@@ -1607,11 +1618,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               <Reveal delay={0.05}>
                 <PromoCard
                   gradient={["#00A896", "#00695C", "rgba(0,168,150,0.30)"]}
-                  eyebrow={t("continue_journey_eyebrow")}
+                  eyebrow="DƏRS YOLU"
                   icon="🦅"
-                  title={continueLevel ? `${t("continue_wings_prefix")} ${continueLevel}${t("continue_wings_suffix")}` : t("continue_journey_title_new")}
-                  body={continueLevel ? t("continue_journey_body_active") : t("continue_journey_body_new")}
-                  cta={continueLevel ? t("continue") : t("start_btn")}
+                  title={continueLevel ? `Qanadların ${continueLevel}-də açılıb!` : "İlk addımı at — A1 səni gözləyir!"}
+                  body={continueLevel
+                    ? "Azərbaycan dilində izahlı, addım-addım qurulmuş dərsliklərimizlə Alman qrammatikası artıq bu qədər asan olmayıb. Qaldığın yerdən davam et, zirvə yaxındır."
+                    : "Sıfırdan başlayanlar üçün düşünülüb: hər dərs sadə izahla, canlı nümunələrlə və tapşırıqlarla qurulub. Bizimlə öyrənməyə başla."}
+                  cta={continueLevel ? "Davam et" : "Başla"}
                   onClick={() => { setJumpLevel(continueLevel || "A1"); setView("lessons"); }}
                 />
               </Reveal>
@@ -1622,58 +1635,58 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
               <section style={{ display: "grid", gap: 12, marginTop: 14 }}>
                 <PromoCard
                   gradient={["#003366", "#001B33", "rgba(0,51,102,0.32)"]}
-                  eyebrow={t("promo_test_eyebrow")} icon="🥨"
-                  title={t("promo_test_title")}
-                  body={t("promo_test_body")}
-                  cta={t("promo_test_cta")}
+                  eyebrow="SƏVİYYƏ TESTİ" icon="🥨"
+                  title="Bilirsən, yoxsa bilirsən sanırsan?"
+                  body="Bir neçə dəqiqəlik onlayn testlə hansı səviyyədə olduğunu dəqiq öyrən — nəticəyə görə sənə uyğun dərs yolunu bizimlə birlikdə qurarıq."
+                  cta="Testi sına"
                   onClick={onStart}
                 />
                 <PromoCard
                   gradient={["#D4AF37", "#9C7A1E", "rgba(212,175,55,0.32)"]}
-                  eyebrow={t("promo_adlercup_eyebrow")} icon="🏆"
-                  title={t("promo_adlercup_title")}
-                  body={t("promo_adlercup_body")}
-                  cta={t("promo_adlercup_cta")}
+                  eyebrow="ADLER CUP" icon="🏆"
+                  title="Dostların hazırdır — sən hazırsanmı?"
+                  body="Canlı sual-cavab yarışında dostlarınla üz-üzə gəl. Sürətli və düzgün cavab daha çox xal qazandırır — kim qartal, kim ötəri quş, ekranda görünür."
+                  cta="Yarışa qoşul"
                   onClick={() => setView("adlercup")}
                 />
                 <PromoCard
                   gradient={["#00A896", "#FF8C00", "rgba(255,140,0,0.28)"]}
-                  eyebrow={t("promo_wordgame_eyebrow")} icon="🐝"
-                  title={t("promo_wordgame_title")}
-                  body={t("promo_wordgame_body")}
-                  cta={t("promo_wordgame_cta")}
+                  eyebrow="SÖZ TAPMACASI" icon="🐝"
+                  title="Bir söz gizlənib hərflərin arasında"
+                  body="Azərbaycanca izaha bax, hərf sayını gör, alman sözünü tap. Oyunla öyrəndiyin hər söz yadında daha möhkəm qalır."
+                  cta="Oyna"
                   onClick={() => setView("sozoyunu")}
                 />
                 <PromoCard
                   gradient={["#C97B63", "#8B4A38", "rgba(201,123,99,0.30)"]}
-                  eyebrow={t("promo_flashcards_eyebrow")} icon="🃏"
-                  title={t("promo_flashcards_title")}
-                  body={t("promo_flashcards_body")}
-                  cta={t("promo_flashcards_cta")}
+                  eyebrow="FLASHCARDS" icon="🃏"
+                  title="Kartı çevir, sözü yadında saxla"
+                  body="Lüğətimizdəki minlərlə sözdən səviyyənə uyğun kartlarla təkrar et — çevir, öyrən, yenidən sına. Bazamız daim yeni sözlərlə böyüyür."
+                  cta="Kartlara başla"
                   onClick={() => setView("flashcards")}
                 />
                 <PromoCard
                   gradient={["#8C6239", "#5C3F22", "rgba(92,63,34,0.32)"]}
-                  eyebrow={t("promo_books_eyebrow")} icon="📚"
-                  title={t("promo_books_title")}
-                  body={t("promo_books_body")}
-                  cta={t("promo_books_cta")}
+                  eyebrow="KİTABLARIMIZ" icon="📚"
+                  title="Səhifədən səhifəyə, sözdən cümləyə"
+                  body="A1-dən B2-yə qədər özümüz hazırladığımız test kitabları və qrammatika bələdçiləri ilə istədiyin yerdə, istədiyin zaman oxu."
+                  cta="Kitablara bax"
                   onClick={() => setView("books")}
                 />
                 <PromoCard
                   gradient={["#12B6C9", "#0C7F8C", "rgba(12,127,140,0.30)"]}
-                  eyebrow={t("promo_dict_eyebrow")} icon="📖"
-                  title={t("promo_dict_title")}
-                  body={t("promo_dict_body")}
-                  cta={t("promo_dict_cta")}
+                  eyebrow="LÜĞƏT" icon="📖"
+                  title="Axtardığın söz bir toxunuşda"
+                  body="Axtardığın hər sözün Azərbaycanca qarşılığını tap, səsləndir, Anki formatında ixrac et — lüğət həmişə əlinin altındadır."
+                  cta="Lüğətə keç"
                   onClick={() => setView("dictionary")}
                 />
                 <PromoCard
                   gradient={["#FF8C00", "#C96800", "rgba(255,140,0,0.30)"]}
-                  eyebrow={t("promo_courses_eyebrow")} icon="🎓"
-                  title={t("promo_courses_title")}
-                  body={t("promo_courses_body")}
-                  cta={t("promo_courses_cta")}
+                  eyebrow="KURSLAR" icon="🎓"
+                  title="Tək uçma, müəllimlə yüksəl"
+                  body="Öz müəllimini seç — sualların həmişə vaxtında cavablansın, irəliləyişin izlənsin, motivasiyanı itirmə."
+                  cta="Müəllimləri gör"
                   onClick={() => setView("courses")}
                 />
               </section>
@@ -1681,9 +1694,10 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
             {/* ---------- Haqqımızda: qısa ---------- */}
             <Reveal delay={0.16}>
               <section style={{ ...portalStyles.section, marginTop: 26 }}>
-                <h2 style={portalStyles.h2}>{t("about_us_title")}</h2>
+                <h2 style={portalStyles.h2}>Haqqımızda</h2>
                 <p style={portalStyles.body}>
-                  {t("about_us_body")}
+                  Deutsch Akademie — Azərbaycanlı öyrənənlər üçün Goethe, TestDaF və telc
+                  standartlarına uyğun hazırlanmış alman dili materialları yaradır.
                 </p>
               </section>
             </Reveal>
@@ -1692,7 +1706,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
 
         {view === "lessons" && (
           <Reveal>
-            {!session && <GuestBanner setAuthModal={setAuthModal} text={t("guest_banner_lessons")} />}
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi A1-in ilk dərslərinə baxa bilərsən — davam etmək üçün qeydiyyatdan keç." />}
             <LessonsView topicsByLevel={topicsByLevel} isPremium={isPremium} isAdmin={isAdmin} setAuthModal={setAuthModal} setView={setView} session={session} profile={profile} initialLevel={jumpLevel} guestMode={!session} />
           </Reveal>
         )}
@@ -1700,7 +1714,7 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "adlercup" && (session ? <Reveal><AdlerCup session={session} profile={profile} isAdmin={isAdmin} /></Reveal> : <AuthRequired setAuthModal={setAuthModal} />)}
         {view === "dictionary" && (
           <Reveal>
-            {!session && <GuestBanner setAuthModal={setAuthModal} text={t("guest_banner_dictionary")} />}
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi gündə 10 axtarış edə bilərsən — limitsiz üçün qeydiyyatdan keç." />}
             <DictionaryView portalStyles={portalStyles} SectionHeader={SectionHeader} guestMode={!session} guestDailyLimit={10} />
           </Reveal>
         )}
@@ -1709,13 +1723,13 @@ function Portal({ onStart, session, profile, isAdmin, isPremium, authModal, setA
         {view === "nailiyyetler" && <Reveal><Nailiyyetlerim session={session} /></Reveal>}
         {view === "hoerverstehen" && (
           <Reveal>
-            {!session && <GuestBanner setAuthModal={setAuthModal} text={t("guest_banner_listening")} />}
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1 fəsli dinləyə bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
             <Hoerverstehen session={session} guestMode={!session} setAuthModal={setAuthModal} />
           </Reveal>
         )}
         {view === "oxuanlama" && (
           <Reveal>
-            {!session && <GuestBanner setAuthModal={setAuthModal} text={t("guest_banner_reading")} />}
+            {!session && <GuestBanner setAuthModal={setAuthModal} text="Qonaq kimi 1-2 nümunə vahidə baxa bilərsən — tam kitabxana üçün qeydiyyatdan keç." />}
             <OxuAnlama session={session} guestMode={!session} setAuthModal={setAuthModal} />
           </Reveal>
         )}
