@@ -90,6 +90,7 @@ function fmtTime(s) {
 /* ========================================================================= */
 
 function InnerApp() {
+  const { t } = useLanguage();
   const [screen, setScreen] = useState("portal"); // portal | home | setup | test | result
   const [name, setName] = useState("");
   const [mode, setMode] = useState(null); // 'level' | 'check'
@@ -367,11 +368,11 @@ function InnerApp() {
     }
     const gate = mode === "level" ? canStartLevelTest() : canStartLevelCheck();
     if (!gate.ok) {
-      if (gate.reason === "guest_used") setLimitMsg("Qonaq kimi yalnız 1 pulsuz test həll edə bilərsən. Davam etmək üçün qeydiyyatdan keç.");
-      else if (gate.reason === "guest_blocked") setLimitMsg("\"Səviyyəni Yoxla\" üçün qeydiyyat lazımdır.");
-      else if (gate.reason === "daily_limit") setLimitMsg("Bugünkü 3 pulsuz test limitini istifadə etmisən. Sabah təzələnəcək, ya da Premium al.");
-      else if (gate.reason === "check_cooldown") setLimitMsg(`"Səviyyəni Yoxla" 3 gündə 1 dəfə mövcuddur. ${gate.daysLeft} gün sonra yenidən sına, ya da Premium al.`);
-      else setLimitMsg("Bir az gözlə, yoxlanılır...");
+      if (gate.reason === "guest_used") setLimitMsg(t("placement_guest_used"));
+      else if (gate.reason === "guest_blocked") setLimitMsg(t("placement_guest_blocked"));
+      else if (gate.reason === "daily_limit") setLimitMsg(t("placement_daily_limit"));
+      else if (gate.reason === "check_cooldown") setLimitMsg(`${t("placement_cooldown_prefix")} ${gate.daysLeft} ${t("placement_cooldown_suffix")}`);
+      else setLimitMsg(t("placement_checking_wait"));
       setAuthModal(!session ? "signup" : null);
       return;
     }
