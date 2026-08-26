@@ -5,14 +5,14 @@
 // başqa interfeys dili seçilsə belə material həmişə Azərbaycanca qalmalıdır.
 //
 // === TƏZƏLİK NİŞANI (bu faylı yükləməzdən əvvəl yoxla!) ===
-// Bu versiyada BÜTÜN indiyədək tərcümə olunan fayllar var (348 açar × 5 dil):
+// Bu versiyada BÜTÜN indiyədək tərcümə olunan fayllar var (354 açar × 5 dil):
 // App.jsx, Flashcards.jsx, Krossvord.jsx, OxuAnlama.jsx, Hoerverstehen.jsx,
 // SozTapmacasi.jsx, AdlerCup.jsx, AdlerCupPlayer.jsx, AdlerCupHost.jsx,
 // DictionaryView.jsx, AuthModal.jsx, Nailiyyetlerim.jsx, CoursesView.jsx,
 // PremiumView.jsx, LessonPathView.jsx
-// Bu versiya əvvəlki zədələnmiş faylı (bəzi İngiliscə mətnlərin səhvən AZ/RU
-// bloklarına qarışması) TAM DÜZƏLDİR — hər 5 blokda dəqiq eyni 348 açar var.
-// Yoxlama açarı: "which_word_open" (bunu Ctrl+F ilə axtar — tapılırsa, doğru fayldır)
+// Bu versiyaya YENİ ƏLAVƏ: "Səviyyəni Yoxla" (placement test) qonaq/limit
+// mesajları InnerApp-a əlavə olundu (6 yeni açar).
+// Yoxlama açarı: "placement_checking_wait" (bunu Ctrl+F ilə axtar — tapılırsa, doğru fayldır)
 // ==========================================================
 
 export const translations = {
@@ -415,6 +415,12 @@ export const translations = {
     log_out: "Çıxış",
     error_occurred: "Xəta baş verdi",
     loading: "Yüklənir...",
+    placement_guest_used: "Qonaq kimi yalnız 1 pulsuz test həll edə bilərsən. Davam etmək üçün qeydiyyatdan keç.",
+    placement_guest_blocked: "\"Səviyyəni Yoxla\" üçün qeydiyyat lazımdır.",
+    placement_daily_limit: "Bugünkü 3 pulsuz test limitini istifadə etmisən. Sabah təzələnəcək, ya da Premium al.",
+    placement_cooldown_prefix: "\"Səviyyəni Yoxla\" 3 gündə 1 dəfə mövcuddur.",
+    placement_cooldown_suffix: "gün sonra yenidən sına, ya da Premium al.",
+    placement_checking_wait: "Bir az gözlə, yoxlanılır...",
   },
 
   ru: {
@@ -816,6 +822,12 @@ export const translations = {
     log_out: "Выйти",
     error_occurred: "Произошла ошибка",
     loading: "Загрузка...",
+    placement_guest_used: "Как гость ты можешь пройти только 1 бесплатный тест. Зарегистрируйся, чтобы продолжить.",
+    placement_guest_blocked: "Для «Проверить уровень» нужна регистрация.",
+    placement_daily_limit: "Ты использовал сегодняшний лимит в 3 бесплатных теста. Обновится завтра, или купи Premium.",
+    placement_cooldown_prefix: "«Проверить уровень» доступно 1 раз в 3 дня.",
+    placement_cooldown_suffix: "дней осталось, попробуй снова, или купи Premium.",
+    placement_checking_wait: "Подожди немного, идёт проверка...",
   },
 
   en: {
@@ -1217,6 +1229,12 @@ export const translations = {
     log_out: "Log out",
     error_occurred: "An error occurred",
     loading: "Loading...",
+    placement_guest_used: "As a guest you can take only 1 free test. Sign up to continue.",
+    placement_guest_blocked: "Registration is required for \"Check My Level\".",
+    placement_daily_limit: "You've used today's 3 free tests. It resets tomorrow, or get Premium.",
+    placement_cooldown_prefix: "\"Check My Level\" is available once every 3 days.",
+    placement_cooldown_suffix: "days left, try again then, or get Premium.",
+    placement_checking_wait: "Please wait, checking...",
   },
 
   tr: {
@@ -1622,6 +1640,12 @@ export const translations = {
 
     error_occurred: "Bir hata oluştu",
     loading: "Yükleniyor...",
+    placement_guest_used: "Misafir olarak yalnızca 1 ücretsiz test çözebilirsin. Devam etmek için kayıt ol.",
+    placement_guest_blocked: "\"Seviyeni Kontrol Et\" için kayıt gerekli.",
+    placement_daily_limit: "Bugünkü 3 ücretsiz test limitini kullandın. Yarın yenilenecek, ya da Premium al.",
+    placement_cooldown_prefix: "\"Seviyeni Kontrol Et\" 3 günde 1 kez kullanılabilir.",
+    placement_cooldown_suffix: "gün sonra tekrar dene, ya da Premium al.",
+    placement_checking_wait: "Biraz bekle, kontrol ediliyor...",
   },
 
   ky: {
@@ -2027,6 +2051,12 @@ export const translations = {
 
     error_occurred: "Ката кетти",
     loading: "Жүктөлүүдө...",
+    placement_guest_used: "Конок катары сен бир гана акысыз тестти чечсең болот. Улантуу үчүн каттал.",
+    placement_guest_blocked: "\"Деңгээлимди текшер\" үчүн каттоо талап кылынат.",
+    placement_daily_limit: "Бүгүнкү 3 акысыз тест лимитин колдондуң. Эртең жаңырат, же Premium ал.",
+    placement_cooldown_prefix: "\"Деңгээлимди текшер\" 3 күндө 1 жолу мүмкүн.",
+    placement_cooldown_suffix: "күндөн кийин кайра сына, же Premium ал.",
+    placement_checking_wait: "Бир аз күт, текшерилүүдө...",
   },
 };
 
