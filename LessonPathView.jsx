@@ -106,12 +106,19 @@ function LessonPathView({ portalStyles, AuthRequired, session, profile, guestMod
   }
 
   async function startQuiz(lessonNum) {
-    const rows = await sb(`lesson_questions?level=eq.${level}&lesson_num=eq.${lessonNum}&select=id,category,question,option_a,option_b,option_c,correct&limit=100`);
+    const rows = await sb(`lesson_questions?level=eq.${level}&lesson_num=eq.${lessonNum}&select=id,category,question,option_a,option_b,option_c,correct,question_ru,option_a_ru,option_b_ru,option_c_ru,question_en,option_a_en,option_b_en,option_c_en,question_tr,option_a_tr,option_b_tr,option_c_tr,question_ky,option_a_ky,option_b_ky,option_c_ky&limit=100`);
     const letterToIdx = { A: 0, B: 1, C: 2 };
-    const pool = rows.map((r) => ({
-      id: r.id, q: r.question, options: [r.option_a, r.option_b, r.option_c],
-      correct: letterToIdx[r.correct] ?? 0,
-    }));
+    const pool = rows.map((r) => {
+      const useLang = (lang && lang !== "az") ? lang : null;
+      const q = useLang && r[`question_${useLang}`] ? r[`question_${useLang}`] : r.question;
+      const optA = useLang && r[`option_a_${useLang}`] ? r[`option_a_${useLang}`] : r.option_a;
+      const optB = useLang && r[`option_b_${useLang}`] ? r[`option_b_${useLang}`] : r.option_b;
+      const optC = useLang && r[`option_c_${useLang}`] ? r[`option_c_${useLang}`] : r.option_c;
+      return {
+        id: r.id, q, options: [optA, optB, optC],
+        correct: letterToIdx[r.correct] ?? 0,
+      };
+    });
     const picked = shuffle(pool).slice(0, 20).map((q) => shuffleOptions(q));
     setQuizQs({ lessonNum, questions: picked });
     setQuizAnswers({});
