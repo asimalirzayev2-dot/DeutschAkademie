@@ -864,6 +864,7 @@ function PromoCard({ eyebrow, icon, title, body, cta, gradient, onClick }) {
 }
 
 function WordOfDay() {
+  const { t } = useLanguage();
   const [word, setWord] = useState(null);
 
   useEffect(() => {
@@ -893,7 +894,7 @@ function WordOfDay() {
         </g>
       </svg>
       <div style={{ position: "relative" }}>
-        <span style={portalStyles.wordOfDayLabel}>🍀 Günün Sözü</span>
+        <span style={portalStyles.wordOfDayLabel}>🍀 {t("word_of_day")}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
           <span style={portalStyles.wordOfDayTerm}>{word.term}</span>
           <button onClick={() => speakGerman(word.term)} style={portalStyles.speakBtn}>🔊</button>
